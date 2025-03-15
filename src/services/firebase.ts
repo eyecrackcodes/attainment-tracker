@@ -1,6 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
   getDatabase,
   ref,
   set,
@@ -28,6 +35,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
+export const auth = getAuth(app);
 
 export const revenueService = {
   // Subscribe to revenue data changes
@@ -208,5 +216,39 @@ export const revenueService = {
       callback(defaultSettings);
       return () => {};
     }
+  },
+};
+
+export const authService = {
+  // Sign in with Google
+  signInWithGoogle: async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      throw error;
+    }
+  },
+
+  // Sign out
+  signOut: async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out:", error);
+      throw error;
+    }
+  },
+
+  // Get current user
+  getCurrentUser: () => {
+    return auth.currentUser;
+  },
+
+  // Subscribe to auth state changes
+  onAuthStateChanged: (callback) => {
+    return onAuthStateChanged(auth, callback);
   },
 };
