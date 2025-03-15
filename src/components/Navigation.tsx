@@ -1,27 +1,8 @@
 import React from "react";
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-  IconButton,
-  Button,
-  Avatar,
-} from "@mui/material";
-import { Menu as MenuIcon, Logout as LogoutIcon } from "@mui/icons-material";
-import { useAuth } from "../contexts/AuthContext";
+import { AppBar, Toolbar, Typography, Box, IconButton } from "@mui/material";
+import { Menu as MenuIcon } from "@mui/icons-material";
 
 export const Navigation = () => {
-  const { user, signOut } = useAuth();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   return (
     <AppBar position="sticky" elevation={1}>
       <Toolbar>
@@ -40,25 +21,9 @@ export const Navigation = () => {
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {user && (
-            <>
-              <Avatar
-                src={user.photoURL || undefined}
-                alt={user.displayName || "User"}
-                sx={{ width: 32, height: 32 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {user.displayName || user.email}
-              </Typography>
-              <Button
-                color="inherit"
-                onClick={handleSignOut}
-                startIcon={<LogoutIcon />}
-              >
-                Sign Out
-              </Button>
-            </>
-          )}
+          <Typography variant="body2" color="text.secondary">
+            Welcome
+          </Typography>
         </Box>
       </Toolbar>
     </AppBar>
