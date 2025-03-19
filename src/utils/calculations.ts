@@ -55,7 +55,8 @@ export const countBusinessDays = (startDate: Date, endDate: Date): number => {
 
 export const calculateLocationMetrics = (
   data: RevenueData[],
-  targetSettings?: TargetSettings
+  targetSettings?: TargetSettings,
+  location?: string
 ) => {
   const totalAustin = data.reduce((sum, entry) => sum + (entry.austin || 0), 0);
   const totalCharlotte = data.reduce(
@@ -64,46 +65,85 @@ export const calculateLocationMetrics = (
   );
   const totalRevenue = totalAustin + totalCharlotte;
 
-  // Calculate targets based on working days in the data period
-  const uniqueDates = [...new Set(data.map((entry) => entry.date))];
-  let austinTarget = 0;
-  let charlotteTarget = 0;
+  // Get the date range from the data
+  const dates = data.map(entry => new Date(entry.date));
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-  uniqueDates.forEach((dateStr) => {
-    const date = new Date(dateStr);
-    const { austin: dailyAustinTarget, charlotte: dailyCharlotteTarget } =
-      getTargetForDate(date, targetSettings);
+  // Calculate total business days in the month
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+  let totalBusinessDays = 0;
+  let currentDay = new Date(firstDayOfMonth);
+  
+  while (currentDay <= lastDayOfMonth) {
+    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) { // Not Sunday (0) or Saturday (6)
+      totalBusinessDays++;
+    }
+    currentDay.setDate(currentDay.getDate() + 1);
+  }
 
-    austinTarget += dailyAustinTarget;
-    charlotteTarget += dailyCharlotteTarget;
-  });
+  // Calculate elapsed business days
+  let elapsedBusinessDays = 0;
+  currentDay = new Date(firstDayOfMonth);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  while (currentDay <= today) {
+    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+      elapsedBusinessDays++;
+    }
+    currentDay.setDate(currentDay.getDate() + 1);
+  }
 
-  const totalTarget = austinTarget + charlotteTarget;
+  // Calculate daily and monthly targets
+  const dailyAustinTarget = targetSettings?.dailyTargets.austin || TARGETS.austin;
+  const dailyCharlotteTarget = targetSettings?.dailyTargets.charlotte || TARGETS.charlotte;
+  
+  const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
+  const monthlyCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
 
-  // Calculate attainment percentages
-  const austinAttainment =
-    austinTarget > 0 ? (totalAustin / austinTarget) * 100 : 0;
-  const charlotteAttainment =
-    charlotteTarget > 0 ? (totalCharlotte / charlotteTarget) * 100 : 0;
-  const totalAttainment =
-    totalTarget > 0 ? (totalRevenue / totalTarget) * 100 : 0;
+  // Calculate on-pace targets based on elapsed business days
+  const onPaceAustinTarget = (monthlyAustinTarget / totalBusinessDays) * elapsedBusinessDays;
+  const onPaceCharlotteTarget = (monthlyCharlotteTarget / totalBusinessDays) * elapsedBusinessDays;
+
+  // Calculate attainment percentages against on-pace targets
+  const austinAttainment = onPaceAustinTarget > 0 ? (totalAustin / onPaceAustinTarget) * 100 : 0;
+  const charlotteAttainment = onPaceCharlotteTarget > 0 ? (totalCharlotte / onPaceCharlotteTarget) * 100 : 0;
+  
+  const totalOnPaceTarget = onPaceAustinTarget + onPaceCharlotteTarget;
+  const totalAttainment = totalOnPaceTarget > 0 ? (totalRevenue / totalOnPaceTarget) * 100 : 0;
+
+  // Filter targets based on location
+  const filteredAustinTarget = (!location || location === "Combined" || location === "Austin") ? onPaceAustinTarget : 0;
+  const filteredCharlotteTarget = (!location || location === "Combined" || location === "Charlotte") ? onPaceCharlotteTarget : 0;
+  const filteredTotalTarget = filteredAustinTarget + filteredCharlotteTarget;
 
   return {
     austin: {
       revenue: totalAustin,
-      target: austinTarget,
+      target: filteredAustinTarget,
       attainment: austinAttainment,
+      weeklyTarget: monthlyAustinTarget, // Using monthly target instead of weekly
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays
     },
     charlotte: {
       revenue: totalCharlotte,
-      target: charlotteTarget,
+      target: filteredCharlotteTarget,
       attainment: charlotteAttainment,
+      weeklyTarget: monthlyCharlotteTarget, // Using monthly target instead of weekly
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays
     },
     total: {
       revenue: totalRevenue,
-      target: totalTarget,
+      target: filteredTotalTarget,
       attainment: totalAttainment,
-    },
+      weeklyTarget: monthlyAustinTarget + monthlyCharlotteTarget, // Using monthly target instead of weekly
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays
+    }
   };
 };
 
@@ -196,13 +236,15 @@ export const filterDataByTimeFrame = (
   switch (timeFrame) {
     case "MTD":
       console.log("Filtering by MTD");
+      console.log("Current UTC date:", nowUTC);
       filteredData = filteredData.filter((item) => {
         const itemDate = createUTCDate(item.date);
-        return (
-          itemDate.getUTCMonth() === nowUTC.getUTCMonth() &&
-          itemDate.getUTCFullYear() === nowUTC.getUTCFullYear()
-        );
+        const isIncluded = itemDate.getUTCMonth() === nowUTC.getUTCMonth() &&
+          itemDate.getUTCFullYear() === nowUTC.getUTCFullYear();
+        console.log(`Date ${item.date} -> UTC: ${itemDate.toISOString()} -> Included: ${isIncluded}`);
+        return isIncluded;
       });
+      console.log("Filtered MTD data:", filteredData);
       break;
     case "last30":
       console.log("Filtering by last30");

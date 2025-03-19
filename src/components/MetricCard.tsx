@@ -7,6 +7,9 @@ interface MetricCardProps {
   revenue: number;
   target: number;
   attainment: number;
+  weeklyTarget?: number;
+  elapsedDays?: number;
+  totalDays?: number;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({
@@ -14,6 +17,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   revenue,
   target,
   attainment,
+  weeklyTarget,
+  elapsedDays,
+  totalDays,
 }) => {
   // Determine color based on attainment percentage
   const getAttainmentColor = (attainment: number) => {
@@ -21,6 +27,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
     if (attainment >= 85) return "warning.main";
     return "error.main";
   };
+
+  // Calculate daily average needed to hit target
+  const remainingDays = totalDays ? totalDays - (elapsedDays || 0) : 0;
+  const remainingRevenue = weeklyTarget ? weeklyTarget - revenue : 0;
+  const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
 
   return (
     <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
@@ -31,21 +42,24 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Revenue
+          MTD Revenue
         </Typography>
         <Typography variant="h6">{formatCurrency(revenue)}</Typography>
       </Box>
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Target
+          Monthly Target ({elapsedDays} of {totalDays} days)
         </Typography>
         <Typography variant="h6">{formatCurrency(target)}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Daily Pace Needed: {formatCurrency(dailyNeeded)}
+        </Typography>
       </Box>
 
       <Box>
         <Typography variant="body2" color="text.secondary">
-          Attainment
+          MTD Attainment
         </Typography>
         <Typography variant="h6" sx={{ color: getAttainmentColor(attainment) }}>
           {attainment.toFixed(1)}%

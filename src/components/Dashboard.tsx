@@ -336,6 +336,7 @@ export const Dashboard: React.FC = () => {
               targetSettings={state.targetSettings}
               startDate={state.filters.startDate}
               endDate={state.filters.endDate}
+              location={state.filters.location}
             />
           </Grid>
 

@@ -20,6 +20,7 @@ interface SummaryMetricsProps {
   targetSettings?: TargetSettings;
   startDate?: string | null;
   endDate?: string | null;
+  location?: string;
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
@@ -28,6 +29,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   targetSettings,
   startDate,
   endDate,
+  location,
 }) => {
   const filteredData = filterDataByTimeFrame(
     data,
@@ -35,9 +37,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     undefined,
     targetSettings,
     startDate,
-    endDate
+    endDate,
+    location
   );
-  const metrics = calculateLocationMetrics(filteredData, targetSettings);
+  const metrics = calculateLocationMetrics(filteredData, targetSettings, location);
 
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
@@ -52,6 +55,9 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             revenue={metrics.austin.revenue}
             target={metrics.austin.target}
             attainment={metrics.austin.attainment}
+            weeklyTarget={metrics.austin.weeklyTarget}
+            elapsedDays={metrics.austin.elapsedDays}
+            totalDays={metrics.austin.totalDays}
           />
         </Grid>
         <Grid item xs={12} md={4}>
@@ -60,6 +66,9 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             revenue={metrics.charlotte.revenue}
             target={metrics.charlotte.target}
             attainment={metrics.charlotte.attainment}
+            weeklyTarget={metrics.charlotte.weeklyTarget}
+            elapsedDays={metrics.charlotte.elapsedDays}
+            totalDays={metrics.charlotte.totalDays}
           />
         </Grid>
         <Grid item xs={12} md={4}>
@@ -68,6 +77,9 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             revenue={metrics.total.revenue}
             target={metrics.total.target}
             attainment={metrics.total.attainment}
+            weeklyTarget={metrics.total.weeklyTarget}
+            elapsedDays={metrics.total.elapsedDays}
+            totalDays={metrics.total.totalDays}
           />
         </Grid>
       </Grid>
