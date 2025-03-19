@@ -183,112 +183,75 @@ export const filterDataByTimeFrame = (
 
   // First filter by date
   let filteredData = [...data];
+  
+  // Create now date in UTC at start of day
   const now = new Date();
+  const nowUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+  const createUTCDate = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split("-").map(num => parseInt(num));
+    return new Date(Date.UTC(year, month - 1, day));
+  };
 
   switch (timeFrame) {
     case "MTD":
       console.log("Filtering by MTD");
       filteredData = filteredData.filter((item) => {
-        // Parse the date string correctly
-        const dateParts = item.date.split("-");
-        const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-        const day = parseInt(dateParts[2]);
-
-        const itemDate = new Date(year, month, day);
-
+        const itemDate = createUTCDate(item.date);
         return (
-          itemDate.getMonth() === now.getMonth() &&
-          itemDate.getFullYear() === now.getFullYear()
+          itemDate.getUTCMonth() === nowUTC.getUTCMonth() &&
+          itemDate.getUTCFullYear() === nowUTC.getUTCFullYear()
         );
       });
       break;
     case "last30":
       console.log("Filtering by last30");
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(now.getDate() - 30);
+      const thirtyDaysAgo = new Date(nowUTC);
+      thirtyDaysAgo.setUTCDate(nowUTC.getUTCDate() - 30);
       filteredData = filteredData.filter((item) => {
-        // Parse the date string correctly
-        const dateParts = item.date.split("-");
-        const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-        const day = parseInt(dateParts[2]);
-
-        const itemDate = new Date(year, month, day);
-
+        const itemDate = createUTCDate(item.date);
         return itemDate >= thirtyDaysAgo;
       });
       break;
     case "last90":
       console.log("Filtering by last90");
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(now.getDate() - 90);
+      const ninetyDaysAgo = new Date(nowUTC);
+      ninetyDaysAgo.setUTCDate(nowUTC.getUTCDate() - 90);
       filteredData = filteredData.filter((item) => {
-        // Parse the date string correctly
-        const dateParts = item.date.split("-");
-        const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-        const day = parseInt(dateParts[2]);
-
-        const itemDate = new Date(year, month, day);
-
+        const itemDate = createUTCDate(item.date);
         return itemDate >= ninetyDaysAgo;
       });
       break;
     case "YTD":
       console.log("Filtering by YTD");
       filteredData = filteredData.filter((item) => {
-        // Parse the date string correctly
-        const dateParts = item.date.split("-");
-        const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-        const day = parseInt(dateParts[2]);
-
-        const itemDate = new Date(year, month, day);
-
-        return itemDate.getFullYear() === now.getFullYear();
+        const itemDate = createUTCDate(item.date);
+        return itemDate.getUTCFullYear() === nowUTC.getUTCFullYear();
       });
       break;
     case "custom":
       console.log("Filtering by custom date range:", { startDate, endDate });
       if (startDate || endDate) {
         filteredData = filteredData.filter((item) => {
-          // Parse the date string correctly
-          const dateParts = item.date.split("-");
-          const year = parseInt(dateParts[0]);
-          const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-          const day = parseInt(dateParts[2]);
-
-          // Create date with time set to midnight for consistent comparison
-          const itemDate = new Date(year, month, day);
-          itemDate.setHours(0, 0, 0, 0);
+          const itemDate = createUTCDate(item.date);
 
           // If only start date is provided
           if (startDate && !endDate) {
-            const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
-            return itemDate.getTime() >= start.getTime();
+            const start = createUTCDate(startDate);
+            return itemDate >= start;
           }
 
           // If only end date is provided
           if (!startDate && endDate) {
-            const end = new Date(endDate);
-            end.setHours(0, 0, 0, 0);
-            return itemDate.getTime() <= end.getTime();
+            const end = createUTCDate(endDate);
+            return itemDate <= end;
           }
 
           // If both dates are provided
           if (startDate && endDate) {
-            const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(endDate);
-            end.setHours(0, 0, 0, 0);
-
-            // For exact date matching, we need to compare by timestamp
-            return (
-              itemDate.getTime() >= start.getTime() &&
-              itemDate.getTime() <= end.getTime()
-            );
+            const start = createUTCDate(startDate);
+            const end = createUTCDate(endDate);
+            return itemDate >= start && itemDate <= end;
           }
 
           return true;

@@ -17,8 +17,20 @@ export interface LocationMetrics {
   combined: LocationMetric;
 }
 
-export type WeeklyMetrics = LocationMetrics;
-export type MonthlyMetrics = LocationMetrics;
+export interface WeeklyMetrics {
+  label: string;
+  austinRevenue: number;
+  charlotteRevenue: number;
+  combinedRevenue: number;
+  austinTarget: number;
+  charlotteTarget: number;
+  combinedTarget: number;
+  austinAttainment: number;
+  charlotteAttainment: number;
+  combinedAttainment: number;
+}
+
+export interface MonthlyMetrics extends WeeklyMetrics {}
 
 export interface DailyTarget {
   austin: number;

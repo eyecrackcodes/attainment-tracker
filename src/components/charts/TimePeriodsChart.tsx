@@ -9,6 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  LabelList,
 } from "recharts";
 import { Typography, useTheme, Box, Paper, Divider } from "@mui/material";
 import { RevenueData, TimeFrame, TargetSettings } from "../../types/revenue";
@@ -162,9 +163,27 @@ export const TimePeriodsChart: React.FC<TimePeriodsChartProps> = ({
             <RechartsTooltip content={<CustomTooltip />} />
             <Legend />
             <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
-            <Bar dataKey="Austin" fill={brandColors.austin} />
-            <Bar dataKey="Charlotte" fill={brandColors.charlotte} />
-            <Bar dataKey="Combined" fill={brandColors.combined} />
+            <Bar dataKey="Austin" fill={brandColors.austin}>
+              <LabelList
+                dataKey="Austin"
+                position="top"
+                formatter={(value: number) => `${value.toFixed(0)}%`}
+              />
+            </Bar>
+            <Bar dataKey="Charlotte" fill={brandColors.charlotte}>
+              <LabelList
+                dataKey="Charlotte"
+                position="top"
+                formatter={(value: number) => `${value.toFixed(0)}%`}
+              />
+            </Bar>
+            <Bar dataKey="Combined" fill={brandColors.combined}>
+              <LabelList
+                dataKey="Combined"
+                position="top"
+                formatter={(value: number) => `${value.toFixed(0)}%`}
+              />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       )}
