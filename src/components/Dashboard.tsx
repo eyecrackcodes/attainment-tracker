@@ -240,73 +240,64 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl">
-      <Snackbar
-        open={state.snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
+    <Box sx={{ flexGrow: 1, bgcolor: "#F3F4F6", minHeight: "100vh", pt: 2 }}>
+      <Container maxWidth={false} sx={{ px: { xs: 2, lg: 4 } }}>
+        <Snackbar
+          open={state.snackbar.open}
+          autoHideDuration={6000}
           onClose={handleCloseSnackbar}
-          severity={state.snackbar.severity}
-          sx={{ width: "100%" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          {state.snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={state.snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {state.snackbar.message}
+          </Alert>
+        </Snackbar>
 
-      <Box sx={{ my: 4 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Revenue Attainment Dashboard
-            </Typography>
-            {/* Settings buttons with improved visibility */}
-            <Box sx={{ display: "flex", gap: 2, mr: 2, alignItems: "center" }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={<SettingsIcon />}
-                onClick={() => {
-                  const targetSettingsButton = document.querySelector(
-                    '[data-testid="target-settings-button"]'
-                  );
-                  if (targetSettingsButton) {
-                    (targetSettingsButton as HTMLElement).click();
-                  }
-                }}
-              >
-                Daily Targets
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={<CalendarIcon />}
-                onClick={() => {
-                  const monthlySettingsButton = document.querySelector(
-                    '[data-testid="monthly-settings-button"]'
-                  );
-                  if (monthlySettingsButton) {
-                    (monthlySettingsButton as HTMLElement).click();
-                  }
-                }}
-              >
-                Monthly Adjustments
-              </Button>
-              <Box sx={{ display: "none" }}>
-                <TargetSettingsComponent
-                  currentSettings={state.targetSettings}
-                  onSettingsChange={handleTargetsChange}
-                />
-                <MonthlyTargetSettingsComponent
-                  currentSettings={state.targetSettings}
-                  onSettingsChange={handleTargetsChange}
-                />
+        <Box sx={{ mb: 3 }}>
+          <AppBar position="static" sx={{ borderRadius: 2 }}>
+            <Toolbar>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Revenue Attainment Dashboard
+              </Typography>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<SettingsIcon />}
+                  onClick={() => {
+                    const targetSettingsButton = document.querySelector(
+                      '[data-testid="target-settings-button"]'
+                    );
+                    if (targetSettingsButton) {
+                      (targetSettingsButton as HTMLElement).click();
+                    }
+                  }}
+                >
+                  Daily Targets
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<CalendarIcon />}
+                  onClick={() => {
+                    const monthlySettingsButton = document.querySelector(
+                      '[data-testid="monthly-settings-button"]'
+                    );
+                    if (monthlySettingsButton) {
+                      (monthlySettingsButton as HTMLElement).click();
+                    }
+                  }}
+                >
+                  Monthly Adjustments
+                </Button>
               </Box>
-            </Box>
-          </Toolbar>
-        </AppBar>
+            </Toolbar>
+          </AppBar>
+        </Box>
 
         {state.loading && (
           <Box
@@ -328,7 +319,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         <Grid container spacing={3}>
-          {/* Summary Metrics - Moved to top for immediate insights */}
+          {/* Summary Metrics */}
           <Grid item xs={12}>
             <SummaryMetrics
               data={state.revenueData}
@@ -340,36 +331,38 @@ export const Dashboard: React.FC = () => {
             />
           </Grid>
 
-          {/* Daily Entry Form - Kept near top for easy data entry */}
-          <Grid item xs={12} md={4}>
-            <DailyEntryForm
-              onSubmit={handleDailyDataAdd}
-              existingData={state.revenueData}
-              targets={state.targetSettings}
-            />
-          </Grid>
-
-          {/* Filters and Data Import/Export */}
+          {/* Daily Entry Form and Filters Row */}
           <Grid item xs={12}>
-            <Paper sx={{ p: 2, mb: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={8}>
-                  <FilterPanel
-                    filters={state.filters}
-                    onFilterChange={handleFilterChange}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <DataImportExport
-                    onDataUpdate={handleDataUpdate}
-                    currentData={state.revenueData}
-                  />
-                </Grid>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <DailyEntryForm
+                  onSubmit={handleDailyDataAdd}
+                  existingData={state.revenueData}
+                  targets={state.targetSettings}
+                />
               </Grid>
-            </Paper>
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 3, height: "100%" }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={8}>
+                      <FilterPanel
+                        filters={state.filters}
+                        onFilterChange={handleFilterChange}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <DataImportExport
+                        onDataUpdate={handleDataUpdate}
+                        currentData={state.revenueData}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            </Grid>
           </Grid>
 
-          {/* Main Chart - Full width for better visibility */}
+          {/* Charts Section */}
           <Grid item xs={12}>
             <RevenueComparisonChart
               data={state.revenueData}
@@ -381,24 +374,26 @@ export const Dashboard: React.FC = () => {
             />
           </Grid>
 
-          {/* Two column charts */}
           <Grid item xs={12} md={6}>
-            <DailyAttainmentChart
-              data={state.revenueData}
-              filters={state.filters}
-              targets={state.targetSettings}
-            />
+            <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+              <DailyAttainmentChart
+                data={state.revenueData}
+                filters={state.filters}
+                targets={state.targetSettings}
+              />
+            </Paper>
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <TimePeriodsChart
-              data={state.revenueData}
-              filters={state.filters}
-              targets={state.targetSettings}
-            />
+            <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+              <TimePeriodsChart
+                data={state.revenueData}
+                filters={state.filters}
+                targets={state.targetSettings}
+              />
+            </Paper>
           </Grid>
 
-          {/* Distribution Charts - Full width at bottom */}
           <Grid item xs={12}>
             <DistributionCharts
               data={state.revenueData}
@@ -407,7 +402,16 @@ export const Dashboard: React.FC = () => {
             />
           </Grid>
         </Grid>
-      </Box>
-    </Container>
+
+        <TargetSettingsComponent
+          currentSettings={state.targetSettings}
+          onSettingsChange={handleTargetsChange}
+        />
+        <MonthlyTargetSettingsComponent
+          currentSettings={state.targetSettings}
+          onSettingsChange={handleTargetsChange}
+        />
+      </Container>
+    </Box>
   );
 };
