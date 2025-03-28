@@ -675,3 +675,73 @@ export const calculateTrend = (
   if (avgFirst - avgSecond > 5) return "declining";
   return "stable";
 };
+
+export const calculateMonthlyTrends = (data: RevenueData[]) => {
+  const monthlyData = data.reduce((acc: any, entry) => {
+    const date = new Date(entry.date);
+    const year = date.getFullYear();
+    const month = date.toLocaleString("default", { month: "short" });
+    const key = `${month}-${year}`;
+
+    if (!acc[key]) {
+      acc[key] = {
+        month,
+        year,
+        austin: 0,
+        charlotte: 0,
+        austinTarget: 0,
+        charlotteTarget: 0,
+      };
+    }
+
+    acc[key].austin += entry.austin || 0;
+    acc[key].charlotte += entry.charlotte || 0;
+    acc[key].austinTarget += entry.austinTarget || 0;
+    acc[key].charlotteTarget += entry.charlotteTarget || 0;
+
+    return acc;
+  }, {});
+
+  // Convert to array and sort by date
+  const sortedData = Object.values(monthlyData).sort((a: any, b: any) => {
+    const dateA = new Date(`${a.month} 1, ${a.year}`);
+    const dateB = new Date(`${b.month} 1, ${b.year}`);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  // Calculate year-over-year comparison
+  const currentYear = new Date().getFullYear();
+  return sortedData.map((month: any) => ({
+    month: month.month,
+    currentYear:
+      month.year === currentYear ? month.austin + month.charlotte : null,
+    previousYear:
+      month.year === currentYear - 1 ? month.austin + month.charlotte : null,
+    austinAttainment:
+      month.austinTarget > 0 ? (month.austin / month.austinTarget) * 100 : 0,
+    charlotteAttainment:
+      month.charlotteTarget > 0
+        ? (month.charlotte / month.charlotteTarget) * 100
+        : 0,
+  }));
+};
+
+export const calculateMovingAverage = (data: any[], periods: number) => {
+  return data.map((item, index) => {
+    const startIndex = Math.max(0, index - periods + 1);
+    const window = data.slice(startIndex, index + 1);
+
+    const austinMA =
+      window.reduce((sum, entry) => sum + (entry.austinAttainment || 0), 0) /
+      window.length;
+    const charlotteMA =
+      window.reduce((sum, entry) => sum + (entry.charlotteAttainment || 0), 0) /
+      window.length;
+
+    return {
+      month: item.month,
+      austin: austinMA,
+      charlotte: charlotteMA,
+    };
+  });
+};

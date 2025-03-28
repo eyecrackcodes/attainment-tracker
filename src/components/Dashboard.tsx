@@ -12,6 +12,9 @@ import {
   Toolbar,
   IconButton,
   Button,
+  Tabs,
+  Tab,
+  Fade,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -29,6 +32,8 @@ import { DailyEntryForm } from "./DailyEntryForm";
 import { revenueService } from "../services/firebase";
 import { TargetSettings as TargetSettingsComponent } from "./TargetSettings";
 import { MonthlyTargetSettings as MonthlyTargetSettingsComponent } from "./MonthlyTargetSettings";
+import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
+import { DailyPatternsView } from "./charts/DailyPatternsView";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -80,6 +85,9 @@ export const Dashboard: React.FC = () => {
       monthlyAdjustments: [],
     },
   });
+
+  const [activeTab, setActiveTab] = useState<number>(0);
+  const [isTabLoading, setIsTabLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribeRevenue = revenueService.subscribeToRevenueData((data) => {
@@ -224,6 +232,145 @@ export const Dashboard: React.FC = () => {
     }));
   };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setIsTabLoading(true);
+    setActiveTab(newValue);
+
+    // Reset filters to MTD when switching to historical or daily views
+    if (newValue !== 0) {
+      setState((prev) => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          timeFrame: "MTD",
+        },
+      }));
+    }
+
+    // Simulate tab loading transition
+    setTimeout(() => {
+      setIsTabLoading(false);
+    }, 300);
+  };
+
+  const renderActiveView = () => {
+    const view = (() => {
+      switch (activeTab) {
+        case 0:
+          return (
+            <Grid container spacing={3}>
+              {/* Summary Metrics */}
+              <Grid item xs={12}>
+                <SummaryMetrics
+                  data={state.revenueData}
+                  timeFrame={state.filters.timeFrame}
+                  targetSettings={state.targetSettings}
+                  startDate={state.filters.startDate}
+                  endDate={state.filters.endDate}
+                  location={state.filters.location}
+                />
+              </Grid>
+
+              {/* Daily Entry Form and Filters Row */}
+              <Grid item xs={12}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <DailyEntryForm
+                      onSubmit={handleDailyDataAdd}
+                      existingData={state.revenueData}
+                      targets={state.targetSettings}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={8}>
+                    <Paper sx={{ p: 3, height: "100%" }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={8}>
+                          <FilterPanel
+                            filters={state.filters}
+                            onFilterChange={handleFilterChange}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <DataImportExport
+                            onDataUpdate={handleDataUpdate}
+                            currentData={state.revenueData}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              {/* Charts Section */}
+              <Grid item xs={12}>
+                <RevenueComparisonChart
+                  data={state.revenueData}
+                  timeFrame={state.filters.timeFrame}
+                  targetSettings={state.targetSettings}
+                  startDate={state.filters.startDate}
+                  endDate={state.filters.endDate}
+                  location={state.filters.location}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <DailyAttainmentChart
+                    data={state.revenueData}
+                    filters={state.filters}
+                    targets={state.targetSettings}
+                  />
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <TimePeriodsChart
+                    data={state.revenueData}
+                    filters={state.filters}
+                    targets={state.targetSettings}
+                  />
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12}>
+                <DistributionCharts
+                  data={state.revenueData}
+                  filters={state.filters}
+                  targets={state.targetSettings}
+                />
+              </Grid>
+            </Grid>
+          );
+        case 1:
+          return (
+            <HistoricalTrendsView
+              data={state.revenueData}
+              targetSettings={state.targetSettings}
+              isLoading={isTabLoading}
+            />
+          );
+        case 2:
+          return (
+            <DailyPatternsView
+              data={state.revenueData}
+              targetSettings={state.targetSettings}
+              isLoading={isTabLoading}
+            />
+          );
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <Fade in={!isTabLoading} timeout={300}>
+        <Box>{view}</Box>
+      </Fade>
+    );
+  };
+
   if (state.error) {
     return (
       <Container maxWidth="xl">
@@ -299,6 +446,25 @@ export const Dashboard: React.FC = () => {
           </AppBar>
         </Box>
 
+        <Paper sx={{ mb: 3 }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              "& .MuiTab-root": {
+                py: 2,
+              },
+            }}
+          >
+            <Tab label="Overview" />
+            <Tab label="Historical Trends" />
+            <Tab label="Daily Patterns" />
+          </Tabs>
+        </Paper>
+
         {state.loading && (
           <Box
             sx={{
@@ -318,90 +484,7 @@ export const Dashboard: React.FC = () => {
           </Box>
         )}
 
-        <Grid container spacing={3}>
-          {/* Summary Metrics */}
-          <Grid item xs={12}>
-            <SummaryMetrics
-              data={state.revenueData}
-              timeFrame={state.filters.timeFrame}
-              targetSettings={state.targetSettings}
-              startDate={state.filters.startDate}
-              endDate={state.filters.endDate}
-              location={state.filters.location}
-            />
-          </Grid>
-
-          {/* Daily Entry Form and Filters Row */}
-          <Grid item xs={12}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <DailyEntryForm
-                  onSubmit={handleDailyDataAdd}
-                  existingData={state.revenueData}
-                  targets={state.targetSettings}
-                />
-              </Grid>
-              <Grid item xs={12} md={8}>
-                <Paper sx={{ p: 3, height: "100%" }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={8}>
-                      <FilterPanel
-                        filters={state.filters}
-                        onFilterChange={handleFilterChange}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <DataImportExport
-                        onDataUpdate={handleDataUpdate}
-                        currentData={state.revenueData}
-                      />
-                    </Grid>
-                  </Grid>
-                </Paper>
-              </Grid>
-            </Grid>
-          </Grid>
-
-          {/* Charts Section */}
-          <Grid item xs={12}>
-            <RevenueComparisonChart
-              data={state.revenueData}
-              timeFrame={state.filters.timeFrame}
-              targetSettings={state.targetSettings}
-              startDate={state.filters.startDate}
-              endDate={state.filters.endDate}
-              location={state.filters.location}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
-              <DailyAttainmentChart
-                data={state.revenueData}
-                filters={state.filters}
-                targets={state.targetSettings}
-              />
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
-              <TimePeriodsChart
-                data={state.revenueData}
-                filters={state.filters}
-                targets={state.targetSettings}
-              />
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12}>
-            <DistributionCharts
-              data={state.revenueData}
-              filters={state.filters}
-              targets={state.targetSettings}
-            />
-          </Grid>
-        </Grid>
+        {renderActiveView()}
 
         <TargetSettingsComponent
           currentSettings={state.targetSettings}
