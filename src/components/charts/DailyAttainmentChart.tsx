@@ -16,7 +16,7 @@ import {
   filterDataByTimeFrame,
   getTargetForDate,
 } from "../../utils/calculations";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface DailyAttainmentChartProps {
   data: RevenueData[];
@@ -56,42 +56,16 @@ export const DailyAttainmentChart: React.FC<DailyAttainmentChartProps> = ({
     filters.location
   );
 
-  // Sort data by date to ensure correct order
-  const sortedData = [...filteredData].sort((a, b) => {
-    const aDateParts = a.date.split("-");
-    const aYear = parseInt(aDateParts[0]);
-    const aMonth = parseInt(aDateParts[1]) - 1;
-    const aDay = parseInt(aDateParts[2]);
-
-    const bDateParts = b.date.split("-");
-    const bYear = parseInt(bDateParts[0]);
-    const bMonth = parseInt(bDateParts[1]) - 1;
-    const bDay = parseInt(bDateParts[2]);
-
-    const aDate = new Date(aYear, aMonth, aDay);
-    const bDate = new Date(bYear, bMonth, bDay);
-
-    return aDate.getTime() - bDate.getTime();
-  });
-
   // Transform data for the chart
-  const chartData = sortedData.map((item) => {
-    // Parse the date string correctly
-    // The date string is in format 'YYYY-MM-DD'
-    const dateParts = item.date.split("-");
-    const year = parseInt(dateParts[0]);
-    const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
-    const day = parseInt(dateParts[2]);
-
-    const date = new Date(year, month, day);
-
+  const chartData = filteredData.map((item) => {
+    const date = parseISO(item.date);
     const dailyTarget = getTargetForDate(date, targets);
 
     // Skip days with zero targets (non-working days)
     if (dailyTarget.austin === 0 && dailyTarget.charlotte === 0) {
       return {
         date: format(date, "MM/dd"),
-        fullDate: item.date, // Store the original date string for tooltip
+        fullDate: item.date,
         Austin: null,
         Charlotte: null,
         Combined: null,
@@ -113,7 +87,7 @@ export const DailyAttainmentChart: React.FC<DailyAttainmentChartProps> = ({
 
     return {
       date: format(date, "MM/dd"),
-      fullDate: item.date, // Store the original date string for tooltip
+      fullDate: item.date,
       Austin: parseFloat(austinAttainment.toFixed(1)),
       Charlotte: parseFloat(charlotteAttainment.toFixed(1)),
       Combined: parseFloat(combinedAttainment.toFixed(1)),
@@ -123,10 +97,9 @@ export const DailyAttainmentChart: React.FC<DailyAttainmentChartProps> = ({
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      // Use the full date in the tooltip for clarity
       const fullDate = payload[0]?.payload?.fullDate;
       const formattedFullDate = fullDate
-        ? format(new Date(fullDate), "MMM d, yyyy")
+        ? format(parseISO(fullDate), "MMM d, yyyy")
         : label;
 
       return (
