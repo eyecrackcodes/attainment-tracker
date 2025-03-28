@@ -46,8 +46,8 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
   // Simplified color scheme with more distinct colors
   const COLORS = {
     poor: "#d32f2f", // Red - Below 75%
-    fair: "#ff9800", // Orange - 75-100%
-    good: "#4caf50", // Green - 100-125%
+    fair: "#ff9800", // Orange - 76-100%
+    good: "#4caf50", // Green - 101-125%
     excellent: "#2e7d32", // Dark Green - Above 125%
   };
 
@@ -62,16 +62,21 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
     filters.location
   );
 
-  // Calculate attainment distribution with simplified ranges
+  // Calculate attainment distribution with corrected ranges
   const calculateDistribution = () => {
     if (filteredData.length === 0) return [];
 
-    // Simplified attainment ranges
+    // Corrected attainment ranges
     const ranges = [
       { name: "Below 75%", min: 0, max: 75, color: COLORS.poor },
-      { name: "75-100%", min: 75, max: 100, color: COLORS.fair },
-      { name: "100-125%", min: 100, max: 125, color: COLORS.good },
-      { name: "Above 125%", min: 125, max: Infinity, color: COLORS.excellent },
+      { name: "76-100%", min: 75.01, max: 100, color: COLORS.fair },
+      { name: "101-125%", min: 100.01, max: 125, color: COLORS.good },
+      {
+        name: "Above 125%",
+        min: 125.01,
+        max: Infinity,
+        color: COLORS.excellent,
+      },
     ];
 
     // Initialize counts
@@ -81,10 +86,9 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
 
     // Count entries in each range
     filteredData.forEach((item) => {
-      // Parse the date string correctly
       const dateParts = item.date.split("-");
       const year = parseInt(dateParts[0]);
-      const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+      const month = parseInt(dateParts[1]) - 1;
       const day = parseInt(dateParts[2]);
 
       const date = new Date(year, month, day);
@@ -108,9 +112,9 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
       const combinedAttainment =
         combinedTarget > 0 ? (combinedRevenue / combinedTarget) * 100 : 0;
 
-      // Increment counts for each location
+      // Increment counts for each location using corrected ranges
       austinCounts.forEach((range) => {
-        if (austinAttainment >= range.min && austinAttainment < range.max) {
+        if (austinAttainment >= range.min && austinAttainment <= range.max) {
           range.count++;
         }
       });
@@ -118,14 +122,17 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
       charlotteCounts.forEach((range) => {
         if (
           charlotteAttainment >= range.min &&
-          charlotteAttainment < range.max
+          charlotteAttainment <= range.max
         ) {
           range.count++;
         }
       });
 
       combinedCounts.forEach((range) => {
-        if (combinedAttainment >= range.min && combinedAttainment < range.max) {
+        if (
+          combinedAttainment >= range.min &&
+          combinedAttainment <= range.max
+        ) {
           range.count++;
         }
       });
