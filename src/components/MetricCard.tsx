@@ -1,6 +1,7 @@
 import React from "react";
 import { Paper, Typography, Box, Divider } from "@mui/material";
 import { formatCurrency } from "../utils/formatters";
+import { TrendingUp, TrendingDown } from "@mui/icons-material";
 
 interface MetricCardProps {
   title: string;
@@ -30,8 +31,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   // Calculate daily average needed to hit target
   const remainingDays = totalDays ? totalDays - (elapsedDays || 0) : 0;
-  const remainingRevenue = weeklyTarget ? weeklyTarget - revenue : 0;
+  const remainingRevenue = target - revenue;
   const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
+  const isAheadOfTarget = revenue >= target;
+  const amountAhead = revenue - target;
 
   return (
     <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
@@ -52,9 +55,25 @@ const MetricCard: React.FC<MetricCardProps> = ({
           Monthly Target ({elapsedDays} of {totalDays} days)
         </Typography>
         <Typography variant="h6">{formatCurrency(target)}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Daily Pace Needed: {formatCurrency(dailyNeeded)}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+          <Typography
+            variant="body2"
+            color={isAheadOfTarget ? "success.main" : "text.secondary"}
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            {isAheadOfTarget ? (
+              <>
+                <TrendingUp sx={{ mr: 0.5, fontSize: "1rem" }} />
+                Ahead by {formatCurrency(amountAhead)}
+              </>
+            ) : (
+              <>
+                <TrendingDown sx={{ mr: 0.5, fontSize: "1rem" }} />
+                Daily Pace Needed: {formatCurrency(Math.abs(dailyNeeded))}
+              </>
+            )}
+          </Typography>
+        </Box>
       </Box>
 
       <Box>
