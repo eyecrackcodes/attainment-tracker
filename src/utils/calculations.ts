@@ -219,18 +219,10 @@ export const filterDataByTimeFrame = (
 ): RevenueData[] => {
   if (!data || data.length === 0) return [];
 
-  console.log("filterDataByTimeFrame called with:", {
-    timeFrame,
-    attainmentThreshold,
-    startDate,
-    endDate,
-    location,
-  });
-
-  // Log the original data dates
+  // Log raw data dates
   console.log(
-    "Original data dates:",
-    data.map((item) => item.date)
+    "🔥 Raw Firebase Dates:",
+    data.map((d) => d.date)
   );
 
   // Default target settings if not provided
@@ -242,97 +234,224 @@ export const filterDataByTimeFrame = (
   // First filter by date
   let filteredData = [...data];
 
-  // Create now date in UTC at start of day
+  // Create dates in local time
   const now = new Date();
-  const nowUTC = new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
-  );
-  const yesterdayUTC = new Date(nowUTC);
-  yesterdayUTC.setUTCDate(yesterdayUTC.getUTCDate() - 1);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-  const createUTCDate = (dateStr: string): Date => {
+  const createDate = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split("-").map((num) => parseInt(num));
-    return new Date(Date.UTC(year, month - 1, day));
+    return new Date(year, month - 1, day);
   };
 
   switch (timeFrame) {
-    case "MTD":
-      console.log("Filtering by MTD");
-      console.log("Current UTC date:", nowUTC);
-      filteredData = filteredData.filter((item) => {
-        const itemDate = createUTCDate(item.date);
-        const isIncluded =
-          itemDate.getUTCMonth() === nowUTC.getUTCMonth() &&
-          itemDate.getUTCFullYear() === nowUTC.getUTCFullYear() &&
-          itemDate <= yesterdayUTC; // Exclude today's data
-        console.log(
-          `Date ${
-            item.date
-          } -> UTC: ${itemDate.toISOString()} -> Included: ${isIncluded}`
-        );
-        return isIncluded;
+    case "This Week":
+      console.log("Filtering by This Week");
+      // Use date-fns to get the correct week range starting from Monday
+      const startOfWeekDate = startOfWeek(now, { weekStartsOn: 1 });
+      const endOfWeekDate = endOfWeek(now, { weekStartsOn: 1 });
+
+      console.log("Week range:", {
+        start: format(startOfWeekDate, "yyyy-MM-dd"),
+        end: format(endOfWeekDate, "yyyy-MM-dd"),
+        now: format(now, "yyyy-MM-dd"),
       });
-      console.log("Filtered MTD data:", filteredData);
+
+      // First filter by location if specified
+      if (location && location !== "Combined") {
+        filteredData = filteredData.map((item) => ({
+          date: item.date,
+          austin: location === "Austin" ? item.austin : 0,
+          charlotte: location === "Charlotte" ? item.charlotte : 0,
+        }));
+      }
+
+      // Then filter by date range and sort
+      filteredData = filteredData
+        .filter((item) => {
+          const itemDate = createDate(item.date);
+          const isInRange =
+            itemDate >= startOfWeekDate && itemDate <= endOfWeekDate;
+
+          console.log(
+            `[FILTER DEBUG] ${item.date} → included: ${isInRange} (${format(
+              itemDate,
+              "yyyy-MM-dd"
+            )})`
+          );
+
+          return isInRange;
+        })
+        .sort((a, b) => {
+          const aDate = createDate(a.date);
+          const bDate = createDate(b.date);
+          return aDate.getTime() - bDate.getTime();
+        });
+
+      console.log(`${timeFrame} Filter:`, {
+        location,
+        dateRange: {
+          start: format(startOfWeekDate, "yyyy-MM-dd"),
+          end: format(endOfWeekDate, "yyyy-MM-dd"),
+        },
+        filteredDates: filteredData.map((item) => item.date).sort(),
+        dataPoints: filteredData.length,
+      });
+      break;
+    case "MTD":
+      // Get the most recent date in the dataset
+      const mostRecentDate = data.reduce((latest, item) => {
+        const itemDate = createDate(item.date);
+        const latestDate = latest ? createDate(latest.date) : itemDate;
+        return itemDate > latestDate ? item : latest;
+      }, data[0]);
+
+      if (!mostRecentDate) return [];
+
+      const referenceDate = createDate(mostRecentDate.date);
+
+      // Get the start of the month for the reference date
+      const startOfMonth = new Date(
+        referenceDate.getFullYear(),
+        referenceDate.getMonth(),
+        1
+      );
+
+      // First filter by location if specified
+      if (location && location !== "Combined") {
+        filteredData = filteredData.map((item) => ({
+          date: item.date,
+          austin: location.toLowerCase() === "austin" ? item.austin : 0,
+          charlotte:
+            location.toLowerCase() === "charlotte" ? item.charlotte : 0,
+        }));
+      }
+
+      // Then filter by date range and sort
+      filteredData = filteredData
+        .filter((item) => {
+          const itemDate = createDate(item.date);
+
+          // Only include dates from start of month up to the most recent date with data
+          const isInRange =
+            itemDate >= startOfMonth &&
+            itemDate <= referenceDate &&
+            // Ensure we have actual data for this date
+            data.some((d) => d.date === item.date);
+
+          console.log(
+            `Filtering MTD ${item.date}: ${
+              isInRange ? "INCLUDED" : "excluded"
+            } (${itemDate.toISOString()}) - Revenue: ${JSON.stringify({
+              austin: item.austin,
+              charlotte: item.charlotte,
+              dayOfWeek: itemDate.getDay(),
+              hasData: data.some((d) => d.date === item.date),
+            })}`
+          );
+          return isInRange;
+        })
+        .sort((a, b) => {
+          const aDate = createDate(a.date);
+          const bDate = createDate(b.date);
+          return aDate.getTime() - bDate.getTime();
+        });
+
+      console.log(`${timeFrame} Filter:`, {
+        location,
+        dateRange: {
+          start: startOfMonth.toISOString().split("T")[0],
+          end: referenceDate.toISOString().split("T")[0],
+        },
+        filteredDates: filteredData.map((item) => item.date).sort(),
+        dataPoints: filteredData.length,
+        has28th: filteredData.some((item) => item.date === "2025-03-28"),
+        allData: filteredData.map((item) => ({
+          date: item.date,
+          dayOfWeek: createDate(item.date).getDay(),
+          revenue: {
+            austin: item.austin,
+            charlotte: item.charlotte,
+          },
+        })),
+      });
       break;
     case "last30":
       console.log("Filtering by last30");
-      const thirtyDaysAgoUTC = new Date(yesterdayUTC);
-      thirtyDaysAgoUTC.setUTCDate(thirtyDaysAgoUTC.getUTCDate() - 30);
+      const thirtyDaysAgo = new Date(yesterday);
+      thirtyDaysAgo.setDate(yesterday.getDate() - 30);
       filteredData = filteredData.filter((item) => {
-        const itemDate = createUTCDate(item.date);
-        return itemDate >= thirtyDaysAgoUTC && itemDate <= yesterdayUTC;
+        const itemDate = createDate(item.date);
+        return itemDate >= thirtyDaysAgo && itemDate <= yesterday;
       });
       break;
     case "last90":
       console.log("Filtering by last90");
-      const ninetyDaysAgoUTC = new Date(yesterdayUTC);
-      ninetyDaysAgoUTC.setUTCDate(ninetyDaysAgoUTC.getUTCDate() - 90);
+      const ninetyDaysAgo = new Date(yesterday);
+      ninetyDaysAgo.setDate(yesterday.getDate() - 90);
       filteredData = filteredData.filter((item) => {
-        const itemDate = createUTCDate(item.date);
-        return itemDate >= ninetyDaysAgoUTC && itemDate <= yesterdayUTC;
+        const itemDate = createDate(item.date);
+        return itemDate >= ninetyDaysAgo && itemDate <= yesterday;
       });
       break;
     case "YTD":
       console.log("Filtering by YTD");
-      const startOfYearUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), 0, 1));
+      const startOfYear = new Date(Date.UTC(now.getFullYear(), 0, 1));
       filteredData = filteredData.filter((item) => {
-        const itemDate = createUTCDate(item.date);
-        return itemDate >= startOfYearUTC && itemDate <= yesterdayUTC;
+        const itemDate = createDate(item.date);
+        return itemDate >= startOfYear && itemDate <= yesterday;
       });
       break;
     case "custom":
-      console.log("Filtering by custom date range");
+      console.log("\n=== Custom Date Range Filtering ===");
+      console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
+
       if (startDate && endDate) {
-        const startUTC = createUTCDate(startDate);
-        const endUTC = createUTCDate(endDate);
-        filteredData = filteredData.filter((item) => {
-          const itemDate = createUTCDate(item.date);
-          return itemDate >= startUTC && itemDate <= endUTC;
+        // Validate dates
+        const start = createDate(startDate);
+        const end = createDate(endDate);
+
+        console.log(`Parsed dates:
+        Start: ${start.toISOString()}
+        End: ${end.toISOString()}`);
+
+        // Check if dates are valid
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          console.error("Invalid date format detected");
+          return [];
+        }
+
+        filteredData = data.filter((item) => {
+          const itemDate = createDate(item.date);
+          const isIncluded = itemDate >= start && itemDate <= end;
+          console.log(
+            `Filtering ${item.date}: ${isIncluded ? "INCLUDED" : "excluded"}`
+          );
+          return isIncluded;
         });
+
+        console.log(`\nFiltered data summary:
+        Original count: ${data.length}
+        Filtered count: ${filteredData.length}
+        Date range: ${filteredData[0]?.date} to ${
+          filteredData[filteredData.length - 1]?.date
+        }`);
       }
       break;
     case "all":
       console.log("Using all data");
       filteredData = filteredData.filter((item) => {
-        const itemDate = createUTCDate(item.date);
-        return itemDate <= yesterdayUTC; // Exclude today's data
+        const itemDate = createDate(item.date);
+        return itemDate <= yesterday; // Exclude today's data
       });
       break;
-  }
-
-  // Then filter by location if specified
-  if (location && location !== "Combined") {
-    filteredData = filteredData.map((item) => ({
-      ...item,
-      austin: location === "Austin" ? item.austin : 0,
-      charlotte: location === "Charlotte" ? item.charlotte : 0,
-    }));
   }
 
   // Finally filter by attainment threshold if specified
   if (attainmentThreshold) {
     filteredData = filteredData.filter((item) => {
-      const dailyTarget = getTargetForDate(createUTCDate(item.date), targets);
+      const dailyTarget = getTargetForDate(createDate(item.date), targets);
       const austinAttainment =
         dailyTarget.austin > 0 ? (item.austin / dailyTarget.austin) * 100 : 0;
       const charlotteAttainment =
@@ -359,8 +478,8 @@ export const filterDataByTimeFrame = (
 
   // Sort the filtered data by date
   filteredData.sort((a, b) => {
-    const aDate = createUTCDate(a.date);
-    const bDate = createUTCDate(b.date);
+    const aDate = createDate(a.date);
+    const bDate = createDate(b.date);
     return aDate.getTime() - bDate.getTime();
   });
 
