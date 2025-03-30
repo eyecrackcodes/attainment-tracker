@@ -56,7 +56,8 @@ export const countBusinessDays = (startDate: Date, endDate: Date): number => {
 export const calculateLocationMetrics = (
   data: RevenueData[],
   targetSettings?: TargetSettings,
-  location?: string
+  location?: string,
+  timeFrame?: TimeFrame
 ) => {
   const totalAustin = data.reduce((sum, entry) => sum + (entry.austin || 0), 0);
   const totalCharlotte = data.reduce(
@@ -68,51 +69,79 @@ export const calculateLocationMetrics = (
   // Get the date range from the data
   const dates = data.map((entry) => new Date(entry.date));
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
 
-  // Calculate total business days in the month
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+  // Calculate business days based on timeFrame
   let totalBusinessDays = 0;
-  let currentDay = new Date(firstDayOfMonth);
-
-  while (currentDay <= lastDayOfMonth) {
-    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-      // Not Sunday (0) or Saturday (6)
-      totalBusinessDays++;
-    }
-    currentDay.setDate(currentDay.getDate() + 1);
-  }
-
-  // Calculate elapsed business days (excluding today)
   let elapsedBusinessDays = 0;
-  currentDay = new Date(firstDayOfMonth);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
 
-  while (currentDay <= yesterday) {
-    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-      elapsedBusinessDays++;
+  if (timeFrame === "This Week") {
+    // For weekly view, we only care about Monday through Friday of the current week
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Start from Monday
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // End on Sunday
+
+    // Count total business days in the week (Monday-Friday)
+    let currentDay = new Date(weekStart);
+    while (currentDay <= weekEnd) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        // Not Sunday (0) or Saturday (6)
+        totalBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
     }
-    currentDay.setDate(currentDay.getDate() + 1);
+
+    // Count elapsed business days up to today
+    currentDay = new Date(weekStart);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    while (currentDay <= today) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        elapsedBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+  } else {
+    // Default monthly calculation
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+    // Calculate total business days in the month
+    let currentDay = new Date(firstDayOfMonth);
+    while (currentDay <= lastDayOfMonth) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        totalBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+
+    // Calculate elapsed business days (excluding today)
+    currentDay = new Date(firstDayOfMonth);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    while (currentDay <= yesterday) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        elapsedBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
   }
 
-  // Calculate daily and monthly targets
+  // Calculate daily and period targets
   const dailyAustinTarget =
     targetSettings?.dailyTargets.austin || TARGETS.austin;
   const dailyCharlotteTarget =
     targetSettings?.dailyTargets.charlotte || TARGETS.charlotte;
 
-  const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
-  const monthlyCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
+  const periodAustinTarget = dailyAustinTarget * totalBusinessDays;
+  const periodCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
 
   // Calculate on-pace targets based on elapsed business days
   const onPaceAustinTarget =
-    (monthlyAustinTarget / totalBusinessDays) * elapsedBusinessDays;
+    (periodAustinTarget / totalBusinessDays) * elapsedBusinessDays;
   const onPaceCharlotteTarget =
-    (monthlyCharlotteTarget / totalBusinessDays) * elapsedBusinessDays;
+    (periodCharlotteTarget / totalBusinessDays) * elapsedBusinessDays;
 
   // Calculate attainment percentages against on-pace targets
   const austinAttainment =
@@ -142,7 +171,7 @@ export const calculateLocationMetrics = (
       revenue: totalAustin,
       target: filteredAustinTarget,
       attainment: austinAttainment,
-      weeklyTarget: monthlyAustinTarget,
+      weeklyTarget: periodAustinTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
@@ -150,7 +179,7 @@ export const calculateLocationMetrics = (
       revenue: totalCharlotte,
       target: filteredCharlotteTarget,
       attainment: charlotteAttainment,
-      weeklyTarget: monthlyCharlotteTarget,
+      weeklyTarget: periodCharlotteTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
@@ -158,7 +187,7 @@ export const calculateLocationMetrics = (
       revenue: totalRevenue,
       target: filteredTotalTarget,
       attainment: totalAttainment,
-      weeklyTarget: monthlyAustinTarget + monthlyCharlotteTarget,
+      weeklyTarget: periodAustinTarget + periodCharlotteTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
