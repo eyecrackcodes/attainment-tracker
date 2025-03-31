@@ -40,7 +40,12 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     endDate,
     location
   );
-  const metrics = calculateLocationMetrics(filteredData, targetSettings, location);
+  const metrics = calculateLocationMetrics(
+    filteredData,
+    targetSettings,
+    location,
+    timeFrame
+  );
 
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 3 }}>

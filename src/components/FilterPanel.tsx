@@ -53,6 +53,7 @@ const defaultFilters: FilterOptions = {
 
 const timeFrameOptions = [
   { value: "MTD", label: "Month to Date" },
+  { value: "This Week", label: "This Week" },
   { value: "last30", label: "Last 30 Days" },
   { value: "last90", label: "Last 90 Days" },
   { value: "YTD", label: "Year to Date" },

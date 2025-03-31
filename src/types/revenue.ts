@@ -51,7 +51,14 @@ export interface TargetSettings {
 }
 
 export type Location = "Austin" | "Charlotte" | "Combined";
-export type TimeFrame = "MTD" | "last30" | "last90" | "YTD" | "all" | "custom";
+export type TimeFrame =
+  | "MTD"
+  | "This Week"
+  | "last30"
+  | "last90"
+  | "YTD"
+  | "all"
+  | "custom";
 
 export interface FilterOptions {
   startDate: string | null;

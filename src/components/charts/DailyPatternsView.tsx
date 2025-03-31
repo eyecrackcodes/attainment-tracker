@@ -6,26 +6,36 @@ import {
   Typography,
   useTheme,
   Skeleton,
+  Stack,
+  Chip,
+  Divider,
+  alpha,
 } from "@mui/material";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  Cell,
+  AreaChart,
+  Area,
+  Bar,
+  BarChart,
   ComposedChart,
-  Line,
   ReferenceLine,
+  Cell,
 } from "recharts";
-import { RevenueData, TargetSettings } from "../../types/revenue";
+import { RevenueData } from "../../types/revenue";
+import { formatCurrency } from "../../utils/formatters";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 interface DailyPatternsViewProps {
   data: RevenueData[];
-  targetSettings: TargetSettings;
   isLoading?: boolean;
 }
 
@@ -38,275 +48,258 @@ const ChartSkeleton = () => (
   />
 );
 
+// Enhanced tooltip component with modern styling
+const EnhancedTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <Paper
+        elevation={8}
+        sx={{
+          p: 2,
+          backgroundColor: alpha("#000000", 0.85),
+          border: "1px solid",
+          borderColor: "rgba(255, 255, 255, 0.1)",
+          borderRadius: "12px",
+          minWidth: 220,
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <Typography variant="subtitle2" color="white" gutterBottom>
+          {label}
+        </Typography>
+        <Divider sx={{ my: 1, borderColor: "rgba(255, 255, 255, 0.1)" }} />
+        <Stack spacing={1.5}>
+          <Box>
+            <Typography
+              variant="body2"
+              color="rgba(255, 255, 255, 0.7)"
+              gutterBottom
+            >
+              Daily Attainment
+            </Typography>
+            <Typography
+              variant="h6"
+              color={getAttainmentColor(payload[0]?.value)}
+              sx={{ fontWeight: "bold" }}
+            >
+              {Math.round(payload[0]?.value)}%
+            </Typography>
+          </Box>
+          <Box>
+            <Typography
+              variant="body2"
+              color="rgba(255, 255, 255, 0.7)"
+              gutterBottom
+            >
+              Total Revenue
+            </Typography>
+            <Typography variant="h6" color="white">
+              {formatCurrency(payload[0]?.payload?.total || 0)}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+            <Box>
+              <Typography
+                variant="body2"
+                color="rgba(255, 255, 255, 0.7)"
+                gutterBottom
+              >
+                Austin
+              </Typography>
+              <Typography variant="body1" color="#4CAF50">
+                {formatCurrency(payload[0]?.payload?.austin || 0)}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography
+                variant="body2"
+                color="rgba(255, 255, 255, 0.7)"
+                gutterBottom
+              >
+                Charlotte
+              </Typography>
+              <Typography variant="body1" color="#7B1FA2">
+                {formatCurrency(payload[0]?.payload?.charlotte || 0)}
+              </Typography>
+            </Box>
+          </Stack>
+        </Stack>
+      </Paper>
+    );
+  }
+  return null;
+};
+
+const getAttainmentColor = (value: number) => {
+  if (value >= 100) return "#2E7D32"; // Dark green
+  if (value >= 85) return "#ED6C02"; // Orange
+  return "#D32F2F"; // Red
+};
+
 export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   data,
-  targetSettings,
   isLoading = false,
 }) => {
   const theme = useTheme();
 
-  // Enhanced color function with green-yellow-red scheme
-  const getAttainmentColor = (attainment: number) => {
-    if (attainment >= 120) return "#1B5E20"; // Dark green
-    if (attainment >= 110) return "#2E7D32"; // Forest green
-    if (attainment >= 100) return "#4CAF50"; // Green
-    if (attainment >= 95) return "#66BB6A"; // Light green
-    if (attainment >= 90) return "#FFEB3B"; // Yellow
-    if (attainment >= 85) return "#FDD835"; // Dark yellow
-    if (attainment >= 80) return "#EF5350"; // Light red
-    if (attainment >= 75) return "#E53935"; // Red
-    return "#C62828"; // Dark red
-  };
+  // Process data for the last 30 working days
+  const processedData = useMemo(() => {
+    if (!data || data.length === 0) return null;
 
-  // Memoize calculations to prevent unnecessary recalculations
-  const { heatmapData, dayOfWeekAverages } = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { heatmapData: [], dayOfWeekAverages: [] };
-    }
+    console.log("=== Data Processing Start ===");
+    console.log("Raw data count:", data.length);
 
-    // Ensure we have valid target settings
-    if (!targetSettings?.dailyTargets) {
-      console.warn("Missing daily targets:", targetSettings);
-      return { heatmapData: [], dayOfWeekAverages: [] };
-    }
-
-    // Calculate daily target once
-    const dailyTarget =
-      (targetSettings.dailyTargets.austin || 0) +
-      (targetSettings.dailyTargets.charlotte || 0);
-
-    // First, sort all data by date
+    // Sort data by date
     const sortedData = [...data].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    // Get the last date from the sorted data
-    const lastDate = new Date(sortedData[sortedData.length - 1].date);
+    console.log("Date range:", {
+      first: sortedData[0]?.date,
+      last: sortedData[sortedData.length - 1]?.date,
+      totalDays: sortedData.length,
+    });
 
-    // Calculate start date (60 days ago to ensure we get enough weekdays)
-    const startDate = new Date(lastDate);
-    startDate.setDate(startDate.getDate() - 60);
-
-    // Initialize day of week data
-    const dayOfWeekData = {
-      Mon: {
-        day: "Mon",
-        austin: 0,
-        charlotte: 0,
-        count: 0,
-        totalAttainment: 0,
-      },
-      Tue: {
-        day: "Tue",
-        austin: 0,
-        charlotte: 0,
-        count: 0,
-        totalAttainment: 0,
-      },
-      Wed: {
-        day: "Wed",
-        austin: 0,
-        charlotte: 0,
-        count: 0,
-        totalAttainment: 0,
-      },
-      Thu: {
-        day: "Thu",
-        austin: 0,
-        charlotte: 0,
-        count: 0,
-        totalAttainment: 0,
-      },
-      Fri: {
-        day: "Fri",
-        austin: 0,
-        charlotte: 0,
-        count: 0,
-        totalAttainment: 0,
-      },
-    };
-
-    // Process data for each day
-    sortedData.forEach((entry) => {
-      // Create date object in local timezone
+    // Get the last 30 working days and filter out weekends
+    const last30Days = sortedData.slice(-30).filter((entry) => {
       const date = new Date(entry.date + "T00:00:00");
       const dayNumber = date.getDay();
+      return dayNumber > 0 && dayNumber < 6;
+    });
 
-      // Map day numbers to names
-      const dayMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const dayName = dayMap[dayNumber];
+    console.log("Filtered working days:", {
+      count: last30Days.length,
+      first: last30Days[0]?.date,
+      last: last30Days[last30Days.length - 1]?.date,
+    });
 
-      // Skip weekends
-      if (dayNumber === 0 || dayNumber === 6) return;
-
+    // Process each entry
+    const processedEntries = last30Days.map((entry) => {
+      const date = new Date(entry.date + "T00:00:00");
+      const dayNumber = date.getDay();
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const dayName = dayNames[dayNumber];
       const total = (entry.austin || 0) + (entry.charlotte || 0);
+      const dailyTarget = 115500;
       const attainment = dailyTarget > 0 ? (total / dailyTarget) * 100 : 0;
 
-      // Debug log for all entries
-      console.log("Processing entry:", {
+      console.log(`[${entry.date}] ${dayName}:`, {
+        austin: formatCurrency(entry.austin || 0),
+        charlotte: formatCurrency(entry.charlotte || 0),
+        total: formatCurrency(total),
+        attainment: attainment.toFixed(2) + "%",
+        target: formatCurrency(dailyTarget),
+      });
+
+      return {
         date: entry.date,
         dayNumber,
         dayName,
         total,
         attainment,
-        austin: entry.austin,
-        charlotte: entry.charlotte,
-      });
-
-      dayOfWeekData[dayName].austin += entry.austin || 0;
-      dayOfWeekData[dayName].charlotte += entry.charlotte || 0;
-      dayOfWeekData[dayName].totalAttainment += attainment;
-      dayOfWeekData[dayName].count += 1;
-    });
-
-    // Debug log for day of week data
-    Object.entries(dayOfWeekData).forEach(([day, data]) => {
-      console.log(`${day} data:`, {
-        count: data.count,
-        avgAttainment: data.count > 0 ? data.totalAttainment / data.count : 0,
-        avgAustin: data.count > 0 ? data.austin / data.count : 0,
-        avgCharlotte: data.count > 0 ? data.charlotte / data.count : 0,
-        totalAustin: data.austin,
-        totalCharlotte: data.charlotte,
-      });
-    });
-
-    // Calculate averages for each day
-    const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-    const sortedDayOfWeekAverages = daysOrder.map((day) => {
-      const dayData = dayOfWeekData[day];
-      return {
-        day,
-        austin: dayData.count > 0 ? dayData.austin / dayData.count : 0,
-        charlotte: dayData.count > 0 ? dayData.charlotte / dayData.count : 0,
-        attainment:
-          dayData.count > 0 ? dayData.totalAttainment / dayData.count : 0,
+        austin: entry.austin || 0,
+        charlotte: entry.charlotte || 0,
       };
     });
 
-    // Calculate heatmap data (weekdays only)
-    const allWeekdayData = sortedData
-      .filter((entry) => {
-        const date = new Date(entry.date + "T00:00:00");
-        const dayNumber = date.getDay();
-        return dayNumber >= 1 && dayNumber <= 5; // Only weekdays (Monday to Friday)
-      })
-      .map((entry) => {
-        const total = (entry.austin || 0) + (entry.charlotte || 0);
-        const attainment = dailyTarget > 0 ? (total / dailyTarget) * 100 : 0;
-        const date = new Date(entry.date + "T00:00:00");
+    // Calculate weekday averages
+    const weekdayData = {
+      Mon: {
+        count: 0,
+        totalAttainment: 0,
+        totalAustin: 0,
+        totalCharlotte: 0,
+        avgAttainment: 0,
+        avgAustin: 0,
+        avgCharlotte: 0,
+      },
+      Tue: {
+        count: 0,
+        totalAttainment: 0,
+        totalAustin: 0,
+        totalCharlotte: 0,
+        avgAttainment: 0,
+        avgAustin: 0,
+        avgCharlotte: 0,
+      },
+      Wed: {
+        count: 0,
+        totalAttainment: 0,
+        totalAustin: 0,
+        totalCharlotte: 0,
+        avgAttainment: 0,
+        avgAustin: 0,
+        avgCharlotte: 0,
+      },
+      Thu: {
+        count: 0,
+        totalAttainment: 0,
+        totalAustin: 0,
+        totalCharlotte: 0,
+        avgAttainment: 0,
+        avgAustin: 0,
+        avgCharlotte: 0,
+      },
+      Fri: {
+        count: 0,
+        totalAttainment: 0,
+        totalAustin: 0,
+        totalCharlotte: 0,
+        avgAttainment: 0,
+        avgAustin: 0,
+        avgCharlotte: 0,
+      },
+    };
 
-        return {
-          date: date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            weekday: "short",
-          }),
-          attainment: Number(attainment.toFixed(1)),
-          total,
-          rawDate: entry.date,
-          value: attainment,
-        };
+    // Process entries for weekday averages
+    processedEntries.forEach((entry) => {
+      const dayData = weekdayData[entry.dayName as keyof typeof weekdayData];
+      if (dayData) {
+        dayData.count++;
+        dayData.totalAttainment += entry.attainment;
+        dayData.totalAustin += entry.austin;
+        dayData.totalCharlotte += entry.charlotte;
+      }
+    });
+
+    // Calculate and log averages for each day
+    console.log("\n=== Weekday Averages ===");
+    Object.entries(weekdayData).forEach(([day, data]) => {
+      if (data.count > 0) {
+        data.avgAttainment = data.totalAttainment / data.count;
+        data.avgAustin = data.totalAustin / data.count;
+        data.avgCharlotte = data.totalCharlotte / data.count;
+      }
+      console.log(`${day}:`, {
+        daysCount: data.count,
+        avgAttainment: data.avgAttainment.toFixed(2) + "%",
+        avgAustin: formatCurrency(data.avgAustin),
+        avgCharlotte: formatCurrency(data.avgCharlotte),
+        avgTotal: formatCurrency(data.avgAustin + data.avgCharlotte),
       });
-
-    // Take the last 30 weekdays
-    const heatmap = allWeekdayData.slice(-30);
-
-    // Debug log for heatmap data
-    console.log("Processed heatmap data:", {
-      totalEntries: allWeekdayData.length,
-      heatmapEntries: heatmap.length,
-      first: heatmap[0]?.rawDate,
-      last: heatmap[heatmap.length - 1]?.rawDate,
-      allDates: heatmap.map((h) => h.rawDate),
     });
 
+    console.log("=== Data Processing Complete ===\n");
+
     return {
-      heatmapData: heatmap,
-      dayOfWeekAverages: sortedDayOfWeekAverages,
+      entries: processedEntries,
+      weekdayData,
+      firstDate: processedEntries[0]?.date,
+      lastDate: processedEntries[processedEntries.length - 1]?.date,
     };
-  }, [data, targetSettings]);
-
-  // Calculate moving average data
-  const heatmapDataWithTrend = useMemo(() => {
-    return heatmapData.map((item, index) => {
-      const window = 5;
-      const start = Math.max(0, index - window + 1);
-      const values = heatmapData.slice(start, index + 1).map((d) => d.value);
-      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-
-      // Calculate trend direction
-      const prevAvg = index > 0 ? heatmapData[index - 1]?.trend : avg;
-      const direction =
-        avg > prevAvg ? "up" : avg < prevAvg ? "down" : "stable";
-
-      return {
-        ...item,
-        trend: Number(avg.toFixed(1)),
-        trendDirection: direction,
-        performance:
-          item.value >= 100
-            ? "Above Target"
-            : item.value >= 85
-            ? "Meeting Minimum"
-            : "Below Target",
-      };
-    });
-  }, [heatmapData]);
-
-  // Calculate performance statistics
-  const stats = useMemo(() => {
-    if (!heatmapDataWithTrend.length) return null;
-
-    const values = heatmapDataWithTrend.map((d) => d.value);
-    return {
-      average: values.reduce((sum, val) => sum + val, 0) / values.length,
-      max: Math.max(...values),
-      min: Math.min(...values),
-      daysAboveTarget: values.filter((v) => v >= 100).length,
-      daysBelowMinimum: values.filter((v) => v < 85).length,
-    };
-  }, [heatmapDataWithTrend]);
-
-  // Format helpers
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      compactDisplay: "short",
-    }).format(value);
-
-  const formatPercent = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "percent",
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value / 100);
+  }, [data]);
 
   if (isLoading) {
-    return (
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <ChartSkeleton />
-        </Grid>
-        <Grid item xs={12}>
-          <ChartSkeleton />
-        </Grid>
-      </Grid>
-    );
+    return <ChartSkeleton />;
   }
 
-  if (!data || data.length === 0) {
+  if (!processedData) {
     return (
       <Paper
         elevation={2}
         sx={{
           p: 3,
-          textAlign: "center",
-          minHeight: 400,
           display: "flex",
-          alignItems: "center",
           justifyContent: "center",
         }}
       >
@@ -320,202 +313,195 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   return (
     <Grid container spacing={3}>
       {/* Performance Summary */}
-      {stats && (
-        <Grid item xs={12}>
-          <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={2.4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Average Attainment
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color={
-                    stats.average >= 100
-                      ? "success.main"
-                      : stats.average >= 85
-                      ? "warning.main"
-                      : "error.main"
-                  }
-                >
-                  {stats.average.toFixed(1)}%
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={2.4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Highest Attainment
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  {stats.max.toFixed(1)}%
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={2.4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Lowest Attainment
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color={stats.min >= 85 ? "success.main" : "error.main"}
-                >
-                  {stats.min.toFixed(1)}%
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={2.4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Days Above Target
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  {stats.daysAboveTarget} days
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={2.4}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Days Below Minimum
-                </Typography>
-                <Typography variant="h6" color="error.main">
-                  {stats.daysBelowMinimum} days
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-      )}
-
-      {/* Daily Performance Heatmap */}
       <Grid item xs={12}>
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Daily Attainment Heatmap (Last 30 Weekdays)
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            mb: 2,
+            background:
+              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
+            borderRadius: 2,
+          }}
+        >
+          <Grid container spacing={3}>
+            {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
+              <Grid item xs={12} sm={2.4} key={day}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    background: alpha(theme.palette.background.paper, 0.8),
+                    backdropFilter: "blur(8px)",
+                    borderRadius: 2,
+                    transition: "transform 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    {day} Average
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    color={getAttainmentColor(
+                      processedData.weekdayData[day].avgAttainment
+                    )}
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    {Math.round(processedData.weekdayData[day].avgAttainment)}%
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      </Grid>
+
+      {/* Daily Performance Chart */}
+      <Grid item xs={12}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            background:
+              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>
+            Daily Performance Trend
           </Typography>
-          <Box sx={{ height: 400, width: "100%" }}>
+          <Box sx={{ height: 400, width: "100%", p: 1 }}>
             <ResponsiveContainer>
               <ComposedChart
-                data={heatmapDataWithTrend}
-                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                data={processedData.entries}
+                margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
               >
+                <defs>
+                  <linearGradient id="colorAustin" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#4CAF50" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient
+                    id="colorCharlotte"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#7B1FA2" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#7B1FA2" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke={theme.palette.divider}
-                  opacity={0.2}
+                  stroke={alpha(theme.palette.divider, 0.1)}
+                  vertical={false}
                 />
                 <XAxis
                   dataKey="date"
+                  tickFormatter={(value) =>
+                    new Date(value).toLocaleDateString()
+                  }
                   angle={-45}
                   textAnchor="end"
                   height={60}
-                  interval={0}
+                  interval="preserveStartEnd"
                   tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                  stroke={theme.palette.divider}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `${value}%`}
+                  yAxisId="left"
+                  orientation="left"
                   domain={[0, 150]}
-                  tick={{ fill: theme.palette.text.secondary }}
-                  stroke={theme.palette.divider}
+                  tickFormatter={(value) => `${value}%`}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme.palette.background.paper,
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: "8px",
-                    padding: "12px",
-                    boxShadow: "0px 4px 8px rgba(0,0,0,0.15)",
-                  }}
-                  formatter={(value: any, name: string, props: any) => {
-                    if (name === "Daily Attainment") {
-                      const entry = props.payload;
-                      return [
-                        <span>
-                          <strong
-                            style={{
-                              color: getAttainmentColor(value),
-                              fontSize: "1.1em",
-                            }}
-                          >
-                            {value.toFixed(1)}%
-                          </strong>
-                          <br />
-                          Performance: {entry.performance}
-                          <br />
-                          Total Revenue: {formatCurrency(entry.total)}
-                        </span>,
-                        name,
-                      ];
-                    }
-                    if (name === "Trend") {
-                      const entry = props.payload;
-                      const direction =
-                        entry.trendDirection === "up"
-                          ? "↑"
-                          : entry.trendDirection === "down"
-                          ? "↓"
-                          : "→";
-                      return [
-                        <span>
-                          {value.toFixed(1)}% {direction}
-                          <br />
-                          5-Day Moving Average
-                        </span>,
-                        name,
-                      ];
-                    }
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => (
-                    <strong style={{ marginBottom: "8px", display: "block" }}>
-                      Date: {label}
-                    </strong>
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={[0, "dataMax"]}
+                  tickFormatter={(value) => formatCurrency(value)}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
+                />
+                <Tooltip content={<EnhancedTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  formatter={(value) => (
+                    <span
+                      style={{
+                        color: theme.palette.text.primary,
+                        fontSize: 12,
+                      }}
+                    >
+                      {value}
+                    </span>
                   )}
                 />
-                <Legend verticalAlign="top" height={36} />
                 <ReferenceLine
                   y={100}
-                  stroke={theme.palette.success.main}
+                  stroke="#2E7D32"
                   strokeDasharray="3 3"
+                  yAxisId="left"
                   label={{
-                    value: "Target (100%)",
-                    fill: theme.palette.text.secondary,
-                    fontSize: 12,
+                    value: "Target",
                     position: "right",
+                    fill: "#2E7D32",
+                    fontSize: 12,
                   }}
                 />
                 <ReferenceLine
                   y={85}
-                  stroke={theme.palette.warning.main}
+                  stroke="#ED6C02"
                   strokeDasharray="3 3"
+                  yAxisId="left"
                   label={{
-                    value: "Minimum (85%)",
-                    fill: theme.palette.text.secondary,
-                    fontSize: 12,
+                    value: "Minimum",
                     position: "right",
+                    fill: "#ED6C02",
+                    fontSize: 12,
                   }}
                 />
                 <Bar
-                  dataKey="value"
-                  name="Daily Attainment"
-                  maxBarSize={40}
-                  radius={[4, 4, 0, 0]} // Rounded top corners
+                  dataKey="total"
+                  name="Daily Revenue"
+                  yAxisId="right"
+                  fill={theme.palette.primary.main}
+                  opacity={0.15}
+                  radius={[4, 4, 0, 0]}
                 >
-                  {heatmapDataWithTrend.map((entry, index) => (
+                  {processedData.entries.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getAttainmentColor(entry.value)}
-                      opacity={1} // Full opacity for better color visibility
+                      fill={alpha(getAttainmentColor(entry.attainment), 0.15)}
                     />
                   ))}
                 </Bar>
                 <Line
                   type="monotone"
-                  dataKey="trend"
-                  name="Trend"
-                  stroke={theme.palette.info.main}
+                  dataKey="attainment"
+                  name="Daily Attainment"
+                  yAxisId="left"
+                  stroke="#1976D2"
                   strokeWidth={2.5}
                   dot={false}
                   activeDot={{
                     r: 6,
                     strokeWidth: 1,
                     fill: theme.palette.background.paper,
-                    stroke: theme.palette.info.main,
+                    stroke: "#1976D2",
                   }}
                 />
               </ComposedChart>
@@ -526,80 +512,131 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
 
       {/* Day of Week Performance */}
       <Grid item xs={12}>
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            background:
+              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>
             Average Performance by Weekday
           </Typography>
-          <Box sx={{ height: 400, width: "100%" }}>
+          <Box sx={{ height: 400, width: "100%", p: 1 }}>
             <ResponsiveContainer>
-              <BarChart
-                data={dayOfWeekAverages}
+              <ComposedChart
+                data={["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({
+                  day,
+                  attainment: processedData.weekdayData[day].avgAttainment || 0,
+                  austin: processedData.weekdayData[day].avgAustin || 0,
+                  charlotte: processedData.weekdayData[day].avgCharlotte || 0,
+                }))}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke={theme.palette.divider}
-                  opacity={0.2}
+                  stroke={alpha(theme.palette.divider, 0.1)}
+                  vertical={false}
                 />
                 <XAxis
                   dataKey="day"
-                  tick={{ fill: theme.palette.text.secondary }}
-                  stroke={theme.palette.divider}
+                  tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
                 />
                 <YAxis
-                  yAxisId="revenue"
-                  tickFormatter={formatCurrency}
-                  tick={{ fill: theme.palette.text.secondary }}
-                  stroke={theme.palette.divider}
-                />
-                <YAxis
-                  yAxisId="attainment"
-                  orientation="right"
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  yAxisId="left"
+                  orientation="left"
                   domain={[0, 150]}
-                  tick={{ fill: theme.palette.text.secondary }}
-                  stroke={theme.palette.divider}
+                  tickFormatter={(value) => `${value}%`}
+                  tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme.palette.background.paper,
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: "8px",
-                    padding: "12px",
-                    boxShadow: "0px 4px 8px rgba(0,0,0,0.15)",
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={[0, "dataMax"]}
+                  tickFormatter={(value) => formatCurrency(value)}
+                  tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={{ stroke: alpha(theme.palette.divider, 0.2) }}
+                />
+                <Tooltip content={<EnhancedTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  formatter={(value) => (
+                    <span
+                      style={{
+                        color: theme.palette.text.primary,
+                        fontSize: 12,
+                      }}
+                    >
+                      {value}
+                    </span>
+                  )}
+                />
+                <ReferenceLine
+                  y={100}
+                  stroke="#2E7D32"
+                  strokeDasharray="3 3"
+                  yAxisId="left"
+                  label={{
+                    value: "Target",
+                    position: "right",
+                    fill: "#2E7D32",
+                    fontSize: 12,
                   }}
-                  formatter={(value: any, name: string) => {
-                    if (name === "Attainment")
-                      return [`${value.toFixed(1)}%`, name];
-                    return [formatCurrency(value), name];
+                />
+                <ReferenceLine
+                  y={85}
+                  stroke="#ED6C02"
+                  strokeDasharray="3 3"
+                  yAxisId="left"
+                  label={{
+                    value: "Minimum",
+                    position: "right",
+                    fill: "#ED6C02",
+                    fontSize: 12,
                   }}
                 />
-                <Legend />
-                <Bar
-                  yAxisId="revenue"
-                  dataKey="austin"
-                  name="Austin"
-                  fill={theme.palette.primary.main}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={50}
-                />
-                <Bar
-                  yAxisId="revenue"
-                  dataKey="charlotte"
-                  name="Charlotte"
-                  fill={theme.palette.secondary.main}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={50}
-                />
-                <Bar
-                  yAxisId="attainment"
+                <Line
+                  type="monotone"
                   dataKey="attainment"
                   name="Attainment"
-                  fill={theme.palette.success.main}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={50}
+                  yAxisId="left"
+                  stroke="#1976D2"
+                  strokeWidth={3}
+                  dot={{ r: 6, fill: "#1976D2", strokeWidth: 2 }}
+                  activeDot={{
+                    r: 8,
+                    strokeWidth: 2,
+                    fill: theme.palette.background.paper,
+                    stroke: "#1976D2",
+                  }}
                 />
-              </BarChart>
+                <Area
+                  type="monotone"
+                  dataKey="austin"
+                  name="Austin Revenue"
+                  yAxisId="right"
+                  fill="url(#colorAustin)"
+                  stroke="#4CAF50"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="charlotte"
+                  name="Charlotte Revenue"
+                  yAxisId="right"
+                  fill="url(#colorCharlotte)"
+                  stroke="#7B1FA2"
+                  strokeWidth={2}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </Box>
         </Paper>

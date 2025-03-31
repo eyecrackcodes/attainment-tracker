@@ -34,6 +34,9 @@ import { TargetSettings as TargetSettingsComponent } from "./TargetSettings";
 import { MonthlyTargetSettings as MonthlyTargetSettingsComponent } from "./MonthlyTargetSettings";
 import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
 import { DailyPatternsView } from "./charts/DailyPatternsView";
+import { LocationDailyChart } from "./charts/LocationDailyChart";
+import { LocationMTDChart } from "./charts/LocationMTDChart";
+import { filterDataByTimeFrame } from "../utils/calculations";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -117,9 +120,25 @@ export const Dashboard: React.FC = () => {
   const handleFilterChange = (newFilters: any) => {
     console.log("Filter change detected:", newFilters);
     setState((prevState) => {
+      // If location is changing and timeFrame is not MTD, reset to MTD
+      const shouldResetToMTD =
+        newFilters.location !== prevState.filters.location &&
+        (newFilters.timeFrame !== "MTD" ||
+          newFilters.startDate !== null ||
+          newFilters.endDate !== null);
+
+      const updatedFilters = shouldResetToMTD
+        ? {
+            ...newFilters,
+            timeFrame: "MTD",
+            startDate: null,
+            endDate: null,
+          }
+        : newFilters;
+
       const updatedState = {
         ...prevState,
-        filters: newFilters,
+        filters: updatedFilters,
       };
       console.log("Updated state filters:", updatedState.filters);
       return updatedState;
@@ -303,44 +322,83 @@ export const Dashboard: React.FC = () => {
               </Grid>
 
               {/* Charts Section */}
-              <Grid item xs={12}>
-                <RevenueComparisonChart
-                  data={state.revenueData}
-                  timeFrame={state.filters.timeFrame}
-                  targetSettings={state.targetSettings}
-                  startDate={state.filters.startDate}
-                  endDate={state.filters.endDate}
-                  location={state.filters.location}
-                />
-              </Grid>
+              {state.filters.location === "Combined" ? (
+                // Show regular charts for combined view
+                <>
+                  <Grid item xs={12}>
+                    <RevenueComparisonChart
+                      data={state.revenueData}
+                      timeFrame={state.filters.timeFrame}
+                      targetSettings={state.targetSettings}
+                      startDate={state.filters.startDate}
+                      endDate={state.filters.endDate}
+                      location={state.filters.location}
+                    />
+                  </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
-                  <DailyAttainmentChart
-                    data={state.revenueData}
-                    filters={state.filters}
-                    targets={state.targetSettings}
-                  />
-                </Paper>
-              </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                      <DailyAttainmentChart
+                        data={state.revenueData}
+                        filters={state.filters}
+                        targets={state.targetSettings}
+                      />
+                    </Paper>
+                  </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
-                  <TimePeriodsChart
-                    data={state.revenueData}
-                    filters={state.filters}
-                    targets={state.targetSettings}
-                  />
-                </Paper>
-              </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                      <TimePeriodsChart
+                        data={state.revenueData}
+                        filters={state.filters}
+                        targets={state.targetSettings}
+                      />
+                    </Paper>
+                  </Grid>
 
-              <Grid item xs={12}>
-                <DistributionCharts
-                  data={state.revenueData}
-                  filters={state.filters}
-                  targets={state.targetSettings}
-                />
-              </Grid>
+                  <Grid item xs={12}>
+                    <DistributionCharts
+                      data={state.revenueData}
+                      filters={state.filters}
+                      targets={state.targetSettings}
+                    />
+                  </Grid>
+                </>
+              ) : (
+                // Show location-specific charts
+                <>
+                  <Grid item xs={12}>
+                    <LocationDailyChart
+                      data={filterDataByTimeFrame(
+                        state.revenueData,
+                        state.filters.timeFrame,
+                        state.filters.attainmentThreshold,
+                        state.targetSettings,
+                        state.filters.startDate,
+                        state.filters.endDate,
+                        state.filters.location
+                      )}
+                      location={state.filters.location}
+                      targetSettings={state.targetSettings}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <LocationMTDChart
+                      data={filterDataByTimeFrame(
+                        state.revenueData,
+                        state.filters.timeFrame,
+                        state.filters.attainmentThreshold,
+                        state.targetSettings,
+                        state.filters.startDate,
+                        state.filters.endDate,
+                        state.filters.location
+                      )}
+                      location={state.filters.location}
+                      targetSettings={state.targetSettings}
+                    />
+                  </Grid>
+                </>
+              )}
             </Grid>
           );
         case 1:
