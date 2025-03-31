@@ -825,6 +825,10 @@ export const calculateTrend = (
 };
 
 export const calculateMonthlyTrends = (data: RevenueData[]) => {
+  console.log("\n=== Monthly Trends Calculation ===");
+  console.log(`Input data points: ${data.length}`);
+
+  // Group data by month and year
   const monthlyData = data.reduce((acc: any, entry) => {
     const date = new Date(entry.date);
     const year = date.getFullYear();
@@ -837,59 +841,155 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
         year,
         austin: 0,
         charlotte: 0,
-        austinTarget: 0,
-        charlotteTarget: 0,
+        austinTarget: TARGETS.austin, // Use default target
+        charlotteTarget: TARGETS.charlotte, // Use default target
+        count: 0,
+        date: date.toISOString().split("T")[0],
       };
     }
 
+    // Sum up daily values
     acc[key].austin += entry.austin || 0;
     acc[key].charlotte += entry.charlotte || 0;
-    acc[key].austinTarget += entry.austinTarget || 0;
-    acc[key].charlotteTarget += entry.charlotteTarget || 0;
+    // Only update targets if they are provided and non-zero
+    if (entry.austinTarget && entry.austinTarget > 0) {
+      acc[key].austinTarget = entry.austinTarget;
+    }
+    if (entry.charlotteTarget && entry.charlotteTarget > 0) {
+      acc[key].charlotteTarget = entry.charlotteTarget;
+    }
+    acc[key].count++;
 
     return acc;
   }, {});
 
-  // Convert to array and sort by date
-  const sortedData = Object.values(monthlyData).sort((a: any, b: any) => {
-    const dateA = new Date(`${a.month} 1, ${a.year}`);
-    const dateB = new Date(`${b.month} 1, ${b.year}`);
-    return dateA.getTime() - dateB.getTime();
+  console.log("\nMonthly Aggregates:");
+  Object.entries(monthlyData).forEach(([key, data]: [string, any]) => {
+    console.log(`${key}:
+    Revenue: Austin=$${data.austin.toLocaleString()}, Charlotte=$${data.charlotte.toLocaleString()}
+    Targets: Austin=$${data.austinTarget.toLocaleString()}/day, Charlotte=$${data.charlotteTarget.toLocaleString()}/day
+    Days: ${data.count}
+    Monthly Target: Austin=$${(
+      data.austinTarget * data.count
+    ).toLocaleString()}, Charlotte=$${(
+      data.charlotteTarget * data.count
+    ).toLocaleString()}`);
   });
+
+  // Convert to array and sort by date
+  const sortedData = Object.values(monthlyData).sort(
+    (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   // Calculate year-over-year comparison
   const currentYear = new Date().getFullYear();
-  return sortedData.map((month: any) => ({
-    month: month.month,
-    currentYear:
-      month.year === currentYear ? month.austin + month.charlotte : null,
-    previousYear:
-      month.year === currentYear - 1 ? month.austin + month.charlotte : null,
-    austinAttainment:
-      month.austinTarget > 0 ? (month.austin / month.austinTarget) * 100 : 0,
-    charlotteAttainment:
-      month.charlotteTarget > 0
-        ? (month.charlotte / month.charlotteTarget) * 100
-        : 0,
-  }));
+  const processedData = sortedData.map((month: any) => {
+    // Calculate monthly totals
+    const monthlyAustin = month.austin;
+    const monthlyCharlotte = month.charlotte;
+    const monthlyTotal = monthlyAustin + monthlyCharlotte;
+
+    // Calculate monthly targets using daily targets * number of days
+    const monthlyAustinTarget = month.austinTarget * month.count;
+    const monthlyCharlotteTarget = month.charlotteTarget * month.count;
+
+    // Calculate attainment percentages
+    const austinAttainment = (monthlyAustin / monthlyAustinTarget) * 100;
+    const charlotteAttainment =
+      (monthlyCharlotte / monthlyCharlotteTarget) * 100;
+    const combinedTarget = monthlyAustinTarget + monthlyCharlotteTarget;
+    const combinedAttainment = (monthlyTotal / combinedTarget) * 100;
+
+    const result = {
+      month: month.month,
+      date: month.date,
+      currentYear: month.year === currentYear ? monthlyTotal : null,
+      previousYear: month.year === currentYear - 1 ? monthlyTotal : null,
+      austinAttainment,
+      charlotteAttainment,
+      combinedAttainment,
+    };
+
+    console.log(`\nProcessed ${month.month}-${month.year}:
+    Monthly Revenue: Austin=$${monthlyAustin.toLocaleString()}, Charlotte=$${monthlyCharlotte.toLocaleString()}
+    Monthly Targets: Austin=$${monthlyAustinTarget.toLocaleString()}, Charlotte=$${monthlyCharlotteTarget.toLocaleString()}
+    Attainment: Austin=${austinAttainment.toFixed(
+      1
+    )}%, Charlotte=${charlotteAttainment.toFixed(
+      1
+    )}%, Combined=${combinedAttainment.toFixed(1)}%
+    YoY Data: Current=${
+      result.currentYear?.toLocaleString() || "N/A"
+    }, Previous=${result.previousYear?.toLocaleString() || "N/A"}`);
+
+    return result;
+  });
+
+  return processedData;
 };
 
 export const calculateMovingAverage = (data: any[], periods: number) => {
-  return data.map((item, index) => {
-    const startIndex = Math.max(0, index - periods + 1);
+  console.log("\n=== Moving Average Calculation ===");
+  console.log(`Periods: ${periods}, Data points: ${data.length}`);
+
+  if (!data || data.length === 0) {
+    console.log("No data provided for moving average calculation");
+    return [];
+  }
+
+  const result = data.map((item, index) => {
+    // Calculate the window size based on available data
+    const windowSize = Math.min(periods, index + 1);
+    const startIndex = Math.max(0, index - windowSize + 1);
     const window = data.slice(startIndex, index + 1);
 
-    const austinMA =
-      window.reduce((sum, entry) => sum + (entry.austinAttainment || 0), 0) /
-      window.length;
-    const charlotteMA =
-      window.reduce((sum, entry) => sum + (entry.charlotteAttainment || 0), 0) /
-      window.length;
+    if (window.length === 0) {
+      console.log(`${item.month}: No data in window`);
+      return {
+        month: item.month,
+        austin: 0,
+        charlotte: 0,
+      };
+    }
 
-    return {
+    // Log the window data
+    console.log(`\nCalculating MA for ${item.month}:
+    Window Size: ${window.length}
+    Window Data: ${window
+      .map(
+        (entry) =>
+          `${entry.month}[A=${entry.austinAttainment?.toFixed(
+            1
+          )}%, C=${entry.charlotteAttainment?.toFixed(1)}%]`
+      )
+      .join(", ")}`);
+
+    // Calculate moving averages for attainment percentages
+    const austinMA =
+      window.reduce((sum, entry) => {
+        const value = entry.austinAttainment || 0;
+        return sum + value;
+      }, 0) / window.length;
+
+    const charlotteMA =
+      window.reduce((sum, entry) => {
+        const value = entry.charlotteAttainment || 0;
+        return sum + value;
+      }, 0) / window.length;
+
+    const resultItem = {
       month: item.month,
       austin: austinMA,
       charlotte: charlotteMA,
     };
+
+    console.log(
+      `Result for ${item.month}: Austin MA=${austinMA.toFixed(
+        1
+      )}%, Charlotte MA=${charlotteMA.toFixed(1)}%`
+    );
+    return resultItem;
   });
+
+  return result;
 };
