@@ -81,7 +81,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           MTD Attainment
         </Typography>
         <Typography variant="h6" sx={{ color: getAttainmentColor(attainment) }}>
-          {attainment.toFixed(1)}%
+          {Math.round(attainment)}%
         </Typography>
       </Box>
     </Paper>
