@@ -134,14 +134,56 @@ export const calculateLocationMetrics = (
   const dailyCharlotteTarget =
     targetSettings?.dailyTargets.charlotte || TARGETS.charlotte;
 
-  const periodAustinTarget = dailyAustinTarget * totalBusinessDays;
-  const periodCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
+  // For monthly calculation, check if there's a monthly adjustment for the current month/year
+  let adjustedDailyAustinTarget = dailyAustinTarget;
+  let adjustedDailyCharlotteTarget = dailyCharlotteTarget;
+  let workingDaysOverride = null;
+
+  if (
+    targetSettings?.monthlyAdjustments &&
+    targetSettings.monthlyAdjustments.length > 0
+  ) {
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthlyAdjustment = targetSettings.monthlyAdjustments.find(
+      (adj) => adj.month === currentMonth && adj.year === currentYear
+    );
+
+    if (monthlyAdjustment) {
+      // Use the custom daily targets if provided
+      if (monthlyAdjustment.austin !== undefined) {
+        adjustedDailyAustinTarget = monthlyAdjustment.austin;
+      }
+
+      if (monthlyAdjustment.charlotte !== undefined) {
+        adjustedDailyCharlotteTarget = monthlyAdjustment.charlotte;
+      }
+
+      // If working days are specified, use that instead of the calculated business days
+      if (
+        monthlyAdjustment.workingDays &&
+        monthlyAdjustment.workingDays.length > 0
+      ) {
+        workingDaysOverride = monthlyAdjustment.workingDays.length;
+      }
+    }
+  }
+
+  // Use working days override if available
+  const effectiveBusinessDays =
+    workingDaysOverride !== null ? workingDaysOverride : totalBusinessDays;
+
+  // Calculate period targets using the adjusted daily targets
+  const periodAustinTarget = adjustedDailyAustinTarget * effectiveBusinessDays;
+  const periodCharlotteTarget =
+    adjustedDailyCharlotteTarget * effectiveBusinessDays;
 
   // Calculate on-pace targets based on elapsed business days
   const onPaceAustinTarget =
-    (periodAustinTarget / totalBusinessDays) * elapsedBusinessDays;
+    (periodAustinTarget / effectiveBusinessDays) * elapsedBusinessDays;
   const onPaceCharlotteTarget =
-    (periodCharlotteTarget / totalBusinessDays) * elapsedBusinessDays;
+    (periodCharlotteTarget / effectiveBusinessDays) * elapsedBusinessDays;
 
   // Calculate attainment percentages against on-pace targets
   const austinAttainment =
@@ -158,38 +200,58 @@ export const calculateLocationMetrics = (
   // Filter targets based on location
   const filteredAustinTarget =
     !location || location === "Combined" || location === "Austin"
-      ? onPaceAustinTarget
+      ? periodAustinTarget // Use full period target for display, not on-pace
       : 0;
   const filteredCharlotteTarget =
     !location || location === "Combined" || location === "Charlotte"
-      ? onPaceCharlotteTarget
+      ? periodCharlotteTarget // Use full period target for display, not on-pace
       : 0;
   const filteredTotalTarget = filteredAustinTarget + filteredCharlotteTarget;
+
+  console.log("=== Target Calculations ===");
+  console.log("Daily Targets:", {
+    austin: adjustedDailyAustinTarget,
+    charlotte: adjustedDailyCharlotteTarget,
+    usingAdjustment:
+      adjustedDailyAustinTarget !== dailyAustinTarget ||
+      adjustedDailyCharlotteTarget !== dailyCharlotteTarget,
+  });
+  console.log("Working Days:", {
+    totalBusinessDays,
+    workingDaysOverride,
+    effectiveBusinessDays,
+    elapsedBusinessDays,
+  });
+  console.log("Monthly Targets:", {
+    austin: periodAustinTarget,
+    charlotte: periodCharlotteTarget,
+    total: periodAustinTarget + periodCharlotteTarget,
+  });
 
   return {
     austin: {
       revenue: totalAustin,
-      target: filteredAustinTarget,
+      target: filteredAustinTarget, // Now showing full monthly target
       attainment: austinAttainment,
-      weeklyTarget: periodAustinTarget,
+      weeklyTarget: periodAustinTarget / 4, // Approximate weekly target
       elapsedDays: elapsedBusinessDays,
-      totalDays: totalBusinessDays,
+      totalDays: effectiveBusinessDays,
     },
     charlotte: {
       revenue: totalCharlotte,
-      target: filteredCharlotteTarget,
+      target: filteredCharlotteTarget, // Now showing full monthly target
       attainment: charlotteAttainment,
-      weeklyTarget: periodCharlotteTarget,
+      weeklyTarget: periodCharlotteTarget / 4, // Approximate weekly target
       elapsedDays: elapsedBusinessDays,
-      totalDays: totalBusinessDays,
+      totalDays: effectiveBusinessDays,
     },
     total: {
       revenue: totalRevenue,
-      target: filteredTotalTarget,
+      target: filteredTotalTarget, // Now showing full monthly target
       attainment: totalAttainment,
-      weeklyTarget: periodAustinTarget + periodCharlotteTarget,
+      weeklyTarget: (periodAustinTarget + periodCharlotteTarget) / 4, // Approximate weekly target
       elapsedDays: elapsedBusinessDays,
-      totalDays: totalBusinessDays,
+      totalDays: effectiveBusinessDays,
     },
   };
 };

@@ -280,82 +280,68 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
           </Box>
         </DialogTitle>
         <Divider />
-        <DialogContent>
+        <DialogContent sx={{ pb: 0 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Adjust targets for specific months to account for holidays,
-                office closures, or other variations. Select working days and
-                optionally override the daily targets for each location.
-              </Typography>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Month</InputLabel>
+                <Select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value as number)}
+                  label="Month"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <MenuItem key={i} value={i}>
+                      {getMonthName(i)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Year</InputLabel>
+                <Select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value as number)}
+                  label="Year"
+                >
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
 
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Month</InputLabel>
-                    <Select
-                      value={selectedMonth}
-                      label="Month"
-                      onChange={(e) =>
-                        setSelectedMonth(e.target.value as number)
-                      }
-                    >
-                      {Array.from({ length: 12 }, (_, i) => (
-                        <MenuItem key={i} value={i}>
-                          {getMonthName(i)}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Year</InputLabel>
-                    <Select
-                      value={selectedYear}
-                      label="Year"
-                      onChange={(e) =>
-                        setSelectedYear(e.target.value as number)
-                      }
-                    >
-                      {years.map((year) => (
-                        <MenuItem key={year} value={year}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-
-              <Typography variant="subtitle2" gutterBottom>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
                 Working Days
               </Typography>
-              <Box
-                sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}
-              >
+              <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
                 <Button
-                  variant="outlined"
                   size="small"
                   onClick={handleSelectAllBusinessDays}
                   startIcon={<CheckIcon />}
+                  variant="outlined"
                 >
                   Select Business Days
                 </Button>
                 <Button
-                  variant="outlined"
                   size="small"
                   onClick={handleClearAllDays}
                   startIcon={<ClearIcon />}
+                  variant="outlined"
+                  color="secondary"
                 >
                   Clear All
                 </Button>
-                <Typography variant="body2" color="text.secondary">
-                  {workingDays.length} days selected
-                </Typography>
               </Box>
-
-              {/* Calendar-like display */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {workingDays.length} days selected
+              </Typography>
+              {/* Calendar display */}
               <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={1} sx={{ mb: 1 }}>
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
@@ -430,8 +416,10 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                   })}
                 </Grid>
               </Paper>
+            </Grid>
 
-              <Typography variant="subtitle2" gutterBottom>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
                 Target Overrides (Optional)
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -440,89 +428,92 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                 Charlotte (
                 {formatCurrency(currentSettings.dailyTargets.charlotte)})
               </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Important:</strong> Enter DAILY target values, not
+                  monthly totals. For example, if your monthly target is
+                  $1,000,000 and you have 20 working days, enter $50,000 as the
+                  daily target.
+                  <Box sx={{ mt: 1, ml: 2 }}>
+                    • <strong>Entered Values:</strong> Daily revenue targets per
+                    location
+                    <br />• <strong>Monthly Target:</strong> Daily target ×
+                    number of working days selected
+                  </Box>
+                </Typography>
+              </Alert>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Austin Daily Target"
-                    type="number"
                     value={austinTarget}
                     onChange={(e) => setAustinTarget(e.target.value)}
+                    placeholder={currentSettings.dailyTargets.austin.toString()}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                      startAdornment: <Box component="span">$</Box>,
                     }}
-                    placeholder={`Default: ${formatCurrency(
-                      currentSettings.dailyTargets.austin
-                    )}`}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Charlotte Daily Target"
-                    type="number"
                     value={charlotteTarget}
                     onChange={(e) => setCharlotteTarget(e.target.value)}
+                    placeholder={currentSettings.dailyTargets.charlotte.toString()}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                      startAdornment: <Box component="span">$</Box>,
                     }}
-                    placeholder={`Default: ${formatCurrency(
-                      currentSettings.dailyTargets.charlotte
-                    )}`}
                   />
                 </Grid>
               </Grid>
-            </Grid>
 
-            <Grid item xs={12} md={4}>
-              <Typography variant="subtitle2" gutterBottom>
-                Existing Adjustments
-              </Typography>
-              {currentSettings.monthlyAdjustments.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  No monthly adjustments have been added yet.
-                </Typography>
-              ) : (
-                <TableContainer
-                  component={Paper}
-                  sx={{ maxHeight: 300, overflow: "auto" }}
+              {austinTarget || charlotteTarget ? (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    bgcolor: "background.paper",
+                    borderRadius: 1,
+                    border: "1px dashed grey.300",
+                  }}
                 >
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Month/Year</TableCell>
-                        <TableCell>Working Days</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {currentSettings.monthlyAdjustments.map((adj, index) => (
-                        <TableRow key={`${adj.month}-${adj.year}`}>
-                          <TableCell>
-                            {getMonthName(adj.month)} {adj.year}
-                          </TableCell>
-                          <TableCell>{adj.workingDays.length} days</TableCell>
-                          <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditAdjustment(index)}
-                              sx={{ mr: 1 }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteAdjustment(index)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
+                  <Typography variant="subtitle2">Target Summary:</Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2">
+                        Austin:{" "}
+                        {formatCurrency(
+                          parseFloat(austinTarget) ||
+                            currentSettings.dailyTargets.austin
+                        )}{" "}
+                        × {workingDays.length} days ={" "}
+                        {formatCurrency(
+                          (parseFloat(austinTarget) ||
+                            currentSettings.dailyTargets.austin) *
+                            workingDays.length
+                        )}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2">
+                        Charlotte:{" "}
+                        {formatCurrency(
+                          parseFloat(charlotteTarget) ||
+                            currentSettings.dailyTargets.charlotte
+                        )}{" "}
+                        × {workingDays.length} days ={" "}
+                        {formatCurrency(
+                          (parseFloat(charlotteTarget) ||
+                            currentSettings.dailyTargets.charlotte) *
+                            workingDays.length
+                        )}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              ) : null}
             </Grid>
           </Grid>
 
