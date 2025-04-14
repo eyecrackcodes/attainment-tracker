@@ -67,7 +67,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         </Typography>
         {payload.map((entry: any, index: number) => (
           <Typography key={index} variant="body2" sx={{ color: entry.color }}>
-            {entry.name}: {entry.value ? entry.value.toFixed(1) + "%" : "N/A"}
+            {entry.name}: {entry.value ? Math.round(entry.value) + "%" : "N/A"}
           </Typography>
         ))}
       </Paper>
@@ -119,7 +119,7 @@ const InsightCard = ({ title, value, trend, subtitle }: InsightCardProps) => {
           <Stack direction="row" spacing={1} alignItems="center">
             {getTrendIcon(trend)}
             <Typography variant="body2" color={getTrendColor(trend)}>
-              {Math.abs(trend)}%{" "}
+              {Math.abs(Math.round(trend))}%{" "}
               {trend > 0 ? "increase" : trend < 0 ? "decrease" : "no change"}
             </Typography>
           </Stack>
@@ -134,7 +134,7 @@ const InsightCard = ({ title, value, trend, subtitle }: InsightCardProps) => {
   );
 };
 
-// Add this new component for the enhanced tooltip
+// Update the EnhancedTooltip to ensure percentages use whole numbers
 const EnhancedTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -179,7 +179,7 @@ const EnhancedTooltip = ({ active, payload, label }: any) => {
                 {entry.name}:
               </Typography>
               <Typography variant="body2" color={entry.color}>
-                {entry.value.toFixed(1)}%
+                {Math.round(entry.value)}%
               </Typography>
             </Stack>
           ))}
@@ -345,8 +345,8 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
   const formatPercent = (value: number) =>
     new Intl.NumberFormat("en-US", {
       style: "percent",
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value / 100);
 
   return (
@@ -523,7 +523,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 />
                 <Tooltip
                   formatter={(value: any) => [
-                    formatPercent(value),
+                    Math.round(value) + "%",
                     "Moving Average",
                   ]}
                   contentStyle={{

@@ -187,7 +187,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
         austin: formatCurrency(entry.austin || 0),
         charlotte: formatCurrency(entry.charlotte || 0),
         total: formatCurrency(total),
-        attainment: attainment.toFixed(2) + "%",
+        attainment: Math.round(attainment) + "%",
         target: formatCurrency(dailyTarget),
       });
 
@@ -272,7 +272,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
       }
       console.log(`${day}:`, {
         daysCount: data.count,
-        avgAttainment: data.avgAttainment.toFixed(2) + "%",
+        avgAttainment: Math.round(data.avgAttainment) + "%",
         avgAustin: formatCurrency(data.avgAustin),
         avgCharlotte: formatCurrency(data.avgCharlotte),
         avgTotal: formatCurrency(data.avgAustin + data.avgCharlotte),
