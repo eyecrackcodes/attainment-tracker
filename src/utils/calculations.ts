@@ -1120,9 +1120,11 @@ export const calculateMissingDataDays = (
     const [bYear, bMonth, bDay] = b.date.split('-').map(num => parseInt(num));
     const aDate = new Date(aYear, aMonth - 1, aDay);
     const bDate = new Date(bYear, bMonth - 1, bDay);
+    console.log(`Comparing dates: ${a.date} (${aDate.getTime()}) vs ${b.date} (${bDate.getTime()})`);
     return bDate.getTime() - aDate.getTime();
   });
   const lastDataDate = sortedData[0].date;
+  console.log(`Identified last data date: ${lastDataDate}`);
   
   // Parse last data date (ensure consistent date parsing)
   const [lastYear, lastMonth, lastDay] = lastDataDate.split('-').map(num => parseInt(num));
@@ -1168,7 +1170,7 @@ export const calculateMissingDataDays = (
       // Use standard business days (weekdays only - no weekends)
       // getDay(): 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
       const dayOfWeek = currentDate.getDay();
-      isWorkingDay = dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude Sunday(0) and Saturday(6)
+      isWorkingDay = dayOfWeek >= 1 && dayOfWeek <= 5; // Only Monday(1) through Friday(5)
     }
     
     const dateStr = currentDate.toISOString().split('T')[0];
