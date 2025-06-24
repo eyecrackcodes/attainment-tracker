@@ -1194,6 +1194,9 @@ export const calculateMissingDataDays = (
   }
 
      console.log('=== Missing Data Days Calculation ===');
+   console.log('Total data entries received:', data.length);
+   console.log('All data dates (unsorted):', data.map(d => d.date));
+   console.log('Sorted data (latest first):', sortedData.slice(0, 5).map(d => d.date));
    console.log('Last data date:', lastDataDate);
    console.log('Yesterday:', yesterday.toISOString().split('T')[0]);
    console.log('Today:', now.toISOString().split('T')[0]);
