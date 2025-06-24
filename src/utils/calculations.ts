@@ -74,74 +74,45 @@ export const calculateLocationMetrics = (
   let totalBusinessDays = 0;
   let elapsedBusinessDays = 0;
 
-  if (timeFrame === "This Week") {
-    // For weekly view, we only care about Monday through Friday of the current week
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Start from Monday
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // End on Sunday
+  // Default monthly calculation
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-    // Count total business days in the week (Monday-Friday)
-    let currentDay = new Date(weekStart);
-    while (currentDay <= weekEnd) {
-      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-        // Not Sunday (0) or Saturday (6)
-        totalBusinessDays++;
-      }
-      currentDay.setDate(currentDay.getDate() + 1);
+  // Calculate total business days in the month
+  let currentDay = new Date(firstDayOfMonth);
+  while (currentDay <= lastDayOfMonth) {
+    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+      totalBusinessDays++;
     }
+    currentDay.setDate(currentDay.getDate() + 1);
+  }
 
-    // Count elapsed business days up to today
-    currentDay = new Date(weekStart);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    while (currentDay <= today) {
-      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-        elapsedBusinessDays++;
-      }
-      currentDay.setDate(currentDay.getDate() + 1);
+  // Calculate elapsed business days (excluding today)
+  currentDay = new Date(firstDayOfMonth);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  while (currentDay <= yesterday) {
+    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+      elapsedBusinessDays++;
     }
-  } else {
-    // Default monthly calculation
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-
-    // Calculate total business days in the month
-    let currentDay = new Date(firstDayOfMonth);
-    while (currentDay <= lastDayOfMonth) {
-      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-        totalBusinessDays++;
-      }
-      currentDay.setDate(currentDay.getDate() + 1);
-    }
-
-    // Calculate elapsed business days (excluding today)
-    currentDay = new Date(firstDayOfMonth);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    while (currentDay <= yesterday) {
-      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-        elapsedBusinessDays++;
-      }
-      currentDay.setDate(currentDay.getDate() + 1);
-    }
+    currentDay.setDate(currentDay.getDate() + 1);
   }
 
   // Calculate daily and period targets
-  const dailyAustinTarget =
-    targetSettings?.dailyTargets.austin || TARGETS.austin;
-  const dailyCharlotteTarget =
-    targetSettings?.dailyTargets.charlotte || TARGETS.charlotte;
+  const dailyAustinTarget = targetSettings?.dailyTargets?.austin || TARGETS.austin;
+  const dailyCharlotteTarget = targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte;
 
-  const periodAustinTarget = dailyAustinTarget * totalBusinessDays;
-  const periodCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
+  // Calculate full month targets
+  const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
+  const monthlyCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
 
   // Calculate on-pace targets based on elapsed business days
-  const onPaceAustinTarget =
-    (periodAustinTarget / totalBusinessDays) * elapsedBusinessDays;
-  const onPaceCharlotteTarget =
-    (periodCharlotteTarget / totalBusinessDays) * elapsedBusinessDays;
+  const onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;
+  const onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
 
   // Calculate attainment percentages against on-pace targets
   const austinAttainment =
@@ -158,36 +129,36 @@ export const calculateLocationMetrics = (
   // Filter targets based on location
   const filteredAustinTarget =
     !location || location === "Combined" || location === "Austin"
-      ? onPaceAustinTarget
+      ? monthlyAustinTarget
       : 0;
   const filteredCharlotteTarget =
     !location || location === "Combined" || location === "Charlotte"
-      ? onPaceCharlotteTarget
+      ? monthlyCharlotteTarget
       : 0;
   const filteredTotalTarget = filteredAustinTarget + filteredCharlotteTarget;
 
   return {
     austin: {
       revenue: totalAustin,
-      target: filteredAustinTarget,
+      target: onPaceAustinTarget,
+      monthlyTarget: monthlyAustinTarget,
       attainment: austinAttainment,
-      weeklyTarget: periodAustinTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
     charlotte: {
       revenue: totalCharlotte,
-      target: filteredCharlotteTarget,
+      target: onPaceCharlotteTarget,
+      monthlyTarget: monthlyCharlotteTarget,
       attainment: charlotteAttainment,
-      weeklyTarget: periodCharlotteTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
     total: {
       revenue: totalRevenue,
-      target: filteredTotalTarget,
+      target: totalOnPaceTarget,
+      monthlyTarget: filteredTotalTarget,
       attainment: totalAttainment,
-      weeklyTarget: periodAustinTarget + periodCharlotteTarget,
       elapsedDays: elapsedBusinessDays,
       totalDays: totalBusinessDays,
     },
@@ -329,31 +300,18 @@ export const filterDataByTimeFrame = (
       });
       break;
     case "MTD":
-      // Get the most recent date in the dataset
-      const mostRecentDate = data.reduce((latest, item) => {
-        const itemDate = createDate(item.date);
-        const latestDate = latest ? createDate(latest.date) : itemDate;
-        return itemDate > latestDate ? item : latest;
-      }, data[0]);
-
-      if (!mostRecentDate) return [];
-
-      const referenceDate = createDate(mostRecentDate.date);
-
-      // Get the start of the month for the reference date
-      const startOfMonth = new Date(
-        referenceDate.getFullYear(),
-        referenceDate.getMonth(),
-        1
-      );
+      // Get the current date in local timezone
+      const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // Get the start of the current month
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 
       // First filter by location if specified
       if (location && location !== "Combined") {
         filteredData = filteredData.map((item) => ({
           date: item.date,
           austin: location.toLowerCase() === "austin" ? item.austin : 0,
-          charlotte:
-            location.toLowerCase() === "charlotte" ? item.charlotte : 0,
+          charlotte: location.toLowerCase() === "charlotte" ? item.charlotte : 0,
         }));
       }
 
@@ -361,22 +319,15 @@ export const filterDataByTimeFrame = (
       filteredData = filteredData
         .filter((item) => {
           const itemDate = createDate(item.date);
-
-          // Only include dates from start of month up to the most recent date with data
-          const isInRange =
-            itemDate >= startOfMonth &&
-            itemDate <= referenceDate &&
-            // Ensure we have actual data for this date
-            data.some((d) => d.date === item.date);
+          
+          // Include all dates from start of month up to current date
+          const isInRange = itemDate >= startOfMonth && itemDate <= currentDate;
 
           console.log(
-            `Filtering MTD ${item.date}: ${
-              isInRange ? "INCLUDED" : "excluded"
-            } (${itemDate.toISOString()}) - Revenue: ${JSON.stringify({
+            `Filtering MTD ${item.date}: ${isInRange ? "INCLUDED" : "excluded"} (${itemDate.toISOString()}) - Revenue: ${JSON.stringify({
               austin: item.austin,
               charlotte: item.charlotte,
               dayOfWeek: itemDate.getDay(),
-              hasData: data.some((d) => d.date === item.date),
             })}`
           );
           return isInRange;
@@ -391,11 +342,10 @@ export const filterDataByTimeFrame = (
         location,
         dateRange: {
           start: startOfMonth.toISOString().split("T")[0],
-          end: referenceDate.toISOString().split("T")[0],
+          end: currentDate.toISOString().split("T")[0],
         },
         filteredDates: filteredData.map((item) => item.date).sort(),
         dataPoints: filteredData.length,
-        has28th: filteredData.some((item) => item.date === "2025-03-28"),
         allData: filteredData.map((item) => ({
           date: item.date,
           dayOfWeek: createDate(item.date).getDay(),

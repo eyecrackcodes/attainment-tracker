@@ -7,8 +7,8 @@ interface MetricCardProps {
   title: string;
   revenue: number;
   target: number;
+  monthlyTarget: number;
   attainment: number;
-  weeklyTarget?: number;
   elapsedDays?: number;
   totalDays?: number;
 }
@@ -17,8 +17,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   title,
   revenue,
   target,
+  monthlyTarget,
   attainment,
-  weeklyTarget,
   elapsedDays,
   totalDays,
 }) => {
@@ -31,7 +31,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   // Calculate daily average needed to hit target
   const remainingDays = totalDays ? totalDays - (elapsedDays || 0) : 0;
-  const remainingRevenue = target - revenue;
+  const remainingRevenue = monthlyTarget - revenue;
   const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
   const isAheadOfTarget = revenue >= target;
   const amountAhead = revenue - target;
@@ -54,7 +54,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <Typography variant="body2" color="text.secondary">
           Monthly Target ({elapsedDays} of {totalDays} days)
         </Typography>
-        <Typography variant="h6">{formatCurrency(target)}</Typography>
+        <Typography variant="h6">{formatCurrency(monthlyTarget)}</Typography>
         <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
           <Typography
             variant="body2"

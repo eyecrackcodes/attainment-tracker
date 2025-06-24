@@ -59,8 +59,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             title="Austin"
             revenue={metrics.austin.revenue}
             target={metrics.austin.target}
+            monthlyTarget={metrics.austin.monthlyTarget}
             attainment={metrics.austin.attainment}
-            weeklyTarget={metrics.austin.weeklyTarget}
             elapsedDays={metrics.austin.elapsedDays}
             totalDays={metrics.austin.totalDays}
           />
@@ -70,8 +70,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             title="Charlotte"
             revenue={metrics.charlotte.revenue}
             target={metrics.charlotte.target}
+            monthlyTarget={metrics.charlotte.monthlyTarget}
             attainment={metrics.charlotte.attainment}
-            weeklyTarget={metrics.charlotte.weeklyTarget}
             elapsedDays={metrics.charlotte.elapsedDays}
             totalDays={metrics.charlotte.totalDays}
           />
@@ -81,8 +81,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             title="Total"
             revenue={metrics.total.revenue}
             target={metrics.total.target}
+            monthlyTarget={metrics.total.monthlyTarget}
             attainment={metrics.total.attainment}
-            weeklyTarget={metrics.total.weeklyTarget}
             elapsedDays={metrics.total.elapsedDays}
             totalDays={metrics.total.totalDays}
           />

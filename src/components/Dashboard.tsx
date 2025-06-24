@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
-  Grid,
   Paper,
   Typography,
   CircularProgress,
@@ -15,7 +14,9 @@ import {
   Tabs,
   Tab,
   Fade,
+  Stack,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
@@ -91,6 +92,7 @@ export const Dashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isTabLoading, setIsTabLoading] = useState(false);
+  const showLocationCharts = state.filters.location !== "Combined";
 
   useEffect(() => {
     const unsubscribeRevenue = revenueService.subscribeToRevenueData((data) => {
@@ -277,9 +279,9 @@ export const Dashboard: React.FC = () => {
       switch (activeTab) {
         case 0:
           return (
-            <Grid container spacing={3}>
+            <Stack spacing={4}>
               {/* Summary Metrics */}
-              <Grid item xs={12}>
+              <Box>
                 <SummaryMetrics
                   data={state.revenueData}
                   timeFrame={state.filters.timeFrame}
@@ -288,10 +290,10 @@ export const Dashboard: React.FC = () => {
                   endDate={state.filters.endDate}
                   location={state.filters.location}
                 />
-              </Grid>
+              </Box>
 
               {/* Daily Entry Form and Filters Row */}
-              <Grid item xs={12}>
+              <Box>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={4}>
                     <DailyEntryForm
@@ -319,87 +321,95 @@ export const Dashboard: React.FC = () => {
                     </Paper>
                   </Grid>
                 </Grid>
-              </Grid>
+              </Box>
 
               {/* Charts Section */}
-              {state.filters.location === "Combined" ? (
+              {!showLocationCharts ? (
                 // Show regular charts for combined view
-                <>
-                  <Grid item xs={12}>
-                    <RevenueComparisonChart
-                      data={state.revenueData}
-                      timeFrame={state.filters.timeFrame}
-                      targetSettings={state.targetSettings}
-                      startDate={state.filters.startDate}
-                      endDate={state.filters.endDate}
-                      location={state.filters.location}
-                    />
-                  </Grid>
+                <Stack spacing={6}>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                      <RevenueComparisonChart
+                        data={state.revenueData}
+                        timeFrame={state.filters.timeFrame}
+                        targetSettings={state.targetSettings}
+                        startDate={state.filters.startDate}
+                        endDate={state.filters.endDate}
+                        location={state.filters.location}
+                      />
+                    </Paper>
+                  </Box>
 
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
                       <DailyAttainmentChart
                         data={state.revenueData}
                         filters={state.filters}
                         targets={state.targetSettings}
                       />
                     </Paper>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
                       <TimePeriodsChart
                         data={state.revenueData}
                         filters={state.filters}
                         targets={state.targetSettings}
                       />
                     </Paper>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12}>
-                    <DistributionCharts
-                      data={state.revenueData}
-                      filters={state.filters}
-                      targets={state.targetSettings}
-                    />
-                  </Grid>
-                </>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 600 }}>
+                      <DistributionCharts
+                        data={state.revenueData}
+                        filters={state.filters}
+                        targets={state.targetSettings}
+                      />
+                    </Paper>
+                  </Box>
+                </Stack>
               ) : (
                 // Show location-specific charts
-                <>
-                  <Grid item xs={12}>
-                    <LocationDailyChart
-                      data={filterDataByTimeFrame(
-                        state.revenueData,
-                        state.filters.timeFrame,
-                        state.filters.attainmentThreshold,
-                        state.targetSettings,
-                        state.filters.startDate,
-                        state.filters.endDate,
-                        state.filters.location
-                      )}
-                      location={state.filters.location}
-                      targetSettings={state.targetSettings}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <LocationMTDChart
-                      data={filterDataByTimeFrame(
-                        state.revenueData,
-                        state.filters.timeFrame,
-                        state.filters.attainmentThreshold,
-                        state.targetSettings,
-                        state.filters.startDate,
-                        state.filters.endDate,
-                        state.filters.location
-                      )}
-                      location={state.filters.location}
-                      targetSettings={state.targetSettings}
-                    />
-                  </Grid>
-                </>
+                <Stack spacing={6}>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                      <LocationDailyChart
+                        data={filterDataByTimeFrame(
+                          state.revenueData,
+                          state.filters.timeFrame,
+                          state.filters.attainmentThreshold,
+                          state.targetSettings,
+                          state.filters.startDate,
+                          state.filters.endDate,
+                          state.filters.location
+                        )}
+                        location={state.filters.location}
+                        targetSettings={state.targetSettings}
+                      />
+                    </Paper>
+                  </Box>
+                  <Box>
+                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                      <LocationMTDChart
+                        data={filterDataByTimeFrame(
+                          state.revenueData,
+                          state.filters.timeFrame,
+                          state.filters.attainmentThreshold,
+                          state.targetSettings,
+                          state.filters.startDate,
+                          state.filters.endDate,
+                          state.filters.location
+                        )}
+                        location={state.filters.location}
+                        targetSettings={state.targetSettings}
+                      />
+                    </Paper>
+                  </Box>
+                </Stack>
               )}
-            </Grid>
+            </Stack>
           );
         case 1:
           return (
