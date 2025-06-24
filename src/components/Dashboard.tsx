@@ -376,7 +376,17 @@ export const Dashboard: React.FC = () => {
                 // Show regular charts for combined view
                 <Stack spacing={6}>
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 550,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <RevenueComparisonChart
                         data={state.revenueData}
                         timeFrame={state.filters.timeFrame}
@@ -389,7 +399,17 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 550,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <DailyAttainmentChart
                         data={state.revenueData}
                         filters={state.filters}
@@ -399,7 +419,17 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 550,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <TimePeriodsChart
                         data={state.revenueData}
                         filters={state.filters}
@@ -409,7 +439,17 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 600 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 650,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <DistributionCharts
                         data={state.revenueData}
                         filters={state.filters}
@@ -422,7 +462,17 @@ export const Dashboard: React.FC = () => {
                 // Show location-specific charts
                 <Stack spacing={6}>
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 550,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <LocationDailyChart
                         data={filterDataByTimeFrame(
                           state.revenueData,
@@ -439,7 +489,17 @@ export const Dashboard: React.FC = () => {
                     </Paper>
                   </Box>
                   <Box>
-                    <Paper elevation={2} sx={{ p: 3, height: 500 }}>
+                    <Paper 
+                      elevation={3} 
+                      sx={{ 
+                        p: 4, 
+                        height: 550,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
+                    >
                       <LocationMTDChart
                         data={filterDataByTimeFrame(
                           state.revenueData,
