@@ -1118,8 +1118,9 @@ export const calculateMissingDataDays = (
   const sortedData = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const lastDataDate = sortedData[0].date;
   
-  // Parse last data date
-  const lastDate = new Date(lastDataDate);
+  // Parse last data date (ensure consistent date parsing)
+  const [lastYear, lastMonth, lastDay] = lastDataDate.split('-').map(num => parseInt(num));
+  const lastDate = new Date(lastYear, lastMonth - 1, lastDay);
   
   // Get yesterday (don't count today since the day isn't over)
   const now = new Date();
@@ -1135,10 +1136,12 @@ export const calculateMissingDataDays = (
     };
   }
 
+  // Get all existing data dates for faster lookup
+  const existingDates = new Set(data.map(entry => entry.date));
+  
   // Calculate missing business days between last data date and yesterday
   const missingDates: string[] = [];
-  let currentDate = new Date(lastDate);
-  currentDate.setDate(currentDate.getDate() + 1); // Start from day after last data
+  let currentDate = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate() + 1); // Start from day after last data
   
   while (currentDate <= yesterday) {
     const month = currentDate.getMonth();
@@ -1161,16 +1164,22 @@ export const calculateMissingDataDays = (
     }
     
     if (isWorkingDay) {
-      missingDates.push(currentDate.toISOString().split('T')[0]);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      // Only add if we don't already have data for this date
+      if (!existingDates.has(dateStr)) {
+        missingDates.push(dateStr);
+      }
     }
     
-    currentDate.setDate(currentDate.getDate() + 1);
+    // Move to next day using a more reliable method
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
   }
 
      console.log('=== Missing Data Days Calculation ===');
    console.log('Last data date:', lastDataDate);
    console.log('Yesterday:', yesterday.toISOString().split('T')[0]);
    console.log('Today:', now.toISOString().split('T')[0]);
+   console.log('All existing dates:', Array.from(existingDates).sort());
    console.log('Missing business days:', missingDates.length);
    console.log('Missing dates:', missingDates);
    console.log('Date comparison - Last date >= Yesterday:', lastDate >= yesterday);
