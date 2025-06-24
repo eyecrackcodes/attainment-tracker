@@ -311,19 +311,22 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   }
 
   return (
-    <Grid container spacing={3}>
-      {/* Performance Summary */}
-      <Grid item xs={12}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            mb: 2,
-            background:
-              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
-            borderRadius: 2,
-          }}
-        >
+    <Box sx={{ p: 2 }}>
+      <Grid container spacing={4}>
+        {/* Performance Summary */}
+        <Grid item xs={12}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              mb: 2,
+              background:
+                "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
           <Grid container spacing={3}>
             {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
               <Grid item xs={12} sm={2.4} key={day}>
@@ -641,6 +644,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
           </Box>
         </Paper>
       </Grid>
-    </Grid>
+      </Grid>
+    </Box>
   );
 };

@@ -107,25 +107,46 @@ const InsightCard = ({ title, value, trend, subtitle }: InsightCardProps) => {
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
-      <Stack spacing={1}>
-        <Typography variant="subtitle2" color="text.secondary">
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        p: 3, 
+        height: "100%",
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          elevation: 4,
+          borderColor: 'primary.light',
+          transform: 'translateY(-2px)'
+        }
+      }}
+    >
+      <Stack spacing={2}>
+        <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
           {title}
         </Typography>
-        <Typography variant="h4" component="div">
+        <Typography variant="h3" component="div" sx={{ fontWeight: 700, color: 'text.primary' }}>
           {value}
         </Typography>
         {trend !== undefined && (
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ 
+            p: 1.5, 
+            borderRadius: 1, 
+            bgcolor: trend > 0 ? 'success.light' : trend < 0 ? 'error.light' : 'grey.100',
+            opacity: 0.8
+          }}>
             {getTrendIcon(trend)}
-            <Typography variant="body2" color={getTrendColor(trend)}>
-              {Math.abs(trend)}%{" "}
+            <Typography variant="body2" color={getTrendColor(trend)} sx={{ fontWeight: 500 }}>
+              {Math.abs(trend).toFixed(1)}%{" "}
               {trend > 0 ? "increase" : trend < 0 ? "decrease" : "no change"}
             </Typography>
           </Stack>
         )}
         {subtitle && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
             {subtitle}
           </Typography>
         )}
@@ -350,53 +371,63 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
     }).format(value / 100);
 
   return (
-    <Grid container spacing={3}>
-      {/* Insights Summary */}
-      {insights && (
-        <>
-          <Grid item xs={12} md={3}>
-            <InsightCard
-              title="Monthly Revenue"
-              value={formatCurrency(insights.revenue.current)}
-              trend={insights.revenue.trend}
-              subtitle="vs. Previous Month"
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <InsightCard
-              title="Austin Attainment"
-              value={formatPercent(insights.austinAttainment.current)}
-              trend={insights.austinAttainment.trend}
-              subtitle="vs. Previous Month"
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <InsightCard
-              title="Charlotte Attainment"
-              value={formatPercent(insights.charlotteAttainment.current)}
-              trend={insights.charlotteAttainment.trend}
-              subtitle="vs. Previous Month"
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <InsightCard
-              title="Combined Attainment"
-              value={formatPercent(insights.combinedAttainment.current)}
-              trend={insights.combinedAttainment.trend}
-              subtitle="vs. Previous Month"
-            />
-          </Grid>
-        </>
-      )}
+    <Box sx={{ p: 2 }}>
+      <Grid container spacing={4}>
+        {/* Insights Summary */}
+        {insights && (
+          <>
+            <Grid item xs={12} md={3}>
+              <InsightCard
+                title="Monthly Revenue"
+                value={formatCurrency(insights.revenue.current)}
+                trend={insights.revenue.trend}
+                subtitle="vs. Previous Month"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <InsightCard
+                title="Austin Attainment"
+                value={formatPercent(insights.austinAttainment.current)}
+                trend={insights.austinAttainment.trend}
+                subtitle="vs. Previous Month"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <InsightCard
+                title="Charlotte Attainment"
+                value={formatPercent(insights.charlotteAttainment.current)}
+                trend={insights.charlotteAttainment.trend}
+                subtitle="vs. Previous Month"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <InsightCard
+                title="Combined Attainment"
+                value={formatPercent(insights.combinedAttainment.current)}
+                trend={insights.combinedAttainment.trend}
+                subtitle="vs. Previous Month"
+              />
+            </Grid>
+          </>
+        )}
 
-      {/* Enhanced Historical Trends */}
-      <Grid item xs={12}>
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Historical Performance Overview
-          </Typography>
-          <Box sx={{ height: 500, width: "100%" }}>
-            <ResponsiveContainer>
+        {/* Enhanced Historical Trends */}
+        <Grid item xs={12}>
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              p: 4, 
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+            }}
+          >
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+              Historical Performance Overview
+            </Typography>
+            <Box sx={{ height: 550, width: "100%", mt: 2 }}>
+              <ResponsiveContainer>
               <ComposedChart
                 data={monthlyTrends}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
@@ -553,6 +584,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
           </Box>
         </Paper>
       </Grid>
-    </Grid>
+      </Grid>
+    </Box>
   );
 };
