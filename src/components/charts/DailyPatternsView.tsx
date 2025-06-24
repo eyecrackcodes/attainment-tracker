@@ -28,14 +28,18 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
-import { RevenueData } from "../../types/revenue";
+import { RevenueData, TargetSettings } from "../../types/revenue";
 import { formatCurrency } from "../../utils/formatters";
+import { getTargetForDate } from "../../utils/calculations";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import RemoveIcon from "@mui/icons-material/Remove";
+import InsightsIcon from "@mui/icons-material/Insights";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 
 interface DailyPatternsViewProps {
   data: RevenueData[];
+  targetSettings?: TargetSettings;
   isLoading?: boolean;
 }
 
@@ -138,6 +142,7 @@ const getAttainmentColor = (value: number) => {
 
 export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   data,
+  targetSettings,
   isLoading = false,
 }) => {
   const theme = useTheme();
@@ -146,19 +151,10 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return null;
 
-    console.log("=== Data Processing Start ===");
-    console.log("Raw data count:", data.length);
-
     // Sort data by date
     const sortedData = [...data].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-
-    console.log("Date range:", {
-      first: sortedData[0]?.date,
-      last: sortedData[sortedData.length - 1]?.date,
-      totalDays: sortedData.length,
-    });
 
     // Get the last 30 working days and filter out weekends
     const last30Days = sortedData.slice(-30).filter((entry) => {
@@ -167,29 +163,20 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
       return dayNumber > 0 && dayNumber < 6;
     });
 
-    console.log("Filtered working days:", {
-      count: last30Days.length,
-      first: last30Days[0]?.date,
-      last: last30Days[last30Days.length - 1]?.date,
-    });
-
-    // Process each entry
+    // Process each entry with dynamic target calculation
     const processedEntries = last30Days.map((entry) => {
       const date = new Date(entry.date + "T00:00:00");
       const dayNumber = date.getDay();
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const dayName = dayNames[dayNumber];
       const total = (entry.austin || 0) + (entry.charlotte || 0);
-      const dailyTarget = 115500;
+      
+      // Use actual target settings if available, otherwise fallback to default
+      const dailyTargets = targetSettings 
+        ? getTargetForDate(date, targetSettings)
+        : { austin: 53000, charlotte: 62500 };
+      const dailyTarget = dailyTargets.austin + dailyTargets.charlotte;
       const attainment = dailyTarget > 0 ? (total / dailyTarget) * 100 : 0;
-
-      console.log(`[${entry.date}] ${dayName}:`, {
-        austin: formatCurrency(entry.austin || 0),
-        charlotte: formatCurrency(entry.charlotte || 0),
-        total: formatCurrency(total),
-        attainment: attainment.toFixed(2) + "%",
-        target: formatCurrency(dailyTarget),
-      });
 
       return {
         date: entry.date,
@@ -199,59 +186,24 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
         attainment,
         austin: entry.austin || 0,
         charlotte: entry.charlotte || 0,
+        target: dailyTarget,
+        formattedDate: date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
       };
     });
 
-    // Calculate weekday averages
+    // Calculate weekday averages and statistics
     const weekdayData = {
-      Mon: {
-        count: 0,
-        totalAttainment: 0,
-        totalAustin: 0,
-        totalCharlotte: 0,
-        avgAttainment: 0,
-        avgAustin: 0,
-        avgCharlotte: 0,
-      },
-      Tue: {
-        count: 0,
-        totalAttainment: 0,
-        totalAustin: 0,
-        totalCharlotte: 0,
-        avgAttainment: 0,
-        avgAustin: 0,
-        avgCharlotte: 0,
-      },
-      Wed: {
-        count: 0,
-        totalAttainment: 0,
-        totalAustin: 0,
-        totalCharlotte: 0,
-        avgAttainment: 0,
-        avgAustin: 0,
-        avgCharlotte: 0,
-      },
-      Thu: {
-        count: 0,
-        totalAttainment: 0,
-        totalAustin: 0,
-        totalCharlotte: 0,
-        avgAttainment: 0,
-        avgAustin: 0,
-        avgCharlotte: 0,
-      },
-      Fri: {
-        count: 0,
-        totalAttainment: 0,
-        totalAustin: 0,
-        totalCharlotte: 0,
-        avgAttainment: 0,
-        avgAustin: 0,
-        avgCharlotte: 0,
-      },
+      Mon: { count: 0, totalAttainment: 0, totalAustin: 0, totalCharlotte: 0, avgAttainment: 0, avgAustin: 0, avgCharlotte: 0, bestDay: 0, worstDay: 100 },
+      Tue: { count: 0, totalAttainment: 0, totalAustin: 0, totalCharlotte: 0, avgAttainment: 0, avgAustin: 0, avgCharlotte: 0, bestDay: 0, worstDay: 100 },
+      Wed: { count: 0, totalAttainment: 0, totalAustin: 0, totalCharlotte: 0, avgAttainment: 0, avgAustin: 0, avgCharlotte: 0, bestDay: 0, worstDay: 100 },
+      Thu: { count: 0, totalAttainment: 0, totalAustin: 0, totalCharlotte: 0, avgAttainment: 0, avgAustin: 0, avgCharlotte: 0, bestDay: 0, worstDay: 100 },
+      Fri: { count: 0, totalAttainment: 0, totalAustin: 0, totalCharlotte: 0, avgAttainment: 0, avgAustin: 0, avgCharlotte: 0, bestDay: 0, worstDay: 100 },
     };
 
-    // Process entries for weekday averages
+    // Process entries for weekday averages and track best/worst days
     processedEntries.forEach((entry) => {
       const dayData = weekdayData[entry.dayName as keyof typeof weekdayData];
       if (dayData) {
@@ -259,35 +211,63 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
         dayData.totalAttainment += entry.attainment;
         dayData.totalAustin += entry.austin;
         dayData.totalCharlotte += entry.charlotte;
+        dayData.bestDay = Math.max(dayData.bestDay, entry.attainment);
+        dayData.worstDay = Math.min(dayData.worstDay, entry.attainment);
       }
     });
 
-    // Calculate and log averages for each day
-    console.log("\n=== Weekday Averages ===");
+    // Calculate averages and analytics
+    let totalDays = 0;
+    let totalAttainment = 0;
+    let daysAboveTarget = 0;
+    let daysBelow85 = 0;
+
     Object.entries(weekdayData).forEach(([day, data]) => {
       if (data.count > 0) {
         data.avgAttainment = data.totalAttainment / data.count;
         data.avgAustin = data.totalAustin / data.count;
         data.avgCharlotte = data.totalCharlotte / data.count;
+        totalDays += data.count;
+        totalAttainment += data.totalAttainment;
       }
-      console.log(`${day}:`, {
-        daysCount: data.count,
-        avgAttainment: data.avgAttainment.toFixed(2) + "%",
-        avgAustin: formatCurrency(data.avgAustin),
-        avgCharlotte: formatCurrency(data.avgCharlotte),
-        avgTotal: formatCurrency(data.avgAustin + data.avgCharlotte),
-      });
     });
 
-    console.log("=== Data Processing Complete ===\n");
+    // Calculate overall statistics
+    processedEntries.forEach((entry) => {
+      if (entry.attainment >= 100) daysAboveTarget++;
+      if (entry.attainment < 85) daysBelow85++;
+    });
+
+    const overallAvgAttainment = totalDays > 0 ? totalAttainment / totalDays : 0;
+    const consistencyScore = totalDays > 0 ? ((totalDays - daysBelow85) / totalDays) * 100 : 0;
+    const targetHitRate = totalDays > 0 ? (daysAboveTarget / totalDays) * 100 : 0;
+
+    // Find best and worst performing days
+    const bestPerformingDay = Object.entries(weekdayData).reduce((best, [day, data]) => 
+      data.avgAttainment > best.avgAttainment ? { day, avgAttainment: data.avgAttainment } : best
+    , { day: '', avgAttainment: 0 });
+
+    const worstPerformingDay = Object.entries(weekdayData).reduce((worst, [day, data]) => 
+      data.count > 0 && data.avgAttainment < worst.avgAttainment ? { day, avgAttainment: data.avgAttainment } : worst
+    , { day: '', avgAttainment: 200 });
 
     return {
       entries: processedEntries,
       weekdayData,
+      analytics: {
+        totalDays,
+        overallAvgAttainment,
+        daysAboveTarget,
+        daysBelow85,
+        consistencyScore,
+        targetHitRate,
+        bestPerformingDay,
+        worstPerformingDay,
+      },
       firstDate: processedEntries[0]?.date,
       lastDate: processedEntries[processedEntries.length - 1]?.date,
     };
-  }, [data]);
+  }, [data, targetSettings]);
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -313,7 +293,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   return (
     <Box sx={{ p: 3 }}>
       <Grid container spacing={5}>
-        {/* Performance Summary */}
+        {/* Weekly Performance Summary */}
         <Grid item xs={12}>
           <Paper
             elevation={3}
@@ -369,6 +349,147 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
                 </Grid>
               ))}
             </Grid>
+          </Paper>
+        </Grid>
+
+        {/* Performance Analytics & Insights */}
+        <Grid item xs={12}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              mb: 3,
+              background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%)',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+              <InsightsIcon color="primary" />
+              <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                Performance Analytics & Insights
+              </Typography>
+            </Stack>
+            
+            <Grid container spacing={3}>
+              {/* Overall Performance */}
+              <Grid item xs={12} md={3}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Overall Performance
+                  </Typography>
+                  <Typography variant="h3" sx={{ color: getAttainmentColor(processedData.analytics.overallAvgAttainment), fontWeight: 700 }}>
+                    {processedData.analytics.overallAvgAttainment.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Average daily attainment
+                  </Typography>
+                  <Chip 
+                    label={`${processedData.analytics.totalDays} working days`}
+                    size="small"
+                    sx={{ mt: 1 }}
+                    icon={<CalendarTodayIcon />}
+                  />
+                </Box>
+              </Grid>
+
+              {/* Target Hit Rate */}
+              <Grid item xs={12} md={3}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Target Hit Rate
+                  </Typography>
+                  <Typography variant="h3" sx={{ color: processedData.analytics.targetHitRate >= 70 ? 'success.main' : 'warning.main', fontWeight: 700 }}>
+                    {processedData.analytics.targetHitRate.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Days hitting 100%+ target
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, color: 'success.main' }}>
+                    {processedData.analytics.daysAboveTarget} out of {processedData.analytics.totalDays} days
+                  </Typography>
+                </Box>
+              </Grid>
+
+              {/* Consistency Score */}
+              <Grid item xs={12} md={3}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Consistency Score
+                  </Typography>
+                  <Typography variant="h3" sx={{ color: processedData.analytics.consistencyScore >= 80 ? 'success.main' : 'warning.main', fontWeight: 700 }}>
+                    {processedData.analytics.consistencyScore.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Days above 85% threshold
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, color: processedData.analytics.daysBelow85 > 0 ? 'error.main' : 'success.main' }}>
+                    {processedData.analytics.daysBelow85} days below 85%
+                  </Typography>
+                </Box>
+              </Grid>
+
+              {/* Best vs Worst Day */}
+              <Grid item xs={12} md={3}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Performance Range
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Best Day</Typography>
+                      <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 600 }}>
+                        {processedData.analytics.bestPerformingDay.day}: {processedData.analytics.bestPerformingDay.avgAttainment.toFixed(1)}%
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Needs Focus</Typography>
+                      <Typography variant="h6" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                        {processedData.analytics.worstPerformingDay.day}: {processedData.analytics.worstPerformingDay.avgAttainment.toFixed(1)}%
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* Performance Recommendations */}
+            <Box sx={{ mt: 3, p: 3, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 2, border: '1px solid', borderColor: 'primary.light' }}>
+              <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 600 }}>
+                💡 Performance Recommendations
+              </Typography>
+              <Grid container spacing={2}>
+                {processedData.analytics.targetHitRate < 70 && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      • Focus on increasing target hit rate - currently only {processedData.analytics.targetHitRate.toFixed(1)}% of days hit target
+                    </Typography>
+                  </Grid>
+                )}
+                {processedData.analytics.consistencyScore < 80 && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      • Improve consistency - {processedData.analytics.daysBelow85} days fell below 85% threshold
+                    </Typography>
+                  </Grid>
+                )}
+                {processedData.analytics.worstPerformingDay.avgAttainment < 90 && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      • {processedData.analytics.worstPerformingDay.day}s need attention - averaging {processedData.analytics.worstPerformingDay.avgAttainment.toFixed(1)}%
+                    </Typography>
+                  </Grid>
+                )}
+                {processedData.analytics.bestPerformingDay.avgAttainment > 110 && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      • Great work on {processedData.analytics.bestPerformingDay.day}s! Apply those strategies to other days
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
           </Paper>
         </Grid>
 
