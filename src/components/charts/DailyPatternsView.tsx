@@ -387,7 +387,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
               Daily Performance Trend
             </Typography>
-            <Box sx={{ height: 500, width: "100%", mt: 2, pb: 2 }}>
+            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={processedData.entries}
@@ -535,7 +535,7 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
               Average Performance by Weekday
             </Typography>
-            <Box sx={{ height: 500, width: "100%", mt: 2, pb: 2 }}>
+            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({
