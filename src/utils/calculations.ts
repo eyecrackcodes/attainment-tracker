@@ -1200,3 +1200,531 @@ export const calculateMissingDataDays = (
     lastDataDate
   };
 };
+
+// Advanced Stakeholder Analytics for Executive Decision Making
+export const calculateStakeholderInsights = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): {
+  executiveSummary: {
+    currentPerformance: number;
+    monthlyProjection: number;
+    riskLevel: 'low' | 'medium' | 'high';
+    keyInsight: string;
+    actionRequired: boolean;
+  };
+  performanceForecasting: {
+    monthEndProjection: {
+      austin: number;
+      charlotte: number;
+      combined: number;
+      confidence: number;
+    };
+    quarterProjection: {
+      revenue: number;
+      attainment: number;
+      confidence: number;
+    };
+    trendAnalysis: {
+      direction: 'improving' | 'declining' | 'stable';
+      velocity: number;
+      sustainability: 'high' | 'medium' | 'low';
+    };
+  };
+  riskAnalysis: {
+    revenueAtRisk: number;
+    daysToRecovery: number;
+    criticalFactors: string[];
+    mitigation: string[];
+  };
+  competitivePositioning: {
+    marketShare: {
+      austin: number;
+      charlotte: number;
+    };
+    growthRate: number;
+    benchmarkComparison: 'above' | 'at' | 'below';
+  };
+  operationalEfficiency: {
+    revenuePerDay: number;
+    consistency: number;
+    peakPerformanceDays: string[];
+    underperformingDays: string[];
+  };
+  strategicRecommendations: {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+    resourceAllocation: {
+      austin: 'increase' | 'maintain' | 'decrease';
+      charlotte: 'increase' | 'maintain' | 'decrease';
+      reasoning: string;
+    };
+  };
+} => {
+  if (!data || data.length === 0) {
+    return {
+      executiveSummary: {
+        currentPerformance: 0,
+        monthlyProjection: 0,
+        riskLevel: 'high' as const,
+        keyInsight: 'No data available for analysis',
+        actionRequired: true,
+      },
+      performanceForecasting: {
+        monthEndProjection: { austin: 0, charlotte: 0, combined: 0, confidence: 0 },
+        quarterProjection: { revenue: 0, attainment: 0, confidence: 0 },
+        trendAnalysis: { direction: 'stable' as const, velocity: 0, sustainability: 'low' as const },
+      },
+      riskAnalysis: {
+        revenueAtRisk: 0,
+        daysToRecovery: 0,
+        criticalFactors: ['No data available'],
+        mitigation: ['Implement data collection process'],
+      },
+      competitivePositioning: {
+        marketShare: { austin: 0, charlotte: 0 },
+        growthRate: 0,
+        benchmarkComparison: 'below' as const,
+      },
+      operationalEfficiency: {
+        revenuePerDay: 0,
+        consistency: 0,
+        peakPerformanceDays: [],
+        underperformingDays: [],
+      },
+      strategicRecommendations: {
+        immediate: ['Establish data collection and tracking systems'],
+        shortTerm: ['Set performance baselines and targets'],
+        longTerm: ['Develop comprehensive performance management strategy'],
+        resourceAllocation: {
+          austin: 'maintain' as const,
+          charlotte: 'maintain' as const,
+          reasoning: 'Insufficient data for strategic resource allocation decisions',
+        },
+      },
+    };
+  }
+
+  // Current month analysis
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const locationMetrics = calculateLocationMetrics(data, targetSettings);
+
+  // Sort data chronologically
+  const sortedData = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Calculate recent performance (last 7 days)
+  const recentData = sortedData.slice(-7);
+  const recentPerformance = recentData.length > 0 
+    ? recentData.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / recentData.length
+    : 0;
+
+  // Calculate trend velocity (performance change rate)
+  const last14Days = sortedData.slice(-14);
+  const firstHalf = last14Days.slice(0, 7);
+  const secondHalf = last14Days.slice(7);
+  
+  const firstHalfAvg = firstHalf.length > 0 
+    ? firstHalf.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / firstHalf.length
+    : 0;
+  const secondHalfAvg = secondHalf.length > 0 
+    ? secondHalf.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / secondHalf.length
+    : 0;
+
+  const trendVelocity = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+
+  // Performance forecasting
+  const dailyAverage = sortedData.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / sortedData.length;
+  const remainingBusinessDays = locationMetrics.total.totalDays - locationMetrics.total.elapsedDays;
+  
+  const austinDailyAvg = sortedData.reduce((sum, entry) => sum + (entry.austin || 0), 0) / sortedData.length;
+  const charlotteDailyAvg = sortedData.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) / sortedData.length;
+
+  // Month-end projection with trend adjustment
+  const trendMultiplier = 1 + (trendVelocity / 100);
+  const projectedAustin = locationMetrics.austin.revenue + (austinDailyAvg * trendMultiplier * remainingBusinessDays);
+  const projectedCharlotte = locationMetrics.charlotte.revenue + (charlotteDailyAvg * trendMultiplier * remainingBusinessDays);
+  const projectedCombined = projectedAustin + projectedCharlotte;
+
+  // Calculate confidence based on data consistency
+  const dailyTotals = sortedData.map(entry => (entry.austin || 0) + (entry.charlotte || 0));
+  const variance = dailyTotals.reduce((sum, val) => sum + Math.pow(val - dailyAverage, 2), 0) / dailyTotals.length;
+  const standardDeviation = Math.sqrt(variance);
+  const coefficientOfVariation = dailyAverage > 0 ? standardDeviation / dailyAverage : 1;
+  const confidence = Math.max(0, Math.min(100, (1 - coefficientOfVariation) * 100));
+
+  // Risk analysis
+  const currentAttainment = locationMetrics.total.attainment;
+  const targetGap = 100 - currentAttainment;
+  const revenueAtRisk = targetGap > 0 ? (locationMetrics.total.monthlyTarget * (targetGap / 100)) : 0;
+  const daysToRecovery = revenueAtRisk > 0 && dailyAverage > 0 ? Math.ceil(revenueAtRisk / dailyAverage) : 0;
+
+  // Identify critical factors
+  const criticalFactors: string[] = [];
+  if (currentAttainment < 85) criticalFactors.push('Performance significantly below target');
+  if (trendVelocity < -5) criticalFactors.push('Declining performance trend');
+  if (confidence < 60) criticalFactors.push('High performance variability');
+  if (locationMetrics.austin.attainment < 80) criticalFactors.push('Austin location underperforming');
+  if (locationMetrics.charlotte.attainment < 80) criticalFactors.push('Charlotte location underperforming');
+
+  // Operational efficiency analysis
+  const peakDays = sortedData
+    .filter(entry => {
+      const total = (entry.austin || 0) + (entry.charlotte || 0);
+      const dailyTarget = (targetSettings?.dailyTargets?.austin || TARGETS.austin) + 
+                         (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+      return total >= dailyTarget * 1.1; // 110% of target
+    })
+    .map(entry => entry.date);
+
+  const underperformingDays = sortedData
+    .filter(entry => {
+      const total = (entry.austin || 0) + (entry.charlotte || 0);
+      const dailyTarget = (targetSettings?.dailyTargets?.austin || TARGETS.austin) + 
+                         (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+      return total < dailyTarget * 0.85; // Below 85% of target
+    })
+    .map(entry => entry.date);
+
+  // Strategic recommendations
+  const immediate: string[] = [];
+  const shortTerm: string[] = [];
+  const longTerm: string[] = [];
+
+  if (currentAttainment < 90) {
+    immediate.push('Implement daily performance reviews and action plans');
+    immediate.push('Focus on high-impact revenue opportunities');
+  }
+  if (trendVelocity < -3) {
+    immediate.push('Investigate root causes of declining performance');
+    shortTerm.push('Develop performance recovery strategy');
+  }
+  if (locationMetrics.austin.attainment < locationMetrics.charlotte.attainment - 10) {
+    shortTerm.push('Analyze and address Austin location performance gaps');
+  }
+  if (locationMetrics.charlotte.attainment < locationMetrics.austin.attainment - 10) {
+    shortTerm.push('Analyze and address Charlotte location performance gaps');
+  }
+
+  longTerm.push('Establish predictive analytics for proactive performance management');
+  longTerm.push('Develop location-specific optimization strategies');
+  longTerm.push('Implement advanced performance tracking and reporting systems');
+
+  // Resource allocation recommendations
+  const austinPerformance = locationMetrics.austin.attainment;
+  const charlottePerformance = locationMetrics.charlotte.attainment;
+  
+  let austinAllocation: 'increase' | 'maintain' | 'decrease' = 'maintain';
+  let charlotteAllocation: 'increase' | 'maintain' | 'decrease' = 'maintain';
+  let allocationReasoning = '';
+
+  if (austinPerformance < charlottePerformance - 15) {
+    austinAllocation = 'increase';
+    allocationReasoning = 'Austin requires additional resources due to performance gap';
+  } else if (charlottePerformance < austinPerformance - 15) {
+    charlotteAllocation = 'increase';
+    allocationReasoning = 'Charlotte requires additional resources due to performance gap';
+  } else if (currentAttainment > 110) {
+    allocationReasoning = 'Strong performance across both locations - maintain current allocation';
+  } else {
+    allocationReasoning = 'Balanced resource allocation recommended based on current performance levels';
+  }
+
+  // Determine risk level
+  let riskLevel: 'low' | 'medium' | 'high' = 'low';
+  if (currentAttainment < 85 || trendVelocity < -5 || criticalFactors.length > 2) {
+    riskLevel = 'high';
+  } else if (currentAttainment < 95 || trendVelocity < 0 || criticalFactors.length > 0) {
+    riskLevel = 'medium';
+  }
+
+  // Generate key insight
+  let keyInsight = '';
+  if (currentAttainment > 110) {
+    keyInsight = 'Exceptional performance - focus on sustaining momentum and scaling success factors';
+  } else if (currentAttainment > 100) {
+    keyInsight = 'On track to meet targets - monitor consistency and optimize for growth';
+  } else if (currentAttainment > 90) {
+    keyInsight = 'Close to target - tactical adjustments needed to ensure month-end success';
+  } else {
+    keyInsight = 'Performance below expectations - immediate intervention required';
+  }
+
+  return {
+    executiveSummary: {
+      currentPerformance: currentAttainment,
+      monthlyProjection: (projectedCombined / locationMetrics.total.monthlyTarget) * 100,
+      riskLevel,
+      keyInsight,
+      actionRequired: riskLevel !== 'low' || currentAttainment < 95,
+    },
+    performanceForecasting: {
+      monthEndProjection: {
+        austin: projectedAustin,
+        charlotte: projectedCharlotte,
+        combined: projectedCombined,
+        confidence,
+      },
+      quarterProjection: {
+        revenue: projectedCombined * 3, // Simple quarterly projection
+        attainment: (projectedCombined * 3) / (locationMetrics.total.monthlyTarget * 3) * 100,
+        confidence: Math.max(0, confidence - 20), // Lower confidence for longer projections
+      },
+      trendAnalysis: {
+        direction: trendVelocity > 2 ? 'improving' : trendVelocity < -2 ? 'declining' : 'stable',
+        velocity: Math.abs(trendVelocity),
+        sustainability: confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
+      },
+    },
+    riskAnalysis: {
+      revenueAtRisk,
+      daysToRecovery,
+      criticalFactors,
+      mitigation: [
+        'Increase daily performance monitoring',
+        'Implement targeted improvement initiatives',
+        'Optimize resource allocation based on performance data',
+        'Establish early warning systems for performance deviations',
+      ],
+    },
+    competitivePositioning: {
+      marketShare: {
+        austin: (locationMetrics.austin.revenue / locationMetrics.total.revenue) * 100,
+        charlotte: (locationMetrics.charlotte.revenue / locationMetrics.total.revenue) * 100,
+      },
+      growthRate: trendVelocity,
+      benchmarkComparison: currentAttainment > 105 ? 'above' : currentAttainment > 95 ? 'at' : 'below',
+    },
+    operationalEfficiency: {
+      revenuePerDay: dailyAverage,
+      consistency: confidence,
+      peakPerformanceDays: peakDays.slice(-5), // Last 5 peak days
+      underperformingDays: underperformingDays.slice(-5), // Last 5 underperforming days
+    },
+    strategicRecommendations: {
+      immediate,
+      shortTerm,
+      longTerm,
+      resourceAllocation: {
+        austin: austinAllocation,
+        charlotte: charlotteAllocation,
+        reasoning: allocationReasoning,
+      },
+    },
+  };
+};
+
+// Calculate Business Intelligence Metrics for Advanced Reporting
+export const calculateBusinessIntelligence = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): {
+  performanceMetrics: {
+    averageDailyRevenue: number;
+    peakDayRevenue: number;
+    consistencyScore: number;
+    growthRate: number;
+    efficiency: number;
+  };
+  locationAnalysis: {
+    austin: {
+      contribution: number;
+      growth: number;
+      consistency: number;
+      efficiency: number;
+    };
+    charlotte: {
+      contribution: number;
+      growth: number;
+      consistency: number;
+      efficiency: number;
+    };
+  };
+  timeSeriesAnalysis: {
+    weeklyTrends: Array<{
+      week: string;
+      revenue: number;
+      attainment: number;
+      growth: number;
+    }>;
+    monthlyPatterns: Array<{
+      dayOfMonth: number;
+      averageRevenue: number;
+      attainmentRate: number;
+    }>;
+  };
+  predictiveIndicators: {
+    probabilityOfTarget: number;
+    expectedVariance: number;
+    riskFactors: string[];
+    opportunities: string[];
+  };
+} => {
+  if (!data || data.length === 0) {
+    return {
+      performanceMetrics: {
+        averageDailyRevenue: 0,
+        peakDayRevenue: 0,
+        consistencyScore: 0,
+        growthRate: 0,
+        efficiency: 0,
+      },
+      locationAnalysis: {
+        austin: { contribution: 0, growth: 0, consistency: 0, efficiency: 0 },
+        charlotte: { contribution: 0, growth: 0, consistency: 0, efficiency: 0 },
+      },
+      timeSeriesAnalysis: {
+        weeklyTrends: [],
+        monthlyPatterns: [],
+      },
+      predictiveIndicators: {
+        probabilityOfTarget: 0,
+        expectedVariance: 0,
+        riskFactors: ['Insufficient data'],
+        opportunities: ['Establish comprehensive data collection'],
+      },
+    };
+  }
+
+  const sortedData = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Performance metrics
+  const dailyTotals = sortedData.map(entry => (entry.austin || 0) + (entry.charlotte || 0));
+  const averageDailyRevenue = dailyTotals.reduce((sum, val) => sum + val, 0) / dailyTotals.length;
+  const peakDayRevenue = Math.max(...dailyTotals);
+  
+  const variance = dailyTotals.reduce((sum, val) => sum + Math.pow(val - averageDailyRevenue, 2), 0) / dailyTotals.length;
+  const standardDeviation = Math.sqrt(variance);
+  const consistencyScore = averageDailyRevenue > 0 ? Math.max(0, (1 - (standardDeviation / averageDailyRevenue)) * 100) : 0;
+
+  // Calculate growth rate (comparing first and last weeks)
+  const firstWeek = sortedData.slice(0, 5);
+  const lastWeek = sortedData.slice(-5);
+  const firstWeekAvg = firstWeek.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / firstWeek.length;
+  const lastWeekAvg = lastWeek.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / lastWeek.length;
+  const growthRate = firstWeekAvg > 0 ? ((lastWeekAvg - firstWeekAvg) / firstWeekAvg) * 100 : 0;
+
+  // Efficiency calculation (revenue per target ratio)
+  const dailyTarget = (targetSettings?.dailyTargets?.austin || TARGETS.austin) + 
+                     (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+  const efficiency = dailyTarget > 0 ? (averageDailyRevenue / dailyTarget) * 100 : 0;
+
+  // Location analysis
+  const austinRevenues = sortedData.map(entry => entry.austin || 0);
+  const charlotteRevenues = sortedData.map(entry => entry.charlotte || 0);
+  
+  const austinTotal = austinRevenues.reduce((sum, val) => sum + val, 0);
+  const charlotteTotal = charlotteRevenues.reduce((sum, val) => sum + val, 0);
+  const totalRevenue = austinTotal + charlotteTotal;
+
+  const austinAvg = austinTotal / austinRevenues.length;
+  const charlotteAvg = charlotteTotal / charlotteRevenues.length;
+
+  // Calculate location consistency
+  const austinVariance = austinRevenues.reduce((sum, val) => sum + Math.pow(val - austinAvg, 2), 0) / austinRevenues.length;
+  const charlotteVariance = charlotteRevenues.reduce((sum, val) => sum + Math.pow(val - charlotteAvg, 2), 0) / charlotteRevenues.length;
+  
+  const austinConsistency = austinAvg > 0 ? Math.max(0, (1 - (Math.sqrt(austinVariance) / austinAvg)) * 100) : 0;
+  const charlotteConsistency = charlotteAvg > 0 ? Math.max(0, (1 - (Math.sqrt(charlotteVariance) / charlotteAvg)) * 100) : 0;
+
+  // Calculate location growth
+  const austinFirstWeek = firstWeek.reduce((sum, entry) => sum + (entry.austin || 0), 0) / firstWeek.length;
+  const austinLastWeek = lastWeek.reduce((sum, entry) => sum + (entry.austin || 0), 0) / lastWeek.length;
+  const austinGrowth = austinFirstWeek > 0 ? ((austinLastWeek - austinFirstWeek) / austinFirstWeek) * 100 : 0;
+
+  const charlotteFirstWeek = firstWeek.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) / firstWeek.length;
+  const charlotteLastWeek = lastWeek.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) / lastWeek.length;
+  const charlotteGrowth = charlotteFirstWeek > 0 ? ((charlotteLastWeek - charlotteFirstWeek) / charlotteFirstWeek) * 100 : 0;
+
+  // Time series analysis
+  const weeklyTrends = [];
+  for (let i = 0; i < sortedData.length; i += 5) {
+    const weekData = sortedData.slice(i, i + 5);
+    if (weekData.length > 0) {
+      const weekRevenue = weekData.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0);
+      const weekAttainment = (weekRevenue / (dailyTarget * weekData.length)) * 100;
+      const prevWeekRevenue = i > 0 ? 
+        sortedData.slice(Math.max(0, i - 5), i).reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) : 0;
+      const weekGrowth = prevWeekRevenue > 0 ? ((weekRevenue - prevWeekRevenue) / prevWeekRevenue) * 100 : 0;
+
+      weeklyTrends.push({
+        week: `Week ${Math.floor(i / 5) + 1}`,
+        revenue: weekRevenue,
+        attainment: weekAttainment,
+        growth: weekGrowth,
+      });
+    }
+  }
+
+  // Monthly patterns (day of month analysis)
+  const monthlyPatterns = [];
+  const dayGroups: { [key: number]: number[] } = {};
+  
+  sortedData.forEach(entry => {
+    const day = new Date(entry.date).getDate();
+    if (!dayGroups[day]) dayGroups[day] = [];
+    dayGroups[day].push((entry.austin || 0) + (entry.charlotte || 0));
+  });
+
+  Object.entries(dayGroups).forEach(([day, revenues]) => {
+    const avgRevenue = revenues.reduce((sum, val) => sum + val, 0) / revenues.length;
+    const attainmentRate = (avgRevenue / dailyTarget) * 100;
+    monthlyPatterns.push({
+      dayOfMonth: parseInt(day),
+      averageRevenue: avgRevenue,
+      attainmentRate,
+    });
+  });
+
+  // Predictive indicators
+  const currentPerformance = efficiency;
+  const probabilityOfTarget = Math.min(100, Math.max(0, currentPerformance));
+  const expectedVariance = standardDeviation;
+
+  const riskFactors = [];
+  const opportunities = [];
+
+  if (consistencyScore < 70) riskFactors.push('High performance variability');
+  if (growthRate < 0) riskFactors.push('Declining performance trend');
+  if (efficiency < 90) riskFactors.push('Below-target efficiency');
+
+  if (peakDayRevenue > dailyTarget * 1.2) opportunities.push('Replicate peak performance strategies');
+  if (austinGrowth > charlotteGrowth + 5) opportunities.push('Apply Austin growth strategies to Charlotte');
+  if (charlotteGrowth > austinGrowth + 5) opportunities.push('Apply Charlotte growth strategies to Austin');
+
+  return {
+    performanceMetrics: {
+      averageDailyRevenue,
+      peakDayRevenue,
+      consistencyScore,
+      growthRate,
+      efficiency,
+    },
+    locationAnalysis: {
+      austin: {
+        contribution: totalRevenue > 0 ? (austinTotal / totalRevenue) * 100 : 0,
+        growth: austinGrowth,
+        consistency: austinConsistency,
+        efficiency: (austinAvg / (targetSettings?.dailyTargets?.austin || TARGETS.austin)) * 100,
+      },
+      charlotte: {
+        contribution: totalRevenue > 0 ? (charlotteTotal / totalRevenue) * 100 : 0,
+        growth: charlotteGrowth,
+        consistency: charlotteConsistency,
+        efficiency: (charlotteAvg / (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte)) * 100,
+      },
+    },
+    timeSeriesAnalysis: {
+      weeklyTrends,
+      monthlyPatterns: monthlyPatterns.sort((a, b) => a.dayOfMonth - b.dayOfMonth),
+    },
+    predictiveIndicators: {
+      probabilityOfTarget,
+      expectedVariance,
+      riskFactors,
+      opportunities,
+    },
+  };
+};

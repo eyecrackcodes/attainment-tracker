@@ -39,6 +39,7 @@ import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
 import { filterDataByTimeFrame, calculateLocationMetrics, calculateTimePeriodsMetrics, validateDataIntegrity } from "../utils/calculations";
 import { DaysBehindAlert } from "./DaysBehindAlert";
+import { ExecutiveDashboard } from "./ExecutiveDashboard";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -363,6 +364,7 @@ export const Dashboard: React.FC = () => {
                           <DataImportExport
                             onDataUpdate={handleDataUpdate}
                             currentData={state.revenueData}
+                            targetSettings={state.targetSettings}
                           />
                         </Grid>
                       </Grid>
@@ -535,6 +537,13 @@ export const Dashboard: React.FC = () => {
               isLoading={isTabLoading}
             />
           );
+        case 3:
+          return (
+            <ExecutiveDashboard
+              data={state.revenueData}
+              targetSettings={state.targetSettings}
+            />
+          );
         default:
           return null;
       }
@@ -638,6 +647,7 @@ export const Dashboard: React.FC = () => {
             <Tab label="Overview" />
             <Tab label="Historical Trends" />
             <Tab label="Daily Patterns" />
+            <Tab label="Executive Dashboard" />
           </Tabs>
         </Paper>
 
