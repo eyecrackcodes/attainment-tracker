@@ -37,7 +37,7 @@ import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
 import { DailyPatternsView } from "./charts/DailyPatternsView";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
-import { filterDataByTimeFrame } from "../utils/calculations";
+import { filterDataByTimeFrame, calculateLocationMetrics, calculateTimePeriodsMetrics, validateDataIntegrity } from "../utils/calculations";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -118,6 +118,36 @@ export const Dashboard: React.FC = () => {
       unsubscribeTargets();
     };
   }, []);
+
+  useEffect(() => {
+    if (state.revenueData.length > 0 && state.targetSettings) {
+      const validation = validateDataIntegrity(state.revenueData, state.targetSettings);
+      
+      if (!validation.isValid) {
+        console.error("Data validation errors:", validation.errors);
+        setState((prevState) => ({
+          ...prevState,
+          snackbar: {
+            open: true,
+            message: `Data validation failed: ${validation.errors.join(', ')}`,
+            severity: "error",
+          },
+        }));
+      } else if (validation.warnings.length > 0) {
+        console.warn("Data validation warnings:", validation.warnings);
+        // Only show first few warnings to avoid overwhelming the user
+        const warningMessage = validation.warnings.slice(0, 3).join(', ');
+        setState((prevState) => ({
+          ...prevState,
+          snackbar: {
+            open: true,
+            message: `Data warnings: ${warningMessage}${validation.warnings.length > 3 ? ' and more...' : ''}`,
+            severity: "warning",
+          },
+        }));
+      }
+    }
+  }, [state.revenueData, state.targetSettings]);
 
   const handleFilterChange = (newFilters: any) => {
     console.log("Filter change detected:", newFilters);

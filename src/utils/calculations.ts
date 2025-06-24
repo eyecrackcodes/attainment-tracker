@@ -80,31 +80,47 @@ export const calculateLocationMetrics = (
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
   const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-  // Calculate total business days in the month
-  let currentDay = new Date(firstDayOfMonth);
-  while (currentDay <= lastDayOfMonth) {
-    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-      totalBusinessDays++;
+  // Check if there's a monthly adjustment for the current month/year
+  const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
+    (adj) => adj.month === currentMonth && adj.year === currentYear
+  );
+
+  if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+    // Use the working days from the monthly adjustment
+    totalBusinessDays = monthlyAdjustment.workingDays.length;
+    
+    // Calculate elapsed working days based on the adjustment
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentDay = today.getDate();
+    
+    elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
+  } else {
+    // Calculate total business days in the month (standard weekdays)
+    let currentDay = new Date(firstDayOfMonth);
+    while (currentDay <= lastDayOfMonth) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        totalBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
     }
-    currentDay.setDate(currentDay.getDate() + 1);
+
+    // Calculate elapsed business days (excluding today)
+    currentDay = new Date(firstDayOfMonth);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    while (currentDay <= yesterday) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+        elapsedBusinessDays++;
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
   }
 
-  // Calculate elapsed business days (excluding today)
-  currentDay = new Date(firstDayOfMonth);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  while (currentDay <= yesterday) {
-    if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
-      elapsedBusinessDays++;
-    }
-    currentDay.setDate(currentDay.getDate() + 1);
-  }
-
-  // Calculate daily and period targets
-  const dailyAustinTarget = targetSettings?.dailyTargets?.austin || TARGETS.austin;
-  const dailyCharlotteTarget = targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte;
+  // Calculate daily targets (use monthly adjustment overrides if available)
+  const dailyAustinTarget = monthlyAdjustment?.austin ?? targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
+  const dailyCharlotteTarget = monthlyAdjustment?.charlotte ?? targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
 
   // Calculate full month targets
   const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
@@ -136,6 +152,22 @@ export const calculateLocationMetrics = (
       ? monthlyCharlotteTarget
       : 0;
   const filteredTotalTarget = filteredAustinTarget + filteredCharlotteTarget;
+
+  console.log("=== Target Calculations Debug ===");
+  console.log("Monthly Adjustment:", monthlyAdjustment);
+  console.log("Working Days:", {
+    total: totalBusinessDays,
+    elapsed: elapsedBusinessDays,
+    adjustment: monthlyAdjustment?.workingDays
+  });
+  console.log("Daily Targets:", {
+    austin: dailyAustinTarget,
+    charlotte: dailyCharlotteTarget
+  });
+  console.log("Monthly Targets:", {
+    austin: monthlyAustinTarget,
+    charlotte: monthlyCharlotteTarget
+  });
 
   return {
     austin: {
@@ -942,4 +974,123 @@ export const calculateMovingAverage = (data: any[], periods: number) => {
   });
 
   return result;
+};
+
+// Data validation function
+export const validateDataIntegrity = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+} => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!data || data.length === 0) {
+    errors.push("No data provided for validation");
+    return { isValid: false, errors, warnings };
+  }
+
+  // Validate date format and consistency
+  data.forEach((entry, index) => {
+    // Check date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(entry.date)) {
+      errors.push(`Invalid date format at index ${index}: ${entry.date}`);
+      return;
+    }
+
+    // Check if date is valid
+    const date = new Date(entry.date);
+    if (isNaN(date.getTime())) {
+      errors.push(`Invalid date at index ${index}: ${entry.date}`);
+      return;
+    }
+
+    // Check revenue values
+    if (typeof entry.austin !== 'number' || entry.austin < 0) {
+      errors.push(`Invalid Austin revenue at index ${index}: ${entry.austin}`);
+    }
+    if (typeof entry.charlotte !== 'number' || entry.charlotte < 0) {
+      errors.push(`Invalid Charlotte revenue at index ${index}: ${entry.charlotte}`);
+    }
+
+    // Check for future dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date > today) {
+      warnings.push(`Future date found at index ${index}: ${entry.date}`);
+    }
+
+    // Validate against targets
+    const dailyTarget = getTargetForDate(date, targetSettings);
+    const totalRevenue = entry.austin + entry.charlotte;
+    const totalTarget = dailyTarget.austin + dailyTarget.charlotte;
+
+    if (totalTarget > 0) {
+      const attainment = (totalRevenue / totalTarget) * 100;
+      if (attainment > 200) {
+        warnings.push(`Unusually high attainment (${attainment.toFixed(1)}%) on ${entry.date}`);
+      }
+      if (attainment < 10 && totalRevenue > 0) {
+        warnings.push(`Unusually low attainment (${attainment.toFixed(1)}%) on ${entry.date}`);
+      }
+    }
+  });
+
+  // Check for duplicate dates
+  const dateSet = new Set();
+  data.forEach((entry, index) => {
+    if (dateSet.has(entry.date)) {
+      errors.push(`Duplicate date found: ${entry.date}`);
+    }
+    dateSet.add(entry.date);
+  });
+
+  // Validate target settings
+  if (!targetSettings.dailyTargets) {
+    errors.push("Daily targets not configured");
+  } else {
+    if (targetSettings.dailyTargets.austin <= 0) {
+      errors.push("Austin daily target must be greater than 0");
+    }
+    if (targetSettings.dailyTargets.charlotte <= 0) {
+      errors.push("Charlotte daily target must be greater than 0");
+    }
+  }
+
+  // Validate monthly adjustments
+  if (targetSettings.monthlyAdjustments) {
+    targetSettings.monthlyAdjustments.forEach((adj, index) => {
+      if (adj.month < 0 || adj.month > 11) {
+        errors.push(`Invalid month in adjustment ${index}: ${adj.month}`);
+      }
+      if (adj.year < 2020 || adj.year > 2030) {
+        warnings.push(`Unusual year in adjustment ${index}: ${adj.year}`);
+      }
+      if (!adj.workingDays || adj.workingDays.length === 0) {
+        errors.push(`No working days specified in adjustment ${index}`);
+      } else {
+        adj.workingDays.forEach(day => {
+          if (day < 1 || day > 31) {
+            errors.push(`Invalid working day in adjustment ${index}: ${day}`);
+          }
+        });
+      }
+      if (adj.austin !== undefined && adj.austin <= 0) {
+        errors.push(`Invalid Austin target in adjustment ${index}: ${adj.austin}`);
+      }
+      if (adj.charlotte !== undefined && adj.charlotte <= 0) {
+        errors.push(`Invalid Charlotte target in adjustment ${index}: ${adj.charlotte}`);
+      }
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
 };
