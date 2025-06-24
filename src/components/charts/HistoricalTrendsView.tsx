@@ -426,11 +426,11 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
               Historical Performance Overview
             </Typography>
-            <Box sx={{ height: 550, width: "100%", mt: 2 }}>
+            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
               <ResponsiveContainer>
               <ComposedChart
                 data={monthlyTrends}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -438,28 +438,43 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 />
                 <XAxis
                   dataKey="month"
-                  tick={{ fill: theme.palette.text.secondary }}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   stroke={theme.palette.divider}
+                  tickLine={false}
+                  axisLine={{ stroke: theme.palette.divider }}
+                  height={50}
                 />
                 {/* Revenue Axis */}
                 <YAxis
                   yAxisId="revenue"
                   tickFormatter={formatCurrency}
-                  tick={{ fill: theme.palette.text.secondary }}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   stroke={theme.palette.divider}
                   domain={[0, (dataMax: number) => dataMax * 1.1]}
+                  tickLine={false}
+                  axisLine={{ stroke: theme.palette.divider }}
                 />
                 {/* Attainment Axis */}
                 <YAxis
                   yAxisId="attainment"
                   orientation="right"
                   tickFormatter={formatPercent}
-                  tick={{ fill: theme.palette.text.secondary }}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   stroke={theme.palette.divider}
                   domain={[0, 1.5]}
+                  tickLine={false}
+                  axisLine={{ stroke: theme.palette.divider }}
                 />
                 <Tooltip content={<EnhancedTooltip />} />
-                <Legend />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                  formatter={(value) => (
+                    <span style={{ color: theme.palette.text.primary, fontSize: 12 }}>
+                      {value}
+                    </span>
+                  )}
+                />
                 {/* Revenue Bar */}
                 <Bar
                   yAxisId="revenue"
@@ -510,6 +525,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                     value: "Target",
                     fill: theme.palette.warning.main,
                     position: "right",
+                    fontSize: 12,
                   }}
                 />
               </ComposedChart>
@@ -528,15 +544,24 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
 
       {/* Moving Average */}
       <Grid item xs={12} md={6}>
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+          }}
+        >
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
             3-Month Moving Average
           </Typography>
-          <Box sx={{ height: 400, width: "100%" }}>
+          <Box sx={{ height: 550, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <AreaChart
                 data={movingAverageData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -544,13 +569,18 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 />
                 <XAxis
                   dataKey="month"
-                  tick={{ fill: theme.palette.text.secondary }}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   stroke={theme.palette.divider}
+                  tickLine={false}
+                  axisLine={{ stroke: theme.palette.divider }}
+                  height={50}
                 />
                 <YAxis
                   tickFormatter={formatPercent}
-                  tick={{ fill: theme.palette.text.secondary }}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   stroke={theme.palette.divider}
+                  tickLine={false}
+                  axisLine={{ stroke: theme.palette.divider }}
                 />
                 <Tooltip
                   formatter={(value: any) => [
@@ -562,7 +592,15 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                     border: `1px solid ${theme.palette.divider}`,
                   }}
                 />
-                <Legend />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                  formatter={(value) => (
+                    <span style={{ color: theme.palette.text.primary, fontSize: 12 }}>
+                      {value}
+                    </span>
+                  )}
+                />
                 <Area
                   type="monotone"
                   dataKey="austin"
