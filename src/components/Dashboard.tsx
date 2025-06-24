@@ -38,6 +38,7 @@ import { DailyPatternsView } from "./charts/DailyPatternsView";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
 import { filterDataByTimeFrame, calculateLocationMetrics, calculateTimePeriodsMetrics, validateDataIntegrity } from "../utils/calculations";
+import { DaysBehindAlert } from "./DaysBehindAlert";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -310,6 +311,12 @@ export const Dashboard: React.FC = () => {
         case 0:
           return (
             <Stack spacing={4}>
+              {/* Days Behind Alert */}
+              <DaysBehindAlert 
+                data={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+
               {/* Summary Metrics */}
               <Box>
                 <SummaryMetrics
@@ -486,7 +493,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ flexGrow: 1, bgcolor: "#F3F4F6", minHeight: "100vh", pt: 2 }}>
-      <Container maxWidth={false} sx={{ px: { xs: 2, lg: 4 } }}>
+      <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}>
         <Snackbar
           open={state.snackbar.open}
           autoHideDuration={6000}

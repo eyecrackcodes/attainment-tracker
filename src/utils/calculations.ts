@@ -1094,3 +1094,74 @@ export const validateDataIntegrity = (
     warnings
   };
 };
+
+// Calculate missing data days
+export const calculateMissingDataDays = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): {
+  missingDays: number;
+  totalExpectedDays: number;
+  missingDates: string[];
+  lastDataDate: string | null;
+} => {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  // Get monthly adjustment for current month
+  const monthlyAdjustment = targetSettings.monthlyAdjustments?.find(
+    (adj) => adj.month === currentMonth && adj.year === currentYear
+  );
+
+  // Determine expected working days
+  let expectedWorkingDays: number[] = [];
+  
+  if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+    // Use working days from monthly adjustment
+    expectedWorkingDays = monthlyAdjustment.workingDays.filter(day => {
+      const workingDate = new Date(currentYear, currentMonth, day);
+      return workingDate <= today; // Only count days up to today
+    });
+  } else {
+    // Use standard business days (weekdays)
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    let currentDay = new Date(firstDayOfMonth);
+    
+    while (currentDay <= today) {
+      if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) { // Not weekend
+        expectedWorkingDays.push(currentDay.getDate());
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+  }
+
+  // Get existing data dates for current month
+  const currentMonthData = data.filter(entry => {
+    const entryDate = new Date(entry.date);
+    return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+  });
+
+  const existingDates = new Set(currentMonthData.map(entry => {
+    const date = new Date(entry.date);
+    return date.getDate();
+  }));
+
+  // Find missing dates
+  const missingDates = expectedWorkingDays.filter(day => !existingDates.has(day));
+  
+  // Get last data date
+  const sortedData = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const lastDataDate = sortedData.length > 0 ? sortedData[0].date : null;
+
+  return {
+    missingDays: missingDates.length,
+    totalExpectedDays: expectedWorkingDays.length,
+    missingDates: missingDates.map(day => {
+      const date = new Date(currentYear, currentMonth, day);
+      return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    }),
+    lastDataDate
+  };
+};
