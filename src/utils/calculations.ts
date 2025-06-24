@@ -1114,8 +1114,14 @@ export const calculateMissingDataDays = (
     };
   }
 
-  // Get the last data date
-  const sortedData = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Get the last data date with proper date parsing for sorting
+  const sortedData = [...data].sort((a, b) => {
+    const [aYear, aMonth, aDay] = a.date.split('-').map(num => parseInt(num));
+    const [bYear, bMonth, bDay] = b.date.split('-').map(num => parseInt(num));
+    const aDate = new Date(aYear, aMonth - 1, aDay);
+    const bDate = new Date(bYear, bMonth - 1, bDay);
+    return bDate.getTime() - aDate.getTime();
+  });
   const lastDataDate = sortedData[0].date;
   
   // Parse last data date (ensure consistent date parsing)
@@ -1160,15 +1166,27 @@ export const calculateMissingDataDays = (
       isWorkingDay = monthlyAdjustment.workingDays.includes(day);
     } else {
       // Use standard business days (weekdays only - no weekends)
-      isWorkingDay = currentDate.getDay() !== 0 && currentDate.getDay() !== 6;
+      // getDay(): 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
+      const dayOfWeek = currentDate.getDay();
+      isWorkingDay = dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude Sunday(0) and Saturday(6)
     }
     
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const dayOfWeek = currentDate.getDay();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    console.log(`Checking ${dateStr} (${dayNames[dayOfWeek]}): Working day? ${isWorkingDay}, Has data? ${existingDates.has(dateStr)}`);
+    
     if (isWorkingDay) {
-      const dateStr = currentDate.toISOString().split('T')[0];
       // Only add if we don't already have data for this date
       if (!existingDates.has(dateStr)) {
         missingDates.push(dateStr);
+        console.log(`  → Added to missing dates: ${dateStr}`);
+      } else {
+        console.log(`  → Skipped (has data): ${dateStr}`);
       }
+    } else {
+      console.log(`  → Skipped (not working day): ${dateStr}`);
     }
     
     // Move to next day using a more reliable method
