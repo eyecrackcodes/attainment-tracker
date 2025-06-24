@@ -387,11 +387,11 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
               Daily Performance Trend
             </Typography>
-            <Box sx={{ height: 500, width: "100%", mt: 2 }}>
+            <Box sx={{ height: 500, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={processedData.entries}
-                margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
               >
                 <defs>
                   <linearGradient id="colorAustin" x1="0" y1="0" x2="0" y2="1">
@@ -535,16 +535,16 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
               Average Performance by Weekday
             </Typography>
-            <Box sx={{ height: 500, width: "100%", mt: 2 }}>
+            <Box sx={{ height: 500, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({
                   day,
-                  attainment: processedData.weekdayData[day].avgAttainment || 0,
-                  austin: processedData.weekdayData[day].avgAustin || 0,
-                  charlotte: processedData.weekdayData[day].avgCharlotte || 0,
+                  attainment: processedData.weekdayData[day as keyof typeof processedData.weekdayData].avgAttainment || 0,
+                  austin: processedData.weekdayData[day as keyof typeof processedData.weekdayData].avgAustin || 0,
+                  charlotte: processedData.weekdayData[day as keyof typeof processedData.weekdayData].avgCharlotte || 0,
                 }))}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
