@@ -311,76 +311,83 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
   }
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Grid container spacing={4}>
+    <Box sx={{ p: 3 }}>
+      <Grid container spacing={5}>
         {/* Performance Summary */}
         <Grid item xs={12}>
           <Paper
             elevation={3}
             sx={{
               p: 4,
-              mb: 2,
-              background:
-                "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              mb: 3,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
               borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider',
             }}
           >
-          <Grid container spacing={3}>
-            {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
-              <Grid item xs={12} sm={2.4} key={day}>
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 2,
-                    background: alpha(theme.palette.background.paper, 0.8),
-                    backdropFilter: "blur(8px)",
-                    borderRadius: 2,
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    gutterBottom
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+              Weekly Performance Summary
+            </Typography>
+            <Grid container spacing={3}>
+              {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
+                <Grid item xs={12} sm={6} md={2.4} key={day}>
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 3,
+                      background: '#ffffff',
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        elevation: 4,
+                        borderColor: 'primary.light',
+                        transform: 'translateY(-2px)'
+                      }
+                    }}
                   >
-                    {day} Average
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    color={getAttainmentColor(
-                      processedData.weekdayData[day].avgAttainment
-                    )}
-                    sx={{ fontWeight: "bold" }}
-                  >
-                    {Math.round(processedData.weekdayData[day].avgAttainment)}%
-                  </Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-      </Grid>
+                    <Typography
+                      variant="subtitle1"
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{ fontWeight: 500 }}
+                    >
+                      {day} Average
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      color={getAttainmentColor(
+                        processedData.weekdayData[day as keyof typeof processedData.weekdayData].avgAttainment
+                      )}
+                      sx={{ fontWeight: 700 }}
+                    >
+                      {Math.round(processedData.weekdayData[day as keyof typeof processedData.weekdayData].avgAttainment)}%
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </Paper>
+        </Grid>
 
-      {/* Daily Performance Chart */}
-      <Grid item xs={12}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            background:
-              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>
-            Daily Performance Trend
-          </Typography>
-          <Box sx={{ height: 400, width: "100%", p: 1 }}>
+        {/* Daily Performance Chart */}
+        <Grid item xs={12}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+              Daily Performance Trend
+            </Typography>
+            <Box sx={{ height: 500, width: "100%", mt: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={processedData.entries}
@@ -513,21 +520,22 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
         </Paper>
       </Grid>
 
-      {/* Day of Week Performance */}
-      <Grid item xs={12}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            background:
-              "linear-gradient(to right, rgba(25, 118, 210, 0.05), rgba(25, 118, 210, 0.02))",
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>
-            Average Performance by Weekday
-          </Typography>
-          <Box sx={{ height: 400, width: "100%", p: 1 }}>
+        {/* Day of Week Performance */}
+        <Grid item xs={12}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+              Average Performance by Weekday
+            </Typography>
+            <Box sx={{ height: 500, width: "100%", mt: 2 }}>
             <ResponsiveContainer>
               <ComposedChart
                 data={["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({
