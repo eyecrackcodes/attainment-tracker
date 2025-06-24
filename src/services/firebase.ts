@@ -24,10 +24,18 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+// Initialize Firebase only if we have valid configuration
+let app;
+let analytics;
+let database;
+
+try {
+  app = initializeApp(firebaseConfig);
+  analytics = getAnalytics(app);
+  database = getDatabase(app);
+} catch (error) {
+  console.log("Firebase initialization skipped - using local storage only");
+}
 
 export const revenueService = {
   // Subscribe to revenue data changes
