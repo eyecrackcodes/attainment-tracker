@@ -90,7 +90,7 @@ export const DaysBehindAlert: React.FC<DaysBehindAlertProps> = ({
     >
       <AlertTitle>Missing Data Entries</AlertTitle>
       <Typography variant="body2">
-        {missingData.missingDays} out of {missingData.totalExpectedDays} expected business days are missing data.
+        {missingData.missingDays} business day{missingData.missingDays !== 1 ? 's' : ''} missing since last data entry.
         {missingData.lastDataDate && (
           <> Last entry was on {formatDate(missingData.lastDataDate)}.</>
         )}
