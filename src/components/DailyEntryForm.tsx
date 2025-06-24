@@ -244,8 +244,18 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
 
   return (
     <>
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper 
+        elevation={2}
+        sx={{ 
+          p: 4, 
+          mb: 3,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+        }}
+      >
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
           Daily Revenue Entry
         </Typography>
 

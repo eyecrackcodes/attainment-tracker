@@ -48,12 +48,22 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   );
 
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper 
+      elevation={2} 
+      sx={{ 
+        p: 4, 
+        mb: 3,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+      }}
+    >
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
         Summary Metrics
       </Typography>
-      <Divider sx={{ mb: 2 }} />
-      <Grid container spacing={3}>
+      <Divider sx={{ mb: 3, borderColor: 'divider' }} />
+      <Grid container spacing={4}>
         <Grid item xs={12} md={4}>
           <MetricCard
             title="Austin"

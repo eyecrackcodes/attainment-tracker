@@ -37,38 +37,57 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const amountAhead = revenue - target;
 
   return (
-    <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper 
+      elevation={1} 
+      sx={{ 
+        p: 3, 
+        height: "100%",
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          elevation: 3,
+          borderColor: 'primary.light',
+          transform: 'translateY(-2px)'
+        }
+      }}
+    >
+      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
         {title}
       </Typography>
-      <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 3, borderColor: 'divider' }} />
 
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
           MTD Revenue
         </Typography>
-        <Typography variant="h6">{formatCurrency(revenue)}</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          {formatCurrency(revenue)}
+        </Typography>
       </Box>
 
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
           Monthly Target ({elapsedDays} of {totalDays} days)
         </Typography>
-        <Typography variant="h6">{formatCurrency(monthlyTarget)}</Typography>
-        <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+          {formatCurrency(monthlyTarget)}
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: isAheadOfTarget ? 'success.light' : 'warning.light', opacity: 0.8 }}>
           <Typography
             variant="body2"
-            color={isAheadOfTarget ? "success.main" : "text.secondary"}
-            sx={{ display: "flex", alignItems: "center" }}
+            color={isAheadOfTarget ? "success.dark" : "warning.dark"}
+            sx={{ display: "flex", alignItems: "center", fontWeight: 500 }}
           >
             {isAheadOfTarget ? (
               <>
-                <TrendingUp sx={{ mr: 0.5, fontSize: "1rem" }} />
+                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
                 Ahead by {formatCurrency(amountAhead)}
               </>
             ) : (
               <>
-                <TrendingDown sx={{ mr: 0.5, fontSize: "1rem" }} />
+                <TrendingDown sx={{ mr: 0.5, fontSize: "1.1rem" }} />
                 Daily Pace Needed: {formatCurrency(Math.abs(dailyNeeded))}
               </>
             )}
@@ -77,10 +96,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
       </Box>
 
       <Box>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
           MTD Attainment
         </Typography>
-        <Typography variant="h6" sx={{ color: getAttainmentColor(attainment) }}>
+        <Typography variant="h5" sx={{ color: getAttainmentColor(attainment), fontWeight: 700 }}>
           {attainment.toFixed(1)}%
         </Typography>
       </Box>

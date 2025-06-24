@@ -310,12 +310,14 @@ export const Dashboard: React.FC = () => {
       switch (activeTab) {
         case 0:
           return (
-            <Stack spacing={4}>
+            <Stack spacing={5}>
               {/* Days Behind Alert */}
-              <DaysBehindAlert 
-                data={state.revenueData}
-                targetSettings={state.targetSettings}
-              />
+              <Box>
+                <DaysBehindAlert 
+                  data={state.revenueData}
+                  targetSettings={state.targetSettings}
+                />
+              </Box>
 
               {/* Summary Metrics */}
               <Box>
@@ -330,18 +332,27 @@ export const Dashboard: React.FC = () => {
               </Box>
 
               {/* Daily Entry Form and Filters Row */}
-              <Box>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={4}>
+              <Box sx={{ mt: 1 }}>
+                <Grid container spacing={4}>
+                  <Grid item xs={12} lg={5}>
                     <DailyEntryForm
                       onSubmit={handleDailyDataAdd}
                       existingData={state.revenueData}
                       targets={state.targetSettings}
                     />
                   </Grid>
-                  <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 3, height: "100%" }}>
-                      <Grid container spacing={2}>
+                  <Grid item xs={12} lg={7}>
+                    <Paper 
+                      elevation={2} 
+                      sx={{ 
+                        p: 4, 
+                        height: "100%",
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Grid container spacing={3}>
                         <Grid item xs={12} md={8}>
                           <FilterPanel
                             filters={state.filters}
