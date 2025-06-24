@@ -226,6 +226,27 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
     }
   };
 
+  const handleOverwriteConfirm = async () => {
+    setShowOverwriteDialog(false);
+    setSubmitting(true);
+
+    try {
+      const newEntry: RevenueData = {
+        date,
+        austin: parseFloat(austinRevenue),
+        charlotte: parseFloat(charlotteRevenue),
+      };
+
+      await onSubmit(newEntry);
+      setShowSuccess(true);
+      resetForm();
+    } catch (err) {
+      setError("Failed to update data. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const resetForm = () => {
     setAustinRevenue("");
     setCharlotteRevenue("");
@@ -448,10 +469,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
         <DialogActions>
           <Button onClick={() => setShowOverwriteDialog(false)}>Cancel</Button>
           <Button
-            onClick={() => {
-              setShowOverwriteDialog(false);
-              handleSubmit(new Event("submit"));
-            }}
+            onClick={handleOverwriteConfirm}
             color="warning"
             variant="contained"
           >

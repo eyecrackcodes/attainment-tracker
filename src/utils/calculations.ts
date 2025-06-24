@@ -153,22 +153,6 @@ export const calculateLocationMetrics = (
       : 0;
   const filteredTotalTarget = filteredAustinTarget + filteredCharlotteTarget;
 
-  console.log("=== Target Calculations Debug ===");
-  console.log("Monthly Adjustment:", monthlyAdjustment);
-  console.log("Working Days:", {
-    total: totalBusinessDays,
-    elapsed: elapsedBusinessDays,
-    adjustment: monthlyAdjustment?.workingDays
-  });
-  console.log("Daily Targets:", {
-    austin: dailyAustinTarget,
-    charlotte: dailyCharlotteTarget
-  });
-  console.log("Monthly Targets:", {
-    austin: monthlyAustinTarget,
-    charlotte: monthlyCharlotteTarget
-  });
-
   return {
     austin: {
       revenue: totalAustin,
@@ -252,10 +236,10 @@ export const filterDataByTimeFrame = (
   if (!data || data.length === 0) return [];
 
   // Log raw data dates
-  console.log(
-    "🔥 Raw Firebase Dates:",
-    data.map((d) => d.date)
-  );
+  // console.log(
+  //   "🔥 Raw Firebase Dates:",
+  //   data.map((d) => d.date)
+  // );
 
   // Default target settings if not provided
   const targets = targetSettings || {
@@ -279,16 +263,16 @@ export const filterDataByTimeFrame = (
 
   switch (timeFrame) {
     case "This Week":
-      console.log("Filtering by This Week");
+      // console.log("Filtering by This Week");
       // Use date-fns to get the correct week range starting from Monday
       const startOfWeekDate = startOfWeek(now, { weekStartsOn: 1 });
       const endOfWeekDate = endOfWeek(now, { weekStartsOn: 1 });
 
-      console.log("Week range:", {
-        start: format(startOfWeekDate, "yyyy-MM-dd"),
-        end: format(endOfWeekDate, "yyyy-MM-dd"),
-        now: format(now, "yyyy-MM-dd"),
-      });
+      // console.log("Week range:", {
+      //   start: format(startOfWeekDate, "yyyy-MM-dd"),
+      //   end: format(endOfWeekDate, "yyyy-MM-dd"),
+      //   now: format(now, "yyyy-MM-dd"),
+      // });
 
       // First filter by location if specified
       if (location && location !== "Combined") {
@@ -306,12 +290,12 @@ export const filterDataByTimeFrame = (
           const isInRange =
             itemDate >= startOfWeekDate && itemDate <= endOfWeekDate;
 
-          console.log(
-            `[FILTER DEBUG] ${item.date} → included: ${isInRange} (${format(
-              itemDate,
-              "yyyy-MM-dd"
-            )})`
-          );
+          // console.log(
+          //   `[FILTER DEBUG] ${item.date} → included: ${isInRange} (${format(
+          //     itemDate,
+          //     "yyyy-MM-dd"
+          //   )})`
+          // );
 
           return isInRange;
         })
@@ -321,15 +305,15 @@ export const filterDataByTimeFrame = (
           return aDate.getTime() - bDate.getTime();
         });
 
-      console.log(`${timeFrame} Filter:`, {
-        location,
-        dateRange: {
-          start: format(startOfWeekDate, "yyyy-MM-dd"),
-          end: format(endOfWeekDate, "yyyy-MM-dd"),
-        },
-        filteredDates: filteredData.map((item) => item.date).sort(),
-        dataPoints: filteredData.length,
-      });
+      // console.log(`${timeFrame} Filter:`, {
+      //   location,
+      //   dateRange: {
+      //     start: format(startOfWeekDate, "yyyy-MM-dd"),
+      //     end: format(endOfWeekDate, "yyyy-MM-dd"),
+      //   },
+      //   filteredDates: filteredData.map((item) => item.date).sort(),
+      //   dataPoints: filteredData.length,
+      // });
       break;
     case "MTD":
       // Get the current date in local timezone
@@ -355,13 +339,13 @@ export const filterDataByTimeFrame = (
           // Include all dates from start of month up to current date
           const isInRange = itemDate >= startOfMonth && itemDate <= currentDate;
 
-          console.log(
-            `Filtering MTD ${item.date}: ${isInRange ? "INCLUDED" : "excluded"} (${itemDate.toISOString()}) - Revenue: ${JSON.stringify({
-              austin: item.austin,
-              charlotte: item.charlotte,
-              dayOfWeek: itemDate.getDay(),
-            })}`
-          );
+          // console.log(
+          //   `Filtering MTD ${item.date}: ${isInRange ? "INCLUDED" : "excluded"} (${itemDate.toISOString()}) - Revenue: ${JSON.stringify({
+          //     austin: item.austin,
+          //     charlotte: item.charlotte,
+          //     dayOfWeek: itemDate.getDay(),
+          //   })}`
+          // );
           return isInRange;
         })
         .sort((a, b) => {
@@ -370,26 +354,26 @@ export const filterDataByTimeFrame = (
           return aDate.getTime() - bDate.getTime();
         });
 
-      console.log(`${timeFrame} Filter:`, {
-        location,
-        dateRange: {
-          start: startOfMonth.toISOString().split("T")[0],
-          end: currentDate.toISOString().split("T")[0],
-        },
-        filteredDates: filteredData.map((item) => item.date).sort(),
-        dataPoints: filteredData.length,
-        allData: filteredData.map((item) => ({
-          date: item.date,
-          dayOfWeek: createDate(item.date).getDay(),
-          revenue: {
-            austin: item.austin,
-            charlotte: item.charlotte,
-          },
-        })),
-      });
+      // console.log(`${timeFrame} Filter:`, {
+      //   location,
+      //   dateRange: {
+      //     start: startOfMonth.toISOString().split("T")[0],
+      //     end: currentDate.toISOString().split("T")[0],
+      //   },
+      //   filteredDates: filteredData.map((item) => item.date).sort(),
+      //   dataPoints: filteredData.length,
+      //   allData: filteredData.map((item) => ({
+      //     date: item.date,
+      //     dayOfWeek: createDate(item.date).getDay(),
+      //     revenue: {
+      //       austin: item.austin,
+      //       charlotte: item.charlotte,
+      //     },
+      //   })),
+      // });
       break;
     case "last30":
-      console.log("Filtering by last30");
+      // console.log("Filtering by last30");
       const thirtyDaysAgo = new Date(yesterday);
       thirtyDaysAgo.setDate(yesterday.getDate() - 30);
       filteredData = filteredData.filter((item) => {
@@ -398,7 +382,7 @@ export const filterDataByTimeFrame = (
       });
       break;
     case "last90":
-      console.log("Filtering by last90");
+      // console.log("Filtering by last90");
       const ninetyDaysAgo = new Date(yesterday);
       ninetyDaysAgo.setDate(yesterday.getDate() - 90);
       filteredData = filteredData.filter((item) => {
@@ -407,7 +391,7 @@ export const filterDataByTimeFrame = (
       });
       break;
     case "YTD":
-      console.log("Filtering by YTD");
+      // console.log("Filtering by YTD");
       const startOfYear = new Date(Date.UTC(now.getFullYear(), 0, 1));
       filteredData = filteredData.filter((item) => {
         const itemDate = createDate(item.date);
@@ -415,43 +399,43 @@ export const filterDataByTimeFrame = (
       });
       break;
     case "custom":
-      console.log("\n=== Custom Date Range Filtering ===");
-      console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
+      // console.log("\n=== Custom Date Range Filtering ===");
+      // console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
 
       if (startDate && endDate) {
         // Validate dates
         const start = createDate(startDate);
         const end = createDate(endDate);
 
-        console.log(`Parsed dates:
-        Start: ${start.toISOString()}
-        End: ${end.toISOString()}`);
+        // console.log(`Parsed dates:
+        // Start: ${start.toISOString()}
+        // End: ${end.toISOString()}`);
 
         // Check if dates are valid
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          console.error("Invalid date format detected");
+          // console.error("Invalid date format detected");
           return [];
         }
 
         filteredData = data.filter((item) => {
           const itemDate = createDate(item.date);
           const isIncluded = itemDate >= start && itemDate <= end;
-          console.log(
-            `Filtering ${item.date}: ${isIncluded ? "INCLUDED" : "excluded"}`
-          );
+          // console.log(
+          //   `Filtering ${item.date}: ${isIncluded ? "INCLUDED" : "excluded"}`
+          // );
           return isIncluded;
         });
 
-        console.log(`\nFiltered data summary:
-        Original count: ${data.length}
-        Filtered count: ${filteredData.length}
-        Date range: ${filteredData[0]?.date} to ${
-          filteredData[filteredData.length - 1]?.date
-        }`);
+        // console.log(`\nFiltered data summary:
+        // Original count: ${data.length}
+        // Filtered count: ${filteredData.length}
+        // Date range: ${filteredData[0]?.date} to ${
+        //   filteredData[filteredData.length - 1]?.date
+        // }`);
       }
       break;
     case "all":
-      console.log("Using all data");
+      // console.log("Using all data");
       filteredData = filteredData.filter((item) => {
         const itemDate = createDate(item.date);
         return itemDate <= yesterday; // Exclude today's data
@@ -494,7 +478,7 @@ export const filterDataByTimeFrame = (
     return aDate.getTime() - bDate.getTime();
   });
 
-  console.log("Final filtered data:", filteredData);
+  // console.log("Final filtered data:", filteredData);
   return filteredData;
 };
 
@@ -807,8 +791,8 @@ export const calculateTrend = (
 };
 
 export const calculateMonthlyTrends = (data: RevenueData[]) => {
-  console.log("\n=== Monthly Trends Calculation ===");
-  console.log(`Input data points: ${data.length}`);
+  // console.log("\n=== Monthly Trends Calculation ===");
+  // console.log(`Input data points: ${data.length}`);
 
   // Group data by month and year
   const monthlyData = data.reduce((acc: any, entry) => {
@@ -845,18 +829,18 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
     return acc;
   }, {});
 
-  console.log("\nMonthly Aggregates:");
-  Object.entries(monthlyData).forEach(([key, data]: [string, any]) => {
-    console.log(`${key}:
-    Revenue: Austin=$${data.austin.toLocaleString()}, Charlotte=$${data.charlotte.toLocaleString()}
-    Targets: Austin=$${data.austinTarget.toLocaleString()}/day, Charlotte=$${data.charlotteTarget.toLocaleString()}/day
-    Days: ${data.count}
-    Monthly Target: Austin=$${(
-      data.austinTarget * data.count
-    ).toLocaleString()}, Charlotte=$${(
-      data.charlotteTarget * data.count
-    ).toLocaleString()}`);
-  });
+  // console.log("\nMonthly Aggregates:");
+  // Object.entries(monthlyData).forEach(([key, data]: [string, any]) => {
+  //   console.log(`${key}:
+  //   Revenue: Austin=$${data.austin.toLocaleString()}, Charlotte=$${data.charlotte.toLocaleString()}
+  //   Targets: Austin=$${data.austinTarget.toLocaleString()}/day, Charlotte=$${data.charlotteTarget.toLocaleString()}/day
+  //   Days: ${data.count}
+  //   Monthly Target: Austin=$${(
+  //     data.austinTarget * data.count
+  //   ).toLocaleString()}, Charlotte=$${(
+  //     data.charlotteTarget * data.count
+  //   ).toLocaleString()}`);
+  // });
 
   // Convert to array and sort by date
   const sortedData = Object.values(monthlyData).sort(
@@ -892,17 +876,17 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
       combinedAttainment,
     };
 
-    console.log(`\nProcessed ${month.month}-${month.year}:
-    Monthly Revenue: Austin=$${monthlyAustin.toLocaleString()}, Charlotte=$${monthlyCharlotte.toLocaleString()}
-    Monthly Targets: Austin=$${monthlyAustinTarget.toLocaleString()}, Charlotte=$${monthlyCharlotteTarget.toLocaleString()}
-    Attainment: Austin=${austinAttainment.toFixed(
-      1
-    )}%, Charlotte=${charlotteAttainment.toFixed(
-      1
-    )}%, Combined=${combinedAttainment.toFixed(1)}%
-    YoY Data: Current=${
-      result.currentYear?.toLocaleString() || "N/A"
-    }, Previous=${result.previousYear?.toLocaleString() || "N/A"}`);
+    // console.log(`\nProcessed ${month.month}-${month.year}:
+    // Monthly Revenue: Austin=$${monthlyAustin.toLocaleString()}, Charlotte=$${monthlyCharlotte.toLocaleString()}
+    // Monthly Targets: Austin=$${monthlyAustinTarget.toLocaleString()}, Charlotte=$${monthlyCharlotteTarget.toLocaleString()}
+    // Attainment: Austin=${austinAttainment.toFixed(
+    //   1
+    // )}%, Charlotte=${charlotteAttainment.toFixed(
+    //   1
+    // )}%, Combined=${combinedAttainment.toFixed(1)}%
+    // YoY Data: Current=${
+    //   result.currentYear?.toLocaleString() || "N/A"
+    // }, Previous=${result.previousYear?.toLocaleString() || "N/A"}`);
 
     return result;
   });
@@ -911,11 +895,11 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
 };
 
 export const calculateMovingAverage = (data: any[], periods: number) => {
-  console.log("\n=== Moving Average Calculation ===");
-  console.log(`Periods: ${periods}, Data points: ${data.length}`);
+  // console.log("\n=== Moving Average Calculation ===");
+  // console.log(`Periods: ${periods}, Data points: ${data.length}`);
 
   if (!data || data.length === 0) {
-    console.log("No data provided for moving average calculation");
+    // console.log("No data provided for moving average calculation");
     return [];
   }
 
@@ -926,7 +910,7 @@ export const calculateMovingAverage = (data: any[], periods: number) => {
     const window = data.slice(startIndex, index + 1);
 
     if (window.length === 0) {
-      console.log(`${item.month}: No data in window`);
+      // console.log(`${item.month}: No data in window`);
       return {
         month: item.month,
         austin: 0,
@@ -935,16 +919,16 @@ export const calculateMovingAverage = (data: any[], periods: number) => {
     }
 
     // Log the window data
-    console.log(`\nCalculating MA for ${item.month}:
-    Window Size: ${window.length}
-    Window Data: ${window
-      .map(
-        (entry) =>
-          `${entry.month}[A=${entry.austinAttainment?.toFixed(
-            1
-          )}%, C=${entry.charlotteAttainment?.toFixed(1)}%]`
-      )
-      .join(", ")}`);
+    // console.log(`\nCalculating MA for ${item.month}:
+    // Window Size: ${window.length}
+    // Window Data: ${window
+    //   .map(
+    //     (entry) =>
+    //       `${entry.month}[A=${entry.austinAttainment?.toFixed(
+    //         1
+    //       )}%, C=${entry.charlotteAttainment?.toFixed(1)}%]`
+    //   )
+    //   .join(", ")}`);
 
     // Calculate moving averages for attainment percentages
     const austinMA =
@@ -965,11 +949,11 @@ export const calculateMovingAverage = (data: any[], periods: number) => {
       charlotte: charlotteMA,
     };
 
-    console.log(
-      `Result for ${item.month}: Austin MA=${austinMA.toFixed(
-        1
-      )}%, Charlotte MA=${charlotteMA.toFixed(1)}%`
-    );
+    // console.log(
+    //   `Result for ${item.month}: Austin MA=${austinMA.toFixed(
+    //     1
+    //   )}%, Charlotte MA=${charlotteMA.toFixed(1)}%`
+    // );
     return resultItem;
   });
 
@@ -1120,11 +1104,11 @@ export const calculateMissingDataDays = (
     const [bYear, bMonth, bDay] = b.date.split('-').map(num => parseInt(num));
     const aDate = new Date(aYear, aMonth - 1, aDay);
     const bDate = new Date(bYear, bMonth - 1, bDay);
-    console.log(`Comparing dates: ${a.date} (${aDate.getTime()}) vs ${b.date} (${bDate.getTime()})`);
+    // console.log(`Comparing dates: ${a.date} (${aDate.getTime()}) vs ${b.date} (${bDate.getTime()})`);
     return bDate.getTime() - aDate.getTime();
   });
   const lastDataDate = sortedData[0].date;
-  console.log(`Identified last data date: ${lastDataDate}`);
+  // console.log(`Identified last data date: ${lastDataDate}`);
   
   // Parse last data date (ensure consistent date parsing)
   const [lastYear, lastMonth, lastDay] = lastDataDate.split('-').map(num => parseInt(num));
@@ -1177,37 +1161,37 @@ export const calculateMissingDataDays = (
     const dayOfWeek = currentDate.getDay();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
-    console.log(`Checking ${dateStr} (${dayNames[dayOfWeek]}): Working day? ${isWorkingDay}, Has data? ${existingDates.has(dateStr)}`);
+    // console.log(`Checking ${dateStr} (${dayNames[dayOfWeek]}): Working day? ${isWorkingDay}, Has data? ${existingDates.has(dateStr)}`);
     
     if (isWorkingDay) {
       // Only add if we don't already have data for this date
       if (!existingDates.has(dateStr)) {
         missingDates.push(dateStr);
-        console.log(`  → Added to missing dates: ${dateStr}`);
+        // console.log(`  → Added to missing dates: ${dateStr}`);
       } else {
-        console.log(`  → Skipped (has data): ${dateStr}`);
+        // console.log(`  → Skipped (has data): ${dateStr}`);
       }
     } else {
-      console.log(`  → Skipped (not working day): ${dateStr}`);
+      // console.log(`  → Skipped (not working day): ${dateStr}`);
     }
     
     // Move to next day using a more reliable method
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
   }
 
-     console.log('=== Missing Data Days Calculation ===');
-   console.log('Total data entries received:', data.length);
-   console.log('All data dates (unsorted):', data.map(d => d.date));
-   console.log('Sorted data (latest first):', sortedData.slice(0, 5).map(d => d.date));
-   console.log('Last data date:', lastDataDate);
-   console.log('Yesterday:', yesterday.toISOString().split('T')[0]);
-   console.log('Today:', now.toISOString().split('T')[0]);
-   console.log('All existing dates:', Array.from(existingDates).sort());
-   console.log('Missing business days:', missingDates.length);
-   console.log('Missing dates:', missingDates);
-   console.log('Date comparison - Last date >= Yesterday:', lastDate >= yesterday);
-   console.log('Last date time:', lastDate.getTime());
-   console.log('Yesterday time:', yesterday.getTime());
+     // console.log('=== Missing Data Days Calculation ===');
+   // console.log('Total data entries received:', data.length);
+   // console.log('All data dates (unsorted):', data.map(d => d.date));
+   // console.log('Sorted data (latest first):', sortedData.slice(0, 5).map(d => d.date));
+   // console.log('Last data date:', lastDataDate);
+   // console.log('Yesterday:', yesterday.toISOString().split('T')[0]);
+   // console.log('Today:', now.toISOString().split('T')[0]);
+   // console.log('All existing dates:', Array.from(existingDates).sort());
+   // console.log('Missing business days:', missingDates.length);
+   // console.log('Missing dates:', missingDates);
+   // console.log('Date comparison - Last date >= Yesterday:', lastDate >= yesterday);
+   // console.log('Last date time:', lastDate.getTime());
+   // console.log('Yesterday time:', yesterday.getTime());
 
   return {
     missingDays: missingDates.length,
