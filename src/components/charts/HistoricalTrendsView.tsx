@@ -1,3 +1,5 @@
+// Historical Trends View - Enhanced with forecasting and improved visibility
+// Version: 2.1 - Updated chart heights, added forecasting, full-width moving average
 import React, { useMemo } from "react";
 import {
   Box,
@@ -543,7 +545,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
       </Grid>
 
       {/* Moving Average */}
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12}>
         <Paper 
           elevation={3} 
           sx={{ 
@@ -555,9 +557,9 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
           }}
         >
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
-            3-Month Moving Average
+            3-Month Moving Average & Forecast
           </Typography>
-          <Box sx={{ height: 550, width: "100%", mt: 2, pb: 2 }}>
+          <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2 }}>
             <ResponsiveContainer>
               <AreaChart
                 data={movingAverageData}
@@ -590,6 +592,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                   contentStyle={{
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '8px',
                   }}
                 />
                 <Legend 
@@ -608,6 +611,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                   fill={theme.palette.primary.light}
                   stroke={theme.palette.primary.main}
                   fillOpacity={0.3}
+                  strokeWidth={2}
                 />
                 <Area
                   type="monotone"
@@ -616,12 +620,102 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                   fill={theme.palette.secondary.light}
                   stroke={theme.palette.secondary.main}
                   fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                {/* Target Reference Line */}
+                <ReferenceLine
+                  y={100}
+                  stroke={theme.palette.warning.main}
+                  strokeDasharray="3 3"
+                  label={{
+                    value: "Target",
+                    fill: theme.palette.warning.main,
+                    position: "right",
+                    fontSize: 12,
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </Box>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 2, textAlign: "center" }}
+          >
+            3-month moving average shows smoothed performance trends over time
+          </Typography>
         </Paper>
       </Grid>
+
+      {/* Forecasting Section */}
+      {monthlyTrends && monthlyTrends.length >= 3 && (
+        <Grid item xs={12}>
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              p: 4,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%)'
+            }}
+          >
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+              Performance Forecast & Insights
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Trend Analysis
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Based on the last 3 months of data, your performance trend shows:
+                  </Typography>
+                  <Typography variant="h4" sx={{ mt: 2, color: insights?.combinedAttainment.trend > 0 ? 'success.main' : 'error.main' }}>
+                    {insights?.combinedAttainment.trend > 0 ? '↗' : '↘'} {Math.abs(insights?.combinedAttainment.trend || 0).toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {insights?.combinedAttainment.trend > 0 ? 'Improving' : 'Declining'} monthly trend
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Next Month Forecast
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Projected attainment based on current trends:
+                  </Typography>
+                  <Typography variant="h4" sx={{ mt: 2, color: 'info.main' }}>
+                    {((insights?.combinedAttainment.current || 0) + (insights?.combinedAttainment.trend || 0)).toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Estimated combined attainment
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Revenue Projection
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Expected revenue next month:
+                  </Typography>
+                  <Typography variant="h4" sx={{ mt: 2, color: 'success.main' }}>
+                    {formatCurrency((insights?.revenue.current || 0) * (1 + (insights?.revenue.trend || 0) / 100))}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Based on trend analysis
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      )}
       </Grid>
     </Box>
   );
