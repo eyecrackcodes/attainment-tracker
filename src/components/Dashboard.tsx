@@ -228,25 +228,11 @@ export const Dashboard: React.FC = () => {
   const handleFilterChange = (newFilters: any) => {
     console.log("Filter change detected:", newFilters);
     setState((prevState) => {
-      // If location is changing and timeFrame is not MTD, reset to MTD
-      const shouldResetToMTD =
-        newFilters.location !== prevState.filters.location &&
-        (newFilters.timeFrame !== "MTD" ||
-          newFilters.startDate !== null ||
-          newFilters.endDate !== null);
-
-      const updatedFilters = shouldResetToMTD
-        ? {
-            ...newFilters,
-            timeFrame: "MTD",
-            startDate: null,
-            endDate: null,
-          }
-        : newFilters;
-
+      // Allow users to select any timeFrame with any location
+      // Remove the automatic MTD reset logic that was causing issues
       const updatedState = {
         ...prevState,
-        filters: updatedFilters,
+        filters: newFilters,
       };
       console.log("Updated state filters:", updatedState.filters);
       return updatedState;
@@ -363,16 +349,8 @@ export const Dashboard: React.FC = () => {
     setIsTabLoading(true);
     setActiveTab(newValue);
 
-    // Reset filters to MTD when switching to historical or daily views
-    if (newValue !== 0) {
-      setState((prev) => ({
-        ...prev,
-        filters: {
-          ...prev.filters,
-          timeFrame: "MTD",
-        },
-      }));
-    }
+    // Allow users to keep their selected timeFrame when switching tabs
+    // Remove the automatic MTD reset that was limiting user choice
 
     // Simulate tab loading transition
     setTimeout(() => {
