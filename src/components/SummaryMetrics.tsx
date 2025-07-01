@@ -76,7 +76,11 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     try {
       switch (timeFrame) {
         case 'MTD':
-          return `Month-to-Date (${new Date(periodInfo.relevantYear || 0, periodInfo.relevantMonth || 0).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+          const currentYear = new Date().getFullYear();
+          const currentMonth = new Date().getMonth();
+          const displayYear = periodInfo.relevantYear || currentYear;
+          const displayMonth = periodInfo.relevantMonth !== undefined ? periodInfo.relevantMonth : currentMonth;
+          return `Month-to-Date (${new Date(displayYear, displayMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
         case 'This Week':
           return `This Week (${periodInfo.startDate} to ${periodInfo.endDate})`;
         case 'last30':
