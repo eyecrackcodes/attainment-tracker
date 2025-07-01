@@ -1756,7 +1756,7 @@ export const validateDataConsistency = (
       const expectedCharlotteMonthly = (monthlyAdjustment.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte) * monthlyAdjustment.workingDays.length;
       
       if (Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01) {
-        errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly}`);
+        errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly} (daily: ${periodInfo.dailyTargets.austin} × ${periodInfo.workingDaysInPeriod} days vs ${monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin} × ${monthlyAdjustment.workingDays.length} days)`);
         monthlyGoalConsistency = false;
       }
       
