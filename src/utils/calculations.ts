@@ -1865,7 +1865,7 @@ export const recalculateMonthlyGoals = (
 export const calculateOptimizedAttainment = (
   revenue: number,
   target: number,
-  precision: number = 1
+  precision: number = 2
 ): number => {
   if (target === 0) return 0;
   const attainment = (revenue / target) * 100;
