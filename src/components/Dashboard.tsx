@@ -547,6 +547,7 @@ export const Dashboard: React.FC = () => {
                         )}
                         location={state.filters.location}
                         targetSettings={state.targetSettings}
+                        timeFrame={state.filters.timeFrame}
                       />
                     </Paper>
                   </Box>
@@ -574,6 +575,7 @@ export const Dashboard: React.FC = () => {
                         )}
                         location={state.filters.location}
                         targetSettings={state.targetSettings}
+                        timeFrame={state.filters.timeFrame}
                       />
                     </Paper>
                   </Box>
