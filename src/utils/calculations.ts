@@ -601,7 +601,13 @@ export const calculateTimePeriodsMetrics = (
       let charlotteTarget = 0;
 
       weekData.forEach((entry) => {
-        const entryDate = new Date(entry.date);
+        // Parse the date string correctly - same as used elsewhere in the code
+        const dateParts = entry.date.split("-");
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1;
+        const day = parseInt(dateParts[2]);
+        const entryDate = new Date(year, month, day);
+        
         const dailyTarget = getTargetForDate(entryDate, targetSettings);
 
         austinRevenue += entry.austin;
@@ -647,7 +653,13 @@ export const calculateTimePeriodsMetrics = (
     let monthlyCharlotteTarget = 0;
 
     sortedData.forEach((entry) => {
-      const entryDate = new Date(entry.date);
+      // Parse the date string correctly - same as used elsewhere in the code
+      const dateParts = entry.date.split("-");
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1;
+      const day = parseInt(dateParts[2]);
+      const entryDate = new Date(year, month, day);
+      
       const dailyTarget = getTargetForDate(entryDate, targetSettings);
 
       monthlyAustinRevenue += entry.austin;
