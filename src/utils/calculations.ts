@@ -1752,13 +1752,15 @@ export const validateDataConsistency = (
     
     // Check if monthly targets are calculated correctly for the relevant period
     if (monthlyAdjustment && periodInfo.hasMonthlyAdjustment) {
-      const expectedAustinMonthly = (monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin) * monthlyAdjustment.workingDays.length;
-      const expectedCharlotteMonthly = (monthlyAdjustment.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte) * monthlyAdjustment.workingDays.length;
+      // Use the actual working days from the calculation, not the theoretical monthly adjustment
+      // This accounts for missing data days when location filtering is applied
+      const expectedAustinMonthly = (monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin) * periodInfo.workingDaysInPeriod;
+      const expectedCharlotteMonthly = (monthlyAdjustment.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte) * periodInfo.workingDaysInPeriod;
       
-      if (Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01) {
-        errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly} (daily: ${periodInfo.dailyTargets.austin} × ${periodInfo.workingDaysInPeriod} days vs ${monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin} × ${monthlyAdjustment.workingDays.length} days)`);
-        monthlyGoalConsistency = false;
-      }
+              if (Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01) {
+          errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly} (daily: ${periodInfo.dailyTargets.austin} × ${periodInfo.workingDaysInPeriod} days)`);
+          monthlyGoalConsistency = false;
+        }
       
       if (Math.abs(metrics.charlotte.monthlyTarget - expectedCharlotteMonthly) > 0.01) {
         errors.push(`Charlotte monthly target mismatch: calculated ${metrics.charlotte.monthlyTarget}, expected ${expectedCharlotteMonthly}`);
