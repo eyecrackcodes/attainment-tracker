@@ -395,14 +395,14 @@ export const Dashboard: React.FC = () => {
               {/* Daily Entry Form and Filters Row */}
               <Box sx={{ mt: 1 }}>
                 <Grid container spacing={4}>
-                  <Grid item xs={12} lg={5}>
+                  <Grid size={{ xs: 12, lg: 5 }}>
                     <DailyEntryForm
                       onSubmit={handleDailyDataAdd}
                       existingData={state.revenueData}
                       targets={state.targetSettings}
                     />
                   </Grid>
-                  <Grid item xs={12} lg={7}>
+                  <Grid size={{ xs: 12, lg: 7 }}>
                     <Paper 
                       elevation={2} 
                       sx={{ 
@@ -414,13 +414,13 @@ export const Dashboard: React.FC = () => {
                       }}
                     >
                       <Grid container spacing={3}>
-                        <Grid item xs={12} md={8}>
+                        <Grid size={{ xs: 12, md: 8 }}>
                           <FilterPanel
                             filters={state.filters}
                             onFilterChange={handleFilterChange}
                           />
                         </Grid>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                           <DataImportExport
                             onDataUpdate={handleDataUpdate}
                             currentData={state.revenueData}
