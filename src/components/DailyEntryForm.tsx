@@ -84,8 +84,8 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
         ? validateEntry(charlotteValue, "charlotte", dateObj)
         : null;
 
-      setWarnings({
-        ...warnings,
+      setWarnings((prevWarnings) => ({
+        ...prevWarnings,
         austin: {
           message: austinWarning || "",
           type: austinWarning
@@ -102,7 +102,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
               : "success"
             : null,
         },
-      });
+      }));
     }
   }, [date, austinRevenue, charlotteRevenue, existingData, targets]);
 
