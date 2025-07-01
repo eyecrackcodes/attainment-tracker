@@ -34,6 +34,17 @@ export const DaysBehindAlert: React.FC<DaysBehindAlertProps> = ({
   
   const missingData = calculateMissingDataDays(data, targetSettings);
   
+  const formatDate = (dateStr: string) => {
+    // Parse date string consistently to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(num => parseInt(num));
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+  
   if (missingData.missingDays === 0) {
     return (
       <Alert 
@@ -44,20 +55,12 @@ export const DaysBehindAlert: React.FC<DaysBehindAlertProps> = ({
         <AlertTitle>Data Up to Date</AlertTitle>
         All expected business days have data entries. Last entry: {" "}
         {missingData.lastDataDate ? 
-          new Date(missingData.lastDataDate).toLocaleDateString() : 
+          formatDate(missingData.lastDataDate) : 
           "No data"
         }
       </Alert>
     );
   }
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   const getSeverity = () => {
     if (missingData.missingDays <= 1) return "warning";
@@ -90,7 +93,7 @@ export const DaysBehindAlert: React.FC<DaysBehindAlertProps> = ({
     >
       <AlertTitle>Missing Data Entries</AlertTitle>
       <Typography variant="body2">
-        {missingData.missingDays} out of {missingData.totalExpectedDays} expected business days are missing data.
+        {missingData.missingDays} business day{missingData.missingDays !== 1 ? 's' : ''} missing since last data entry.
         {missingData.lastDataDate && (
           <> Last entry was on {formatDate(missingData.lastDataDate)}.</>
         )}

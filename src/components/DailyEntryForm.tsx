@@ -18,7 +18,6 @@ import {
   TableCell,
   TableRow,
   InputAdornment,
-  FormHelperText,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -28,7 +27,6 @@ import {
 } from "@mui/icons-material";
 import { RevenueData, TargetSettings } from "../types/revenue";
 import {
-  TARGETS,
   isBusinessDay,
   getTargetForDate,
 } from "../utils/calculations";
@@ -226,6 +224,27 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
     }
   };
 
+  const handleOverwriteConfirm = async () => {
+    setShowOverwriteDialog(false);
+    setSubmitting(true);
+
+    try {
+      const newEntry: RevenueData = {
+        date,
+        austin: parseFloat(austinRevenue),
+        charlotte: parseFloat(charlotteRevenue),
+      };
+
+      await onSubmit(newEntry);
+      setShowSuccess(true);
+      resetForm();
+    } catch (err) {
+      setError("Failed to update data. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const resetForm = () => {
     setAustinRevenue("");
     setCharlotteRevenue("");
@@ -244,8 +263,18 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
 
   return (
     <>
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper 
+        elevation={2}
+        sx={{ 
+          p: 4, 
+          mb: 3,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+        }}
+      >
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
           Daily Revenue Entry
         </Typography>
 
@@ -438,10 +467,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
         <DialogActions>
           <Button onClick={() => setShowOverwriteDialog(false)}>Cancel</Button>
           <Button
-            onClick={() => {
-              setShowOverwriteDialog(false);
-              handleSubmit(new Event("submit"));
-            }}
+            onClick={handleOverwriteConfirm}
             color="warning"
             variant="contained"
           >
