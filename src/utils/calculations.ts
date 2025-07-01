@@ -1714,8 +1714,8 @@ export const validateDataConsistency = (
     filters.location
   );
 
-  // Calculate metrics using our optimized function
-  const metrics = calculateLocationMetrics(
+  // Calculate metrics using our period-aware function for accurate validation
+  const metrics = calculateLocationMetricsForPeriod(
     filteredData,
     targetSettings,
     filters.location,
@@ -1740,29 +1740,30 @@ export const validateDataConsistency = (
     }
   }
 
-  // Validate monthly goal consistency
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const monthlyAdjustment = targetSettings.monthlyAdjustments?.find(
-    adj => adj.month === currentMonth && adj.year === currentYear
-  );
-
+  // Validate monthly goal consistency using period-aware logic
   let monthlyGoalConsistency = true;
   
-  // Check if monthly targets are calculated correctly
-  if (monthlyAdjustment) {
-    const expectedAustinMonthly = (monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin) * monthlyAdjustment.workingDays.length;
-    const expectedCharlotteMonthly = (monthlyAdjustment.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte) * monthlyAdjustment.workingDays.length;
+  // Get the relevant period information from the metrics
+  const periodInfo = metrics.austin.periodInfo;
+  if (periodInfo) {
+    const monthlyAdjustment = targetSettings.monthlyAdjustments?.find(
+      adj => adj.month === periodInfo.relevantMonth && adj.year === periodInfo.relevantYear
+    );
     
-    if (Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01) {
-      errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly}`);
-      monthlyGoalConsistency = false;
-    }
-    
-    if (Math.abs(metrics.charlotte.monthlyTarget - expectedCharlotteMonthly) > 0.01) {
-      errors.push(`Charlotte monthly target mismatch: calculated ${metrics.charlotte.monthlyTarget}, expected ${expectedCharlotteMonthly}`);
-      monthlyGoalConsistency = false;
+    // Check if monthly targets are calculated correctly for the relevant period
+    if (monthlyAdjustment && periodInfo.hasMonthlyAdjustment) {
+      const expectedAustinMonthly = (monthlyAdjustment.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin) * monthlyAdjustment.workingDays.length;
+      const expectedCharlotteMonthly = (monthlyAdjustment.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte) * monthlyAdjustment.workingDays.length;
+      
+      if (Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01) {
+        errors.push(`Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly}`);
+        monthlyGoalConsistency = false;
+      }
+      
+      if (Math.abs(metrics.charlotte.monthlyTarget - expectedCharlotteMonthly) > 0.01) {
+        errors.push(`Charlotte monthly target mismatch: calculated ${metrics.charlotte.monthlyTarget}, expected ${expectedCharlotteMonthly}`);
+        monthlyGoalConsistency = false;
+      }
     }
   }
 
