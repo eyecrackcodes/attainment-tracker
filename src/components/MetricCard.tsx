@@ -24,7 +24,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   totalDays,
 }) => {
   // Use optimized attainment calculation for consistency
-  const optimizedAttainment = calculateOptimizedAttainment(revenue, target, 1);
+  const optimizedAttainment = calculateOptimizedAttainment(revenue, target);
   
   // Determine color based on attainment percentage
   const getAttainmentColor = (attainment: number) => {
@@ -41,7 +41,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const amountAhead = revenue - target;
 
   // Calculate monthly attainment percentage for additional context
-  const monthlyAttainment = monthlyTarget > 0 ? calculateOptimizedAttainment(revenue, monthlyTarget, 1) : 0;
+  const monthlyAttainment = monthlyTarget > 0 ? calculateOptimizedAttainment(revenue, monthlyTarget) : 0;
 
   return (
     <Paper 

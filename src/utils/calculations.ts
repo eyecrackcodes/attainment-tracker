@@ -601,7 +601,13 @@ export const calculateTimePeriodsMetrics = (
       let charlotteTarget = 0;
 
       weekData.forEach((entry) => {
-        const entryDate = new Date(entry.date);
+        // Parse the date string correctly - same as used elsewhere in the code
+        const dateParts = entry.date.split("-");
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1;
+        const day = parseInt(dateParts[2]);
+        const entryDate = new Date(year, month, day);
+        
         const dailyTarget = getTargetForDate(entryDate, targetSettings);
 
         austinRevenue += entry.austin;
@@ -647,7 +653,13 @@ export const calculateTimePeriodsMetrics = (
     let monthlyCharlotteTarget = 0;
 
     sortedData.forEach((entry) => {
-      const entryDate = new Date(entry.date);
+      // Parse the date string correctly - same as used elsewhere in the code
+      const dateParts = entry.date.split("-");
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1;
+      const day = parseInt(dateParts[2]);
+      const entryDate = new Date(year, month, day);
+      
       const dailyTarget = getTargetForDate(entryDate, targetSettings);
 
       monthlyAustinRevenue += entry.austin;
@@ -1865,7 +1877,7 @@ export const recalculateMonthlyGoals = (
 export const calculateOptimizedAttainment = (
   revenue: number,
   target: number,
-  precision: number = 1
+  precision: number = 2
 ): number => {
   if (target === 0) return 0;
   const attainment = (revenue / target) * 100;
@@ -2120,11 +2132,11 @@ export const calculateLocationMetricsForPeriod = (
     onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
   }
 
-  // Calculate attainment percentages
-  const austinAttainment = onPaceAustinTarget > 0 ? (totalAustin / onPaceAustinTarget) * 100 : 0;
-  const charlotteAttainment = onPaceCharlotteTarget > 0 ? (totalCharlotte / onPaceCharlotteTarget) * 100 : 0;
+  // Calculate attainment percentages using the optimized function for consistent precision
+  const austinAttainment = calculateOptimizedAttainment(totalAustin, onPaceAustinTarget);
+  const charlotteAttainment = calculateOptimizedAttainment(totalCharlotte, onPaceCharlotteTarget);
   const totalOnPaceTarget = onPaceAustinTarget + onPaceCharlotteTarget;
-  const totalAttainment = totalOnPaceTarget > 0 ? (totalRevenue / totalOnPaceTarget) * 100 : 0;
+  const totalAttainment = calculateOptimizedAttainment(totalRevenue, totalOnPaceTarget);
 
   // Apply location filtering
   const getLocationFilteredTarget = (austinTarget: number, charlotteTarget: number) => {

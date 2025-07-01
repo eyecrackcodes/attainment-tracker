@@ -397,7 +397,15 @@ export const Dashboard: React.FC = () => {
               {/* Summary Metrics */}
               <Box>
                 <SummaryMetrics
-                  data={state.revenueData}
+                  data={filterDataByTimeFrame(
+                    state.revenueData,
+                    state.filters.timeFrame,
+                    state.filters.attainmentThreshold,
+                    state.targetSettings,
+                    state.filters.startDate,
+                    state.filters.endDate,
+                    state.filters.location
+                  )}
                   timeFrame={state.filters.timeFrame}
                   targetSettings={state.targetSettings}
                   startDate={state.filters.startDate}
