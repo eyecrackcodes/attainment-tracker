@@ -714,10 +714,14 @@ export const calculateTrend = (
   const firstHalf = recentDays.slice(0, Math.floor(recentDays.length / 2));
   const secondHalf = recentDays.slice(Math.floor(recentDays.length / 2));
 
-  const avgFirst = calculateLocationMetrics(firstHalf, targets).combined
-    .percentage;
-  const avgSecond = calculateLocationMetrics(secondHalf, targets).combined
-    .percentage;
+  // Convert DailyTarget to TargetSettings format
+  const targetSettings: TargetSettings = {
+    dailyTargets: targets,
+    monthlyAdjustments: []
+  };
+
+  const avgFirst = calculateLocationMetrics(firstHalf, targetSettings).total.attainment;
+  const avgSecond = calculateLocationMetrics(secondHalf, targetSettings).total.attainment;
 
   if (avgSecond - avgFirst > 5) return "improving";
   if (avgFirst - avgSecond > 5) return "declining";
@@ -751,13 +755,7 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
     // Sum up daily values
     acc[key].austin += entry.austin || 0;
     acc[key].charlotte += entry.charlotte || 0;
-    // Only update targets if they are provided and non-zero
-    if (entry.austinTarget && entry.austinTarget > 0) {
-      acc[key].austinTarget = entry.austinTarget;
-    }
-    if (entry.charlotteTarget && entry.charlotteTarget > 0) {
-      acc[key].charlotteTarget = entry.charlotteTarget;
-    }
+    // Note: RevenueData doesn't have target properties, so we use default targets
     acc[key].count++;
 
     return acc;
