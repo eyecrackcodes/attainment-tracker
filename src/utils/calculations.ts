@@ -1895,6 +1895,13 @@ export const calculateLocationMetricsForPeriod = (
           periodType: timeFrame || 'MTD',
           workingDaysInPeriod: 0,
           actualDataDays: 0,
+          relevantMonth: 0,
+          relevantYear: 0,
+          hasMonthlyAdjustment: false,
+          dailyTargets: {
+            austin: 0,
+            charlotte: 0
+          }
         }
       },
       charlotte: {
@@ -1910,6 +1917,13 @@ export const calculateLocationMetricsForPeriod = (
           periodType: timeFrame || 'MTD',
           workingDaysInPeriod: 0,
           actualDataDays: 0,
+          relevantMonth: 0,
+          relevantYear: 0,
+          hasMonthlyAdjustment: false,
+          dailyTargets: {
+            austin: 0,
+            charlotte: 0
+          }
         }
       },
       total: {
@@ -1925,6 +1939,13 @@ export const calculateLocationMetricsForPeriod = (
           periodType: timeFrame || 'MTD',
           workingDaysInPeriod: 0,
           actualDataDays: 0,
+          relevantMonth: 0,
+          relevantYear: 0,
+          hasMonthlyAdjustment: false,
+          dailyTargets: {
+            austin: 0,
+            charlotte: 0
+          }
         }
       },
     };
@@ -1941,10 +1962,31 @@ export const calculateLocationMetricsForPeriod = (
   
   const totalRevenue = totalAustin + totalCharlotte;
 
-  // Get the actual date range from the filtered data
+  // Get the actual date range from the filtered data with null checks
   const dates = data.map(item => new Date(item.date)).sort((a, b) => a.getTime() - b.getTime());
+  
+  // Additional safety check for dates array
+  if (dates.length === 0) {
+    console.warn('No valid dates found in data');
+    return {
+      austin: { revenue: totalAustin, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+      charlotte: { revenue: totalCharlotte, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+      total: { revenue: totalRevenue, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+    };
+  }
+
   const startDate = dates[0];
   const endDate = dates[dates.length - 1];
+  
+  // Additional null checks for startDate and endDate
+  if (!startDate || !endDate) {
+    console.warn('Invalid start or end date');
+    return {
+      austin: { revenue: totalAustin, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+      charlotte: { revenue: totalCharlotte, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+      total: { revenue: totalRevenue, target: 0, monthlyTarget: 0, attainment: 0, elapsedDays: 0, totalDays: 0, periodInfo: { startDate: '', endDate: '', periodType: timeFrame || 'MTD', workingDaysInPeriod: 0, actualDataDays: 0, relevantMonth: 0, relevantYear: 0, hasMonthlyAdjustment: false, dailyTargets: { austin: 0, charlotte: 0 } } },
+    };
+  }
   
   // Determine the relevant month/year for target calculations
   // For most time frames, we'll use the start date's month/year

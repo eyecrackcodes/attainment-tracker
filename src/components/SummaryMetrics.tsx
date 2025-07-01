@@ -1,5 +1,5 @@
 import React from "react";
-import { Grid, Paper, Typography, Box, Divider, Chip, Stack } from "@mui/material";
+import { Grid, Paper, Typography, Box, Divider, Chip, Stack, Alert } from "@mui/material";
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
@@ -56,23 +56,43 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Get period information for detailed breakdown
   const periodInfo = metrics.total.periodInfo;
   
+  // Safety check for periodInfo
+  if (!periodInfo) {
+    console.warn('Period info is missing from metrics');
+    return (
+      <Paper elevation={2} sx={{ p: 4, mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
+          Summary Metrics
+        </Typography>
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          Unable to load period information. Please refresh the page.
+        </Alert>
+      </Paper>
+    );
+  }
+  
   // Format period display
   const getPeriodDisplayName = () => {
-    switch (timeFrame) {
-      case 'MTD':
-        return `Month-to-Date (${new Date(periodInfo.relevantYear, periodInfo.relevantMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
-      case 'This Week':
-        return `This Week (${periodInfo.startDate} to ${periodInfo.endDate})`;
-      case 'last30':
-        return `Last 30 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
-      case 'last90':
-        return `Last 90 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
-      case 'YTD':
-        return `Year-to-Date ${periodInfo.relevantYear} (${periodInfo.startDate} to ${periodInfo.endDate})`;
-      case 'custom':
-        return `Custom Period (${periodInfo.startDate} to ${periodInfo.endDate})`;
-      default:
-        return `${timeFrame} (${periodInfo.startDate} to ${periodInfo.endDate})`;
+    try {
+      switch (timeFrame) {
+        case 'MTD':
+          return `Month-to-Date (${new Date(periodInfo.relevantYear || 0, periodInfo.relevantMonth || 0).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+        case 'This Week':
+          return `This Week (${periodInfo.startDate} to ${periodInfo.endDate})`;
+        case 'last30':
+          return `Last 30 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
+        case 'last90':
+          return `Last 90 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
+        case 'YTD':
+          return `Year-to-Date ${periodInfo.relevantYear || new Date().getFullYear()} (${periodInfo.startDate} to ${periodInfo.endDate})`;
+        case 'custom':
+          return `Custom Period (${periodInfo.startDate} to ${periodInfo.endDate})`;
+        default:
+          return `${timeFrame} (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      }
+    } catch (error) {
+      console.warn('Error formatting period display name:', error);
+      return `${timeFrame} Period`;
     }
   };
 
