@@ -37,7 +37,14 @@ import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
 import { DailyPatternsView } from "./charts/DailyPatternsView";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
-import { filterDataByTimeFrame, calculateLocationMetrics, calculateTimePeriodsMetrics, validateDataIntegrity } from "../utils/calculations";
+import { 
+  filterDataByTimeFrame, 
+  calculateLocationMetrics, 
+  calculateTimePeriodsMetrics, 
+  validateDataIntegrity,
+  validateDataConsistency,
+  recalculateMonthlyGoals
+} from "../utils/calculations";
 import { DaysBehindAlert } from "./DaysBehindAlert";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
 
@@ -123,6 +130,7 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (state.revenueData.length > 0 && state.targetSettings) {
+      // Existing data integrity validation
       const validation = validateDataIntegrity(state.revenueData, state.targetSettings);
       
       if (!validation.isValid) {
@@ -148,8 +156,74 @@ export const Dashboard: React.FC = () => {
           },
         }));
       }
+
+      // New comprehensive data consistency validation
+      const consistencyCheck = validateDataConsistency(
+        state.revenueData,
+        state.targetSettings,
+        {
+          timeFrame: state.filters.timeFrame,
+          location: state.filters.location,
+          startDate: state.filters.startDate,
+          endDate: state.filters.endDate,
+        }
+      );
+
+      // Log detailed validation results for debugging
+      console.log("Data Consistency Check:", {
+        isValid: consistencyCheck.isValid,
+        summary: consistencyCheck.summary,
+        errors: consistencyCheck.errors,
+        warnings: consistencyCheck.warnings,
+      });
+
+      // Handle critical consistency errors
+      if (!consistencyCheck.isValid && consistencyCheck.errors.length > 0) {
+        console.error("Critical data consistency errors:", consistencyCheck.errors);
+        
+        // Show error notification for critical issues
+        const criticalErrors = consistencyCheck.errors.filter(error => 
+          error.includes("mismatch") || error.includes("filter not working")
+        );
+        
+        if (criticalErrors.length > 0) {
+          setState((prevState) => ({
+            ...prevState,
+            snackbar: {
+              open: true,
+              message: `Critical consistency issue: ${criticalErrors[0]}`,
+              severity: "error",
+            },
+          }));
+        }
+      }
+
+      // Automatically recalculate monthly goals if needed
+      if (!consistencyCheck.summary.monthlyGoalConsistency) {
+        console.log("Monthly goal inconsistency detected, attempting recalculation...");
+        
+        try {
+          const recalculatedSettings = recalculateMonthlyGoals(state.targetSettings, false);
+          
+          // Only update if there are actual changes
+          if (JSON.stringify(recalculatedSettings) !== JSON.stringify(state.targetSettings)) {
+            console.log("Updating target settings with recalculated monthly goals");
+            setState((prevState) => ({
+              ...prevState,
+              targetSettings: recalculatedSettings,
+              snackbar: {
+                open: true,
+                message: "Monthly goals have been automatically recalculated for consistency",
+                severity: "info",
+              },
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to recalculate monthly goals:", error);
+        }
+      }
     }
-  }, [state.revenueData, state.targetSettings]);
+  }, [state.revenueData, state.targetSettings, state.filters]);
 
   const handleFilterChange = (newFilters: any) => {
     console.log("Filter change detected:", newFilters);

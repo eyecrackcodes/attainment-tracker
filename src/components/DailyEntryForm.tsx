@@ -18,7 +18,6 @@ import {
   TableCell,
   TableRow,
   InputAdornment,
-  FormHelperText,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -28,7 +27,6 @@ import {
 } from "@mui/icons-material";
 import { RevenueData, TargetSettings } from "../types/revenue";
 import {
-  TARGETS,
   isBusinessDay,
   getTargetForDate,
 } from "../utils/calculations";
