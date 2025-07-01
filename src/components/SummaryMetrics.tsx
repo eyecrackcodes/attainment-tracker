@@ -1,9 +1,11 @@
 import React from "react";
-import { Grid, Paper, Typography, Box, Divider } from "@mui/material";
+import { Grid, Paper, Typography, Box, Divider, Chip, Stack } from "@mui/material";
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   TrendingFlat as TrendingFlatIcon,
+  CalendarToday as CalendarIcon,
+  Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 import { RevenueData, TimeFrame, TargetSettings } from "../types/revenue";
 import {
@@ -11,8 +13,10 @@ import {
   calculateMetrics,
   filterDataByTimeFrame,
   calculateLocationMetrics,
+  calculateLocationMetricsForPeriod,
 } from "../utils/calculations";
 import MetricCard from "./MetricCard";
+import { formatCurrency } from "../utils/formatters";
 
 interface SummaryMetricsProps {
   data: RevenueData[];
@@ -40,12 +44,37 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     endDate,
     location
   );
-  const metrics = calculateLocationMetrics(
+  
+  // Use the new time-period-aware calculation
+  const metrics = calculateLocationMetricsForPeriod(
     filteredData,
     targetSettings,
     location,
     timeFrame
   );
+
+  // Get period information for detailed breakdown
+  const periodInfo = metrics.total.periodInfo;
+  
+  // Format period display
+  const getPeriodDisplayName = () => {
+    switch (timeFrame) {
+      case 'MTD':
+        return `Month-to-Date (${new Date(periodInfo.relevantYear, periodInfo.relevantMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+      case 'This Week':
+        return `This Week (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      case 'last30':
+        return `Last 30 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      case 'last90':
+        return `Last 90 Days (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      case 'YTD':
+        return `Year-to-Date ${periodInfo.relevantYear} (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      case 'custom':
+        return `Custom Period (${periodInfo.startDate} to ${periodInfo.endDate})`;
+      default:
+        return `${timeFrame} (${periodInfo.startDate} to ${periodInfo.endDate})`;
+    }
+  };
 
   return (
     <Paper 
@@ -59,10 +88,84 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
       }}
     >
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
-        Summary Metrics
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+          Summary Metrics
+        </Typography>
+        
+        {/* Period Information Header */}
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Chip 
+            icon={<CalendarIcon />}
+            label={getPeriodDisplayName()}
+            color="primary"
+            variant="outlined"
+            sx={{ fontWeight: 500 }}
+          />
+          <Chip 
+            icon={<AssessmentIcon />}
+            label={`${periodInfo.actualDataDays} data points`}
+            color="info"
+            variant="outlined"
+          />
+          {periodInfo.hasMonthlyAdjustment && (
+            <Chip 
+              label="Custom Working Days"
+              color="warning"
+              variant="outlined"
+              size="small"
+            />
+          )}
+        </Stack>
+
+        {/* Period Details */}
+        <Box sx={{ 
+          p: 2, 
+          backgroundColor: 'grey.50', 
+          borderRadius: 1, 
+          border: '1px solid', 
+          borderColor: 'grey.200',
+          mb: 3
+        }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Working Days in Period
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                {periodInfo.workingDaysInPeriod}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Daily Target - Austin
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
+                {formatCurrency(periodInfo.dailyTargets.austin)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Daily Target - Charlotte
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
+                {formatCurrency(periodInfo.dailyTargets.charlotte)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Period Target Total
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'info.main' }}>
+                {formatCurrency(periodInfo.dailyTargets.austin * periodInfo.workingDaysInPeriod + periodInfo.dailyTargets.charlotte * periodInfo.workingDaysInPeriod)}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+      
       <Divider sx={{ mb: 3, borderColor: 'divider' }} />
+      
       <Grid container spacing={4}>
         <Grid item xs={12} md={4}>
           <MetricCard

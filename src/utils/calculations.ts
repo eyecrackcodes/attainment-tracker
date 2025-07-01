@@ -1871,3 +1871,506 @@ export const calculateOptimizedAttainment = (
   const attainment = (revenue / target) * 100;
   return Math.round(attainment * Math.pow(10, precision)) / Math.pow(10, precision);
 };
+
+// Enhanced location metrics calculation with time-period awareness
+export const calculateLocationMetricsForPeriod = (
+  data: RevenueData[],
+  targetSettings?: TargetSettings,
+  location?: string,
+  timeFrame?: TimeFrame
+) => {
+  // Early return if no data
+  if (!data || data.length === 0) {
+    return {
+      austin: {
+        revenue: 0,
+        target: 0,
+        monthlyTarget: 0,
+        attainment: 0,
+        elapsedDays: 0,
+        totalDays: 0,
+        periodInfo: {
+          startDate: '',
+          endDate: '',
+          periodType: timeFrame || 'MTD',
+          workingDaysInPeriod: 0,
+          actualDataDays: 0,
+        }
+      },
+      charlotte: {
+        revenue: 0,
+        target: 0,
+        monthlyTarget: 0,
+        attainment: 0,
+        elapsedDays: 0,
+        totalDays: 0,
+        periodInfo: {
+          startDate: '',
+          endDate: '',
+          periodType: timeFrame || 'MTD',
+          workingDaysInPeriod: 0,
+          actualDataDays: 0,
+        }
+      },
+      total: {
+        revenue: 0,
+        target: 0,
+        monthlyTarget: 0,
+        attainment: 0,
+        elapsedDays: 0,
+        totalDays: 0,
+        periodInfo: {
+          startDate: '',
+          endDate: '',
+          periodType: timeFrame || 'MTD',
+          workingDaysInPeriod: 0,
+          actualDataDays: 0,
+        }
+      },
+    };
+  }
+
+  // Calculate totals efficiently using reduce
+  const { totalAustin, totalCharlotte } = data.reduce(
+    (acc, entry) => ({
+      totalAustin: acc.totalAustin + (entry.austin || 0),
+      totalCharlotte: acc.totalCharlotte + (entry.charlotte || 0),
+    }),
+    { totalAustin: 0, totalCharlotte: 0 }
+  );
+  
+  const totalRevenue = totalAustin + totalCharlotte;
+
+  // Get the actual date range from the filtered data
+  const dates = data.map(item => new Date(item.date)).sort((a, b) => a.getTime() - b.getTime());
+  const startDate = dates[0];
+  const endDate = dates[dates.length - 1];
+  
+  // Determine the relevant month/year for target calculations
+  // For most time frames, we'll use the start date's month/year
+  // For MTD, we'll use current month if filtering current month, otherwise the data's month
+  let relevantMonth: number;
+  let relevantYear: number;
+  
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  if (timeFrame === 'MTD') {
+    // For MTD, check if we're looking at current month or historical month
+    const dataMonth = startDate.getMonth();
+    const dataYear = startDate.getFullYear();
+    
+    if (dataMonth === currentMonth && dataYear === currentYear) {
+      // Current month MTD
+      relevantMonth = currentMonth;
+      relevantYear = currentYear;
+    } else {
+      // Historical month MTD
+      relevantMonth = dataMonth;
+      relevantYear = dataYear;
+    }
+  } else {
+    // For other time frames, use the start date's month/year
+    relevantMonth = startDate.getMonth();
+    relevantYear = startDate.getFullYear();
+  }
+
+  // Check for monthly adjustment for the relevant period
+  const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
+    (adj) => adj.month === relevantMonth && adj.year === relevantYear
+  );
+
+  // Calculate working days and targets for the specific period
+  let totalBusinessDays = 0;
+  let elapsedBusinessDays = 0;
+  let actualDataDays = data.length;
+  let dailyAustinTarget = 0;
+  let dailyCharlotteTarget = 0;
+
+  if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+    // Use monthly adjustment for the relevant period
+    if (timeFrame === 'MTD') {
+      // For MTD, calculate based on the month's working days
+      totalBusinessDays = monthlyAdjustment.workingDays.length;
+      
+      if (relevantMonth === currentMonth && relevantYear === currentYear) {
+        // Current month - count elapsed days
+        const currentDay = now.getDate();
+        elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
+      } else {
+        // Historical month - all working days are "elapsed"
+        elapsedBusinessDays = monthlyAdjustment.workingDays.length;
+      }
+    } else {
+      // For other time frames, count working days in the actual date range
+      const workingDaysInRange = monthlyAdjustment.workingDays.filter(day => {
+        const dayDate = new Date(relevantYear, relevantMonth, day);
+        return dayDate >= startDate && dayDate <= endDate;
+      });
+      
+      totalBusinessDays = workingDaysInRange.length;
+      elapsedBusinessDays = workingDaysInRange.length; // All days in range are "elapsed"
+    }
+    
+    // Get targets from monthly adjustment
+    dailyAustinTarget = monthlyAdjustment.austin ?? targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
+    dailyCharlotteTarget = monthlyAdjustment.charlotte ?? targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
+  } else {
+    // Standard business day calculation for the period
+    if (timeFrame === 'MTD') {
+      // Calculate business days for the full month
+      const firstDayOfMonth = new Date(relevantYear, relevantMonth, 1);
+      const lastDayOfMonth = new Date(relevantYear, relevantMonth + 1, 0);
+      
+      let currentCalendarDay = new Date(firstDayOfMonth);
+      while (currentCalendarDay <= lastDayOfMonth) {
+        if (currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6) {
+          totalBusinessDays++;
+        }
+        currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
+      }
+
+      // Count elapsed business days
+      if (relevantMonth === currentMonth && relevantYear === currentYear) {
+        // Current month
+        currentCalendarDay = new Date(firstDayOfMonth);
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        while (currentCalendarDay <= yesterday && currentCalendarDay.getMonth() === relevantMonth) {
+          if (currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6) {
+            elapsedBusinessDays++;
+          }
+          currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
+        }
+      } else {
+        // Historical month - all business days are elapsed
+        elapsedBusinessDays = totalBusinessDays;
+      }
+    } else {
+      // For other time frames, count business days in the actual range
+      totalBusinessDays = countBusinessDays(startDate, endDate);
+      elapsedBusinessDays = totalBusinessDays; // All days in range are "elapsed"
+    }
+
+    // Use standard daily targets
+    dailyAustinTarget = targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
+    dailyCharlotteTarget = targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
+  }
+
+  // Calculate targets based on the period
+  const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
+  const monthlyCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
+
+  // For historical data, the "on-pace" target should be the full period target
+  // For current MTD, it should be based on elapsed days
+  let onPaceAustinTarget: number;
+  let onPaceCharlotteTarget: number;
+
+  if (timeFrame === 'MTD' && relevantMonth === currentMonth && relevantYear === currentYear) {
+    // Current month MTD - use elapsed days
+    onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;
+    onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
+  } else {
+    // Historical or other time frames - use full period
+    onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;
+    onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
+  }
+
+  // Calculate attainment percentages
+  const austinAttainment = onPaceAustinTarget > 0 ? (totalAustin / onPaceAustinTarget) * 100 : 0;
+  const charlotteAttainment = onPaceCharlotteTarget > 0 ? (totalCharlotte / onPaceCharlotteTarget) * 100 : 0;
+  const totalOnPaceTarget = onPaceAustinTarget + onPaceCharlotteTarget;
+  const totalAttainment = totalOnPaceTarget > 0 ? (totalRevenue / totalOnPaceTarget) * 100 : 0;
+
+  // Apply location filtering
+  const getLocationFilteredTarget = (austinTarget: number, charlotteTarget: number) => {
+    if (!location || location === "Combined") {
+      return austinTarget + charlotteTarget;
+    }
+    if (location === "Austin") {
+      return austinTarget;
+    }
+    if (location === "Charlotte") {
+      return charlotteTarget;
+    }
+    return 0;
+  };
+
+  const filteredMonthlyTarget = getLocationFilteredTarget(monthlyAustinTarget, monthlyCharlotteTarget);
+
+  // Create period info for detailed breakdown
+  const periodInfo = {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    periodType: timeFrame || 'MTD',
+    workingDaysInPeriod: totalBusinessDays,
+    actualDataDays: actualDataDays,
+    relevantMonth: relevantMonth,
+    relevantYear: relevantYear,
+    hasMonthlyAdjustment: !!monthlyAdjustment,
+    dailyTargets: {
+      austin: dailyAustinTarget,
+      charlotte: dailyCharlotteTarget
+    }
+  };
+
+  return {
+    austin: {
+      revenue: totalAustin,
+      target: onPaceAustinTarget,
+      monthlyTarget: monthlyAustinTarget,
+      attainment: austinAttainment,
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays,
+      periodInfo,
+    },
+    charlotte: {
+      revenue: totalCharlotte,
+      target: onPaceCharlotteTarget,
+      monthlyTarget: monthlyCharlotteTarget,
+      attainment: charlotteAttainment,
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays,
+      periodInfo,
+    },
+    total: {
+      revenue: totalRevenue,
+      target: totalOnPaceTarget,
+      monthlyTarget: filteredMonthlyTarget,
+      attainment: totalAttainment,
+      elapsedDays: elapsedBusinessDays,
+      totalDays: totalBusinessDays,
+      periodInfo,
+    },
+  };
+};
+
+// Comprehensive validation function to verify summary metrics logic
+export const validateSummaryMetricsLogic = (
+  data: RevenueData[],
+  targetSettings: TargetSettings,
+  timeFrame: TimeFrame,
+  location?: string,
+  startDate?: string | null,
+  endDate?: string | null
+): {
+  isValid: boolean;
+  breakdown: {
+    timeFrame: TimeFrame;
+    filteredDataCount: number;
+    dateRange: { start: string; end: string };
+    relevantPeriod: { month: number; year: number };
+    workingDaysCalculation: {
+      method: 'monthly_adjustment' | 'standard_business_days';
+      totalWorkingDays: number;
+      elapsedWorkingDays: number;
+      workingDaysList?: number[];
+    };
+    targetCalculation: {
+      dailyTargets: { austin: number; charlotte: number };
+      periodTargets: { austin: number; charlotte: number };
+      onPaceTargets: { austin: number; charlotte: number };
+    };
+    revenueBreakdown: {
+      austin: number;
+      charlotte: number;
+      total: number;
+    };
+    attainmentCalculation: {
+      austin: { percentage: number; calculation: string };
+      charlotte: { percentage: number; calculation: string };
+      total: { percentage: number; calculation: string };
+    };
+  };
+  recommendations: string[];
+} => {
+  const recommendations: string[] = [];
+  
+  // Filter data for the specified time frame
+  const filteredData = filterDataByTimeFrame(
+    data,
+    timeFrame,
+    undefined,
+    targetSettings,
+    startDate,
+    endDate,
+    location
+  );
+
+  // Calculate metrics using our enhanced function
+  const metrics = calculateLocationMetricsForPeriod(
+    filteredData,
+    targetSettings,
+    location,
+    timeFrame
+  );
+
+  const periodInfo = metrics.total.periodInfo;
+  
+  // Validate the logic step by step
+  let isValid = true;
+
+  // 1. Validate filtered data count
+  if (filteredData.length === 0) {
+    recommendations.push("No data found for the specified time frame and filters");
+    isValid = false;
+  }
+
+  // 2. Validate date range logic
+  const dates = filteredData.map(item => new Date(item.date)).sort((a, b) => a.getTime() - b.getTime());
+  const actualStartDate = dates[0]?.toISOString().split('T')[0] || '';
+  const actualEndDate = dates[dates.length - 1]?.toISOString().split('T')[0] || '';
+
+  // 3. Validate working days calculation
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  let workingDaysMethod: 'monthly_adjustment' | 'standard_business_days';
+  let expectedWorkingDays = 0;
+  let workingDaysList: number[] | undefined;
+
+  const monthlyAdjustment = targetSettings.monthlyAdjustments?.find(
+    adj => adj.month === periodInfo.relevantMonth && adj.year === periodInfo.relevantYear
+  );
+
+  if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+    workingDaysMethod = 'monthly_adjustment';
+    workingDaysList = monthlyAdjustment.workingDays;
+    
+    if (timeFrame === 'MTD') {
+      expectedWorkingDays = monthlyAdjustment.workingDays.length;
+    } else {
+      // Count working days that fall within the filtered date range
+      expectedWorkingDays = monthlyAdjustment.workingDays.filter(day => {
+        const dayDate = new Date(periodInfo.relevantYear, periodInfo.relevantMonth, day);
+        return dayDate >= dates[0] && dayDate <= dates[dates.length - 1];
+      }).length;
+    }
+  } else {
+    workingDaysMethod = 'standard_business_days';
+    
+    if (timeFrame === 'MTD') {
+      // Count standard business days in the month
+      const firstDay = new Date(periodInfo.relevantYear, periodInfo.relevantMonth, 1);
+      const lastDay = new Date(periodInfo.relevantYear, periodInfo.relevantMonth + 1, 0);
+      expectedWorkingDays = countBusinessDays(firstDay, lastDay);
+    } else {
+      expectedWorkingDays = countBusinessDays(dates[0], dates[dates.length - 1]);
+    }
+  }
+
+  // Validate working days calculation
+  if (periodInfo.workingDaysInPeriod !== expectedWorkingDays) {
+    recommendations.push(`Working days calculation mismatch: expected ${expectedWorkingDays}, got ${periodInfo.workingDaysInPeriod}`);
+    isValid = false;
+  }
+
+  // 4. Validate target calculations
+  const expectedDailyAustinTarget = monthlyAdjustment?.austin ?? targetSettings.dailyTargets?.austin ?? TARGETS.austin;
+  const expectedDailyCharlotteTarget = monthlyAdjustment?.charlotte ?? targetSettings.dailyTargets?.charlotte ?? TARGETS.charlotte;
+
+  if (periodInfo.dailyTargets.austin !== expectedDailyAustinTarget) {
+    recommendations.push(`Austin daily target mismatch: expected ${expectedDailyAustinTarget}, got ${periodInfo.dailyTargets.austin}`);
+    isValid = false;
+  }
+
+  if (periodInfo.dailyTargets.charlotte !== expectedDailyCharlotteTarget) {
+    recommendations.push(`Charlotte daily target mismatch: expected ${expectedDailyCharlotteTarget}, got ${periodInfo.dailyTargets.charlotte}`);
+    isValid = false;
+  }
+
+  // 5. Validate revenue calculations
+  const expectedAustinRevenue = filteredData.reduce((sum, entry) => sum + (entry.austin || 0), 0);
+  const expectedCharlotteRevenue = filteredData.reduce((sum, entry) => sum + (entry.charlotte || 0), 0);
+
+  if (Math.abs(metrics.austin.revenue - expectedAustinRevenue) > 0.01) {
+    recommendations.push(`Austin revenue calculation mismatch: expected ${expectedAustinRevenue}, got ${metrics.austin.revenue}`);
+    isValid = false;
+  }
+
+  if (Math.abs(metrics.charlotte.revenue - expectedCharlotteRevenue) > 0.01) {
+    recommendations.push(`Charlotte revenue calculation mismatch: expected ${expectedCharlotteRevenue}, got ${metrics.charlotte.revenue}`);
+    isValid = false;
+  }
+
+  // 6. Validate attainment calculations
+  const austinAttainmentCalc = metrics.austin.target > 0 ? `${metrics.austin.revenue} / ${metrics.austin.target} * 100 = ${metrics.austin.attainment.toFixed(2)}%` : "No target set";
+  const charlotteAttainmentCalc = metrics.charlotte.target > 0 ? `${metrics.charlotte.revenue} / ${metrics.charlotte.target} * 100 = ${metrics.charlotte.attainment.toFixed(2)}%` : "No target set";
+  const totalAttainmentCalc = metrics.total.target > 0 ? `${metrics.total.revenue} / ${metrics.total.target} * 100 = ${metrics.total.attainment.toFixed(2)}%` : "No target set";
+
+  // Add recommendations for optimization
+  if (isValid) {
+    recommendations.push("✅ All calculations are correct and consistent");
+    
+    if (timeFrame === 'MTD' && periodInfo.relevantMonth === currentMonth && periodInfo.relevantYear === currentYear) {
+      recommendations.push("📊 Current month MTD - showing on-pace targets based on elapsed working days");
+    } else {
+      recommendations.push("📚 Historical period - showing full period targets");
+    }
+    
+    if (monthlyAdjustment) {
+      recommendations.push("⚙️ Using custom monthly adjustment for working days and targets");
+    } else {
+      recommendations.push("📅 Using standard business days (Monday-Friday)");
+    }
+  }
+
+  return {
+    isValid,
+    breakdown: {
+      timeFrame,
+      filteredDataCount: filteredData.length,
+      dateRange: {
+        start: actualStartDate,
+        end: actualEndDate
+      },
+      relevantPeriod: {
+        month: periodInfo.relevantMonth,
+        year: periodInfo.relevantYear
+      },
+      workingDaysCalculation: {
+        method: workingDaysMethod,
+        totalWorkingDays: periodInfo.workingDaysInPeriod,
+        elapsedWorkingDays: metrics.total.elapsedDays,
+        workingDaysList
+      },
+      targetCalculation: {
+        dailyTargets: {
+          austin: periodInfo.dailyTargets.austin,
+          charlotte: periodInfo.dailyTargets.charlotte
+        },
+        periodTargets: {
+          austin: metrics.austin.monthlyTarget,
+          charlotte: metrics.charlotte.monthlyTarget
+        },
+        onPaceTargets: {
+          austin: metrics.austin.target,
+          charlotte: metrics.charlotte.target
+        }
+      },
+      revenueBreakdown: {
+        austin: metrics.austin.revenue,
+        charlotte: metrics.charlotte.revenue,
+        total: metrics.total.revenue
+      },
+      attainmentCalculation: {
+        austin: {
+          percentage: metrics.austin.attainment,
+          calculation: austinAttainmentCalc
+        },
+        charlotte: {
+          percentage: metrics.charlotte.attainment,
+          calculation: charlotteAttainmentCalc
+        },
+        total: {
+          percentage: metrics.total.attainment,
+          calculation: totalAttainmentCalc
+        }
+      }
+    },
+    recommendations
+  };
+};
