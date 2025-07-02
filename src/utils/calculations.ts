@@ -2017,6 +2017,14 @@ export const calculateLocationMetricsForPeriod = (
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   
+  console.log(`[DEBUG] Current date info:`, {
+    now: now.toISOString(),
+    currentDate: now.toISOString().split('T')[0],
+    currentDay: now.getDate(),
+    currentMonth,
+    currentYear
+  });
+  
   if (timeFrame === 'MTD') {
     // For MTD, check if we're looking at current month or historical month
     const dataMonth = startDate.getMonth();
