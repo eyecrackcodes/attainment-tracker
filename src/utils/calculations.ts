@@ -2050,9 +2050,18 @@ export const calculateLocationMetricsForPeriod = (
       totalBusinessDays = monthlyAdjustment.workingDays.length;
       
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
-        // Current month - count elapsed days
+        // Current month - count elapsed days (including today if it's a working day)
         const currentDay = now.getDate();
-        elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
+        // Include days up to and including today if today is a working day
+        elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day <= currentDay).length;
+        
+        // Debug logging
+        console.log(`Date calculation debug:`, {
+          currentDay,
+          workingDays: monthlyAdjustment.workingDays,
+          elapsedBusinessDays,
+          totalBusinessDays: monthlyAdjustment.workingDays.length
+        });
       } else {
         // Historical month - all working days are "elapsed"
         elapsedBusinessDays = monthlyAdjustment.workingDays.length;
@@ -2088,17 +2097,23 @@ export const calculateLocationMetricsForPeriod = (
 
       // Count elapsed business days
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
-        // Current month
+        // Current month - count business days up to and including today
         currentCalendarDay = new Date(firstDayOfMonth);
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
-        while (currentCalendarDay <= yesterday && currentCalendarDay.getMonth() === relevantMonth) {
+        while (currentCalendarDay <= today && currentCalendarDay.getMonth() === relevantMonth) {
           if (currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6) {
             elapsedBusinessDays++;
           }
           currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
         }
+        
+        // Debug logging
+        console.log(`Standard business days calculation:`, {
+          today: today.toISOString().split('T')[0],
+          elapsedBusinessDays,
+          totalBusinessDays
+        });
       } else {
         // Historical month - all business days are elapsed
         elapsedBusinessDays = totalBusinessDays;
