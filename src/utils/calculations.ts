@@ -2055,13 +2055,7 @@ export const calculateLocationMetricsForPeriod = (
         // Include days up to and including today if today is a working day
         elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day <= currentDay).length;
         
-        // Debug logging
-        console.log(`Date calculation debug:`, {
-          currentDay,
-          workingDays: monthlyAdjustment.workingDays,
-          elapsedBusinessDays,
-          totalBusinessDays: monthlyAdjustment.workingDays.length
-        });
+
       } else {
         // Historical month - all working days are "elapsed"
         elapsedBusinessDays = monthlyAdjustment.workingDays.length;
@@ -2108,12 +2102,7 @@ export const calculateLocationMetricsForPeriod = (
           currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
         }
         
-        // Debug logging
-        console.log(`Standard business days calculation:`, {
-          today: today.toISOString().split('T')[0],
-          elapsedBusinessDays,
-          totalBusinessDays
-        });
+
       } else {
         // Historical month - all business days are elapsed
         elapsedBusinessDays = totalBusinessDays;
