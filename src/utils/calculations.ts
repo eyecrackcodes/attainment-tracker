@@ -2055,18 +2055,10 @@ export const calculateLocationMetricsForPeriod = (
         
         // CRITICAL FIX: For MTD calculations, we should count days that have PASSED, not including today
         // This ensures that on June 1st, we show 0 elapsed days (since no full business days have passed)
-        // Only include today if we're past business hours or if it's a completed business day
-        const hasCurrentDayPassed = now.getHours() >= 17; // After 5 PM, consider day complete
+        // Count only days that are strictly less than current day (exclude today)
+        elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
         
-        if (hasCurrentDayPassed) {
-          // After business hours - include today if it's a working day
-          elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day <= currentDay).length;
-        } else {
-          // During business hours - only count previous days
-          elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
-        }
-        
-        console.log(`[TEMP DEBUG] Monthly Adjustment - Current Day: ${currentDay}, Hour: ${now.getHours()}, Elapsed: ${elapsedBusinessDays}, Total: ${monthlyAdjustment.workingDays.length}`);
+        console.log(`[TEMP DEBUG] Monthly Adjustment - Current Day: ${currentDay}, Elapsed: ${elapsedBusinessDays}, Total: ${monthlyAdjustment.workingDays.length}, Working Days: [${monthlyAdjustment.workingDays.join(', ')}]`);
         
 
         
@@ -2106,17 +2098,16 @@ export const calculateLocationMetricsForPeriod = (
 
       // Count elapsed business days
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
-        // Current month - count business days that have PASSED
+        // Current month - count business days that have PASSED (excluding today)
         currentCalendarDay = new Date(firstDayOfMonth);
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const hasCurrentDayPassed = now.getHours() >= 17; // After 5 PM, consider day complete
         
         // CRITICAL FIX: For MTD, count completed business days only
-        // On June 1st during business hours, this should be 0
-        // On June 1st after 5 PM, this should be 1 (if June 1st is a business day)
-        const endDate = hasCurrentDayPassed ? today : new Date(today.getTime() - 24 * 60 * 60 * 1000); // Yesterday if current day not complete
+        // On June 1st, this should be 0 (no days have passed yet)
+        // Count up to but not including today
+        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         
-        while (currentCalendarDay <= endDate && currentCalendarDay.getMonth() === relevantMonth) {
+        while (currentCalendarDay <= yesterday && currentCalendarDay.getMonth() === relevantMonth) {
           const isBusinessDay = currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6;
           if (isBusinessDay) {
             elapsedBusinessDays++;
@@ -2124,7 +2115,7 @@ export const calculateLocationMetricsForPeriod = (
           currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
         }
         
-        console.log(`[TEMP DEBUG] Standard Business Days - Current Day: ${now.getDate()}, Hour: ${now.getHours()}, Elapsed: ${elapsedBusinessDays}, Total: ${totalBusinessDays}`);
+        console.log(`[TEMP DEBUG] Standard Business Days - Current Day: ${now.getDate()}, Elapsed: ${elapsedBusinessDays}, Total: ${totalBusinessDays}, Yesterday: ${yesterday.toISOString().split('T')[0]}`);
         
 
       } else {
