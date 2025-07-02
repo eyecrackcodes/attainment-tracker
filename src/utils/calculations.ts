@@ -2177,9 +2177,17 @@ export const calculateLocationMetricsForPeriod = (
   let onPaceCharlotteTarget: number;
 
   if (timeFrame === 'MTD' && relevantMonth === currentMonth && relevantYear === currentYear) {
-    // Current month MTD - use elapsed days
-    onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;
-    onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
+    // Current month MTD - use elapsed days, but ensure minimum of 1 day for calculation
+    const effectiveElapsedDays = Math.max(elapsedBusinessDays, 1);
+    onPaceAustinTarget = dailyAustinTarget * effectiveElapsedDays;
+    onPaceCharlotteTarget = dailyCharlotteTarget * effectiveElapsedDays;
+    
+    console.log(`[DEBUG] MTD On-Pace Target Calculation:`, {
+      elapsedBusinessDays,
+      effectiveElapsedDays,
+      dailyAustinTarget,
+      onPaceAustinTarget
+    });
   } else {
     // Historical or other time frames - use full period
     onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;

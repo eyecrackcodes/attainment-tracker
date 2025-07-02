@@ -40,12 +40,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const isAheadOfTarget = revenue >= target;
   const amountAhead = revenue - target;
   
-  // Fix: Show daily pace needed even when ahead of on-pace target but behind monthly target
-  const showDailyPace = remainingRevenue > 0 && remainingDays > 0;
-  
   // Enhanced status logic for better messaging
   const isMonthComplete = remainingRevenue <= 0;
   const isStartOfMonth = (elapsedDays || 0) === 0;
+  
+  // Fix: Show appropriate status based on month progress
+  // At start of month (0 elapsed days), show "Month Starting" in blue
+  // When behind monthly target with remaining days, show "Daily Pace Needed" in orange
+  // When ahead or complete, show success message in green
+  const showDailyPace = remainingRevenue > 0 && remainingDays > 0 && !isStartOfMonth;
 
   // Calculate monthly attainment percentage for additional context
   const monthlyAttainment = monthlyTarget > 0 ? calculateOptimizedAttainment(revenue, monthlyTarget) : 0;
