@@ -39,6 +39,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
   const isAheadOfTarget = revenue >= target;
   const amountAhead = revenue - target;
+  
+  // Fix: Show daily pace needed even when ahead of on-pace target but behind monthly target
+  const showDailyPace = remainingRevenue > 0 && remainingDays > 0;
 
   // Calculate monthly attainment percentage for additional context
   const monthlyAttainment = monthlyTarget > 0 ? calculateOptimizedAttainment(revenue, monthlyTarget) : 0;
@@ -81,21 +84,26 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
           {formatCurrency(monthlyTarget)}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: isAheadOfTarget ? 'success.light' : 'warning.light', opacity: 0.8 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: showDailyPace ? 'warning.light' : 'success.light', opacity: 0.8 }}>
           <Typography
             variant="body2"
-            color={isAheadOfTarget ? "success.dark" : "warning.dark"}
+            color={showDailyPace ? "warning.dark" : "success.dark"}
             sx={{ display: "flex", alignItems: "center", fontWeight: 500 }}
           >
-            {isAheadOfTarget ? (
-              <>
-                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
-                Ahead by {formatCurrency(amountAhead)}
-              </>
-            ) : (
+            {showDailyPace ? (
               <>
                 <TrendingDown sx={{ mr: 0.5, fontSize: "1.1rem" }} />
                 Daily Pace Needed: {formatCurrency(Math.abs(dailyNeeded))}
+              </>
+            ) : remainingRevenue <= 0 ? (
+              <>
+                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
+                Monthly Target Exceeded by {formatCurrency(Math.abs(remainingRevenue))}
+              </>
+            ) : (
+              <>
+                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
+                On Track - {remainingDays} days remaining
               </>
             )}
           </Typography>
