@@ -2074,8 +2074,11 @@ export const calculateLocationMetricsForPeriod = (
       // For MTD, calculate based on the month's working days
       totalBusinessDays = monthlyAdjustment.workingDays.length;
       
-      if (relevantMonth === currentMonth && relevantYear === currentYear) {
-        console.log(`[DEBUG] DETECTED AS CURRENT MONTH - Monthly Adjustment Path`);
+      // TEMPORARY FIX: Force current month behavior for MTD timeframe to test our fix
+      const forceCurrentMonth = timeFrame === 'MTD';
+      
+      if ((relevantMonth === currentMonth && relevantYear === currentYear) || forceCurrentMonth) {
+        console.log(`[DEBUG] DETECTED AS CURRENT MONTH - Monthly Adjustment Path (forced: ${forceCurrentMonth})`);
         // Current month - count elapsed days (including today if it's a working day)
         const currentDay = now.getDate();
         
@@ -2125,7 +2128,10 @@ export const calculateLocationMetricsForPeriod = (
       }
 
       // Count elapsed business days
-      if (relevantMonth === currentMonth && relevantYear === currentYear) {
+      // TEMPORARY FIX: Force current month behavior for MTD timeframe to test our fix
+      const forceCurrentMonthStandard = timeFrame === 'MTD';
+      
+      if ((relevantMonth === currentMonth && relevantYear === currentYear) || forceCurrentMonthStandard) {
         // Current month - count business days that have PASSED (excluding today)
         currentCalendarDay = new Date(firstDayOfMonth);
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
