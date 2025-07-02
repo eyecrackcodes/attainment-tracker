@@ -2195,6 +2195,23 @@ export const calculateLocationMetricsForPeriod = (
     }
   };
 
+  // Temporary debug to see what's happening
+  if (timeFrame === 'MTD') {
+    console.log(`[DEBUG] MTD Calculation Results:`, {
+      currentDate: now.toISOString().split('T')[0],
+      currentHour: now.getHours(),
+      totalBusinessDays,
+      elapsedBusinessDays,
+      remainingDays: totalBusinessDays - elapsedBusinessDays,
+      hasMonthlyAdjustment: !!monthlyAdjustment,
+      relevantMonth,
+      relevantYear,
+      currentMonth,
+      currentYear,
+      isCurrentMonth: relevantMonth === currentMonth && relevantYear === currentYear
+    });
+  }
+
 
 
   return {
