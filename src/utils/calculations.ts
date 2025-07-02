@@ -2016,19 +2016,31 @@ export const calculateLocationMetricsForPeriod = (
     const dataMonth = startDate.getMonth();
     const dataYear = startDate.getFullYear();
     
+    console.log(`[DEBUG] MTD Month Detection:`, {
+      dataMonth,
+      dataYear,
+      currentMonth,
+      currentYear,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    });
+    
     if (dataMonth === currentMonth && dataYear === currentYear) {
       // Current month MTD
       relevantMonth = currentMonth;
       relevantYear = currentYear;
+      console.log(`[DEBUG] Detected as CURRENT month MTD`);
     } else {
       // Historical month MTD
       relevantMonth = dataMonth;
       relevantYear = dataYear;
+      console.log(`[DEBUG] Detected as HISTORICAL month MTD`);
     }
   } else {
     // For other time frames, use the start date's month/year
     relevantMonth = startDate.getMonth();
     relevantYear = startDate.getFullYear();
+    console.log(`[DEBUG] Non-MTD timeFrame: ${timeFrame}, using data month/year`);
   }
 
   // Check for monthly adjustment for the relevant period
@@ -2064,7 +2076,9 @@ export const calculateLocationMetricsForPeriod = (
           relevantMonth,
           relevantYear,
           currentMonth,
-          currentYear
+          currentYear,
+          isCurrentMonth: true,
+          calculation: `workingDays.filter(day => day <= ${currentDay}).length = ${elapsedBusinessDays}`
         });
         
 
@@ -2107,9 +2121,19 @@ export const calculateLocationMetricsForPeriod = (
         currentCalendarDay = new Date(firstDayOfMonth);
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
+        console.log(`[DEBUG] Standard Business Days - Before Loop:`, {
+          firstDayOfMonth: firstDayOfMonth.toISOString().split('T')[0],
+          today: today.toISOString().split('T')[0],
+          currentDay: now.getDate(),
+          totalBusinessDays,
+          elapsedBusinessDays: 0
+        });
+        
         while (currentCalendarDay <= today && currentCalendarDay.getMonth() === relevantMonth) {
-          if (currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6) {
+          const isBusinessDay = currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6;
+          if (isBusinessDay) {
             elapsedBusinessDays++;
+            console.log(`[DEBUG] Business Day Found: ${currentCalendarDay.toISOString().split('T')[0]} (day ${currentCalendarDay.getDate()})`);
           }
           currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
         }
@@ -2122,7 +2146,9 @@ export const calculateLocationMetricsForPeriod = (
           relevantMonth,
           relevantYear,
           currentMonth,
-          currentYear
+          currentYear,
+          isCurrentMonth: true,
+          calculation: `Counted business days from ${firstDayOfMonth.toISOString().split('T')[0]} to ${today.toISOString().split('T')[0]}`
         });
         
 
@@ -2197,6 +2223,19 @@ export const calculateLocationMetricsForPeriod = (
       charlotte: dailyCharlotteTarget
     }
   };
+
+  // Final debug output for the complete calculation
+  console.log(`[DEBUG] Final Calculation Results:`, {
+    timeFrame,
+    location,
+    totalBusinessDays,
+    elapsedBusinessDays,
+    daysRemaining: totalBusinessDays - elapsedBusinessDays,
+    monthlyTargets: { austin: monthlyAustinTarget, charlotte: monthlyCharlotteTarget },
+    onPaceTargets: { austin: onPaceAustinTarget, charlotte: onPaceCharlotteTarget },
+    periodInfo,
+    isCurrentMonth: relevantMonth === currentMonth && relevantYear === currentYear
+  });
 
   return {
     austin: {
