@@ -1892,6 +1892,12 @@ export const calculateLocationMetricsForPeriod = (
   location?: string,
   timeFrame?: TimeFrame
 ) => {
+  console.log(`[DEBUG] calculateLocationMetricsForPeriod called with:`, {
+    dataLength: data.length,
+    timeFrame,
+    location,
+    hasTargetSettings: !!targetSettings
+  });
   // Early return if no data
   if (!data || data.length === 0) {
     return {
@@ -2035,6 +2041,13 @@ export const calculateLocationMetricsForPeriod = (
   const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
     (adj) => adj.month === relevantMonth && adj.year === relevantYear
   );
+  
+  console.log(`[DEBUG] Monthly adjustment search:`, {
+    relevantMonth,
+    relevantYear,
+    hasMonthlyAdjustment: !!monthlyAdjustment,
+    monthlyAdjustments: targetSettings?.monthlyAdjustments?.map(adj => ({ month: adj.month, year: adj.year, workingDays: adj.workingDays.length }))
+  });
 
   // Calculate working days and targets for the specific period
   let totalBusinessDays = 0;
@@ -2044,6 +2057,7 @@ export const calculateLocationMetricsForPeriod = (
   let dailyCharlotteTarget = 0;
 
   if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+    console.log(`[DEBUG] Using MONTHLY ADJUSTMENT path`);
     // Use monthly adjustment for the relevant period
     if (timeFrame === 'MTD') {
       // For MTD, calculate based on the month's working days
@@ -2082,6 +2096,7 @@ export const calculateLocationMetricsForPeriod = (
     dailyAustinTarget = monthlyAdjustment.austin ?? targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
     dailyCharlotteTarget = monthlyAdjustment.charlotte ?? targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
   } else {
+    console.log(`[DEBUG] Using STANDARD BUSINESS DAYS path`);
     // Standard business day calculation for the period
     if (timeFrame === 'MTD') {
       // Calculate business days for the full month
