@@ -2076,8 +2076,9 @@ export const calculateLocationMetricsForPeriod = (
       
       // TEMPORARY FIX: Force current month behavior for MTD timeframe to test our fix
       const forceCurrentMonth = timeFrame === 'MTD';
+      const isActualCurrentMonth = relevantMonth === currentMonth && relevantYear === currentYear;
       
-      if ((relevantMonth === currentMonth && relevantYear === currentYear) || forceCurrentMonth) {
+      if (isActualCurrentMonth || forceCurrentMonth) {
         console.log(`[DEBUG] DETECTED AS CURRENT MONTH - Monthly Adjustment Path (forced: ${forceCurrentMonth})`);
         // Current month - count elapsed days (including today if it's a working day)
         const currentDay = now.getDate();
@@ -2176,17 +2177,25 @@ export const calculateLocationMetricsForPeriod = (
   let onPaceAustinTarget: number;
   let onPaceCharlotteTarget: number;
 
-  if (timeFrame === 'MTD' && relevantMonth === currentMonth && relevantYear === currentYear) {
+  // Check if this should be treated as current month (including our force fix)
+  const treatAsCurrentMonth = (timeFrame === 'MTD' && relevantMonth === currentMonth && relevantYear === currentYear) || 
+                             (timeFrame === 'MTD'); // Force fix for all MTD
+  
+  if (treatAsCurrentMonth) {
     // Current month MTD - use elapsed days, but ensure minimum of 1 day for calculation
     const effectiveElapsedDays = Math.max(elapsedBusinessDays, 1);
     onPaceAustinTarget = dailyAustinTarget * effectiveElapsedDays;
     onPaceCharlotteTarget = dailyCharlotteTarget * effectiveElapsedDays;
     
     console.log(`[DEBUG] MTD On-Pace Target Calculation:`, {
+      timeFrame,
+      treatAsCurrentMonth,
       elapsedBusinessDays,
       effectiveElapsedDays,
       dailyAustinTarget,
-      onPaceAustinTarget
+      onPaceAustinTarget,
+      totalAustin,
+      calculatedAttainment: totalAustin / onPaceAustinTarget * 100
     });
   } else {
     // Historical or other time frames - use full period

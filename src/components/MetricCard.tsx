@@ -34,7 +34,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   // Calculate daily average needed to hit monthly target
-  const remainingDays = totalDays ? totalDays - (elapsedDays || 0) : 0;
+  // If we're at start of month (0 elapsed days), we still have current day + remaining days
+  // So remaining = totalDays - elapsedDays - 1 (subtract current day)
+  const remainingDays = totalDays ? totalDays - (elapsedDays || 0) - 1 : 0;
   const remainingRevenue = monthlyTarget - revenue;
   const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
   const isAheadOfTarget = revenue >= target;
