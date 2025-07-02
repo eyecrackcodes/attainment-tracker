@@ -2064,12 +2064,25 @@ export const calculateLocationMetricsForPeriod = (
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
         // Current month - count elapsed days (including today if it's a working day)
         const currentDay = now.getDate();
-        // Include days up to and including today if today is a working day
-        elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day <= currentDay).length;
+        
+        // CRITICAL FIX: For MTD calculations, we should count days that have PASSED, not including today
+        // This ensures that on June 1st, we show 0 elapsed days (since no full business days have passed)
+        // Only include today if we're past business hours or if it's a completed business day
+        const hasCurrentDayPassed = now.getHours() >= 17; // After 5 PM, consider day complete
+        
+        if (hasCurrentDayPassed) {
+          // After business hours - include today if it's a working day
+          elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day <= currentDay).length;
+        } else {
+          // During business hours - only count previous days
+          elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
+        }
         
         // Debug: Log the calculation
         console.log(`[DEBUG] Monthly Adjustment Calculation:`, {
           currentDay,
+          currentHour: now.getHours(),
+          hasCurrentDayPassed,
           monthlyWorkingDays: monthlyAdjustment.workingDays,
           elapsedBusinessDays,
           totalBusinessDays: monthlyAdjustment.workingDays.length,
@@ -2078,7 +2091,9 @@ export const calculateLocationMetricsForPeriod = (
           currentMonth,
           currentYear,
           isCurrentMonth: true,
-          calculation: `workingDays.filter(day => day <= ${currentDay}).length = ${elapsedBusinessDays}`
+          calculation: hasCurrentDayPassed 
+            ? `workingDays.filter(day => day <= ${currentDay}).length = ${elapsedBusinessDays}`
+            : `workingDays.filter(day => day < ${currentDay}).length = ${elapsedBusinessDays}`
         });
         
 
@@ -2117,19 +2132,28 @@ export const calculateLocationMetricsForPeriod = (
 
       // Count elapsed business days
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
-        // Current month - count business days up to and including today
+        // Current month - count business days that have PASSED
         currentCalendarDay = new Date(firstDayOfMonth);
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const hasCurrentDayPassed = now.getHours() >= 17; // After 5 PM, consider day complete
+        
+        // CRITICAL FIX: For MTD, count completed business days only
+        // On June 1st during business hours, this should be 0
+        // On June 1st after 5 PM, this should be 1 (if June 1st is a business day)
+        const endDate = hasCurrentDayPassed ? today : new Date(today.getTime() - 24 * 60 * 60 * 1000); // Yesterday if current day not complete
         
         console.log(`[DEBUG] Standard Business Days - Before Loop:`, {
           firstDayOfMonth: firstDayOfMonth.toISOString().split('T')[0],
           today: today.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
           currentDay: now.getDate(),
+          currentHour: now.getHours(),
+          hasCurrentDayPassed,
           totalBusinessDays,
           elapsedBusinessDays: 0
         });
         
-        while (currentCalendarDay <= today && currentCalendarDay.getMonth() === relevantMonth) {
+        while (currentCalendarDay <= endDate && currentCalendarDay.getMonth() === relevantMonth) {
           const isBusinessDay = currentCalendarDay.getDay() !== 0 && currentCalendarDay.getDay() !== 6;
           if (isBusinessDay) {
             elapsedBusinessDays++;
@@ -2141,6 +2165,7 @@ export const calculateLocationMetricsForPeriod = (
         // Debug: Log the calculation
         console.log(`[DEBUG] Standard Business Days Calculation:`, {
           today: today.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
           elapsedBusinessDays,
           totalBusinessDays,
           relevantMonth,
@@ -2148,7 +2173,8 @@ export const calculateLocationMetricsForPeriod = (
           currentMonth,
           currentYear,
           isCurrentMonth: true,
-          calculation: `Counted business days from ${firstDayOfMonth.toISOString().split('T')[0]} to ${today.toISOString().split('T')[0]}`
+          hasCurrentDayPassed,
+          calculation: `Counted business days from ${firstDayOfMonth.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`
         });
         
 
