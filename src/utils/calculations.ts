@@ -2066,6 +2066,8 @@ export const calculateLocationMetricsForPeriod = (
           elapsedBusinessDays = monthlyAdjustment.workingDays.filter(day => day < currentDay).length;
         }
         
+        console.log(`[TEMP DEBUG] Monthly Adjustment - Current Day: ${currentDay}, Hour: ${now.getHours()}, Elapsed: ${elapsedBusinessDays}, Total: ${monthlyAdjustment.workingDays.length}`);
+        
 
         
 
@@ -2121,6 +2123,8 @@ export const calculateLocationMetricsForPeriod = (
           }
           currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
         }
+        
+        console.log(`[TEMP DEBUG] Standard Business Days - Current Day: ${now.getDate()}, Hour: ${now.getHours()}, Elapsed: ${elapsedBusinessDays}, Total: ${totalBusinessDays}`);
         
 
       } else {
