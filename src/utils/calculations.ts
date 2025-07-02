@@ -2053,6 +2053,9 @@ export const calculateLocationMetricsForPeriod = (
   console.log(`[DEBUG] Monthly adjustment search:`, {
     relevantMonth,
     relevantYear,
+    currentMonth,
+    currentYear,
+    isCurrentMonth: relevantMonth === currentMonth && relevantYear === currentYear,
     hasMonthlyAdjustment: !!monthlyAdjustment,
     monthlyAdjustments: targetSettings?.monthlyAdjustments?.map(adj => ({ month: adj.month, year: adj.year, workingDays: adj.workingDays.length }))
   });
@@ -2072,6 +2075,7 @@ export const calculateLocationMetricsForPeriod = (
       totalBusinessDays = monthlyAdjustment.workingDays.length;
       
       if (relevantMonth === currentMonth && relevantYear === currentYear) {
+        console.log(`[DEBUG] DETECTED AS CURRENT MONTH - Monthly Adjustment Path`);
         // Current month - count elapsed days (including today if it's a working day)
         const currentDay = now.getDate();
         
@@ -2086,6 +2090,7 @@ export const calculateLocationMetricsForPeriod = (
         
 
       } else {
+        console.log(`[DEBUG] DETECTED AS HISTORICAL MONTH - Monthly Adjustment Path`);
         // Historical month - all working days are "elapsed"
         elapsedBusinessDays = monthlyAdjustment.workingDays.length;
       }
