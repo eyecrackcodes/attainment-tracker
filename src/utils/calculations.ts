@@ -2232,6 +2232,12 @@ export const calculateLocationMetricsForPeriod = (
 
 
 
+  console.log(`[DEBUG] FINAL RETURN VALUES:`, {
+    elapsedBusinessDays,
+    totalBusinessDays,
+    remainingDays: totalBusinessDays - elapsedBusinessDays
+  });
+
   return {
     austin: {
       revenue: totalAustin,
