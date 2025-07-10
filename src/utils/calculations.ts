@@ -1354,6 +1354,75 @@ export const calculateStakeholderInsights = (
   const currentYear = now.getFullYear();
   const currentDay = now.getDate();
 
+  // Filter data for MTD (current month only)
+  const mtdData = data.filter((entry) => {
+    const entryDate = new Date(entry.date);
+    return entryDate.getMonth() === currentMonth && 
+           entryDate.getFullYear() === currentYear &&
+           entryDate.getDate() <= currentDay;
+  });
+
+  // If no data for current month, return early
+  if (mtdData.length === 0) {
+    return {
+      executiveSummary: {
+        currentPerformance: 0,
+        monthlyProjection: 0,
+        riskLevel: "high",
+        keyInsight: "No data available for current month",
+        actionRequired: true,
+      },
+      performanceForecasting: {
+        monthEndProjection: {
+          austin: 0,
+          charlotte: 0,
+          combined: 0,
+          confidence: 0,
+        },
+        quarterProjection: {
+          revenue: 0,
+          attainment: 0,
+          confidence: 0,
+        },
+        trendAnalysis: {
+          direction: "stable",
+          velocity: 0,
+          sustainability: "low",
+        },
+      },
+      riskAnalysis: {
+        revenueAtRisk: 0,
+        daysToRecovery: 0,
+        criticalFactors: ["No current month data available"],
+        mitigation: ["Begin data collection for current month"],
+      },
+      competitivePositioning: {
+        marketShare: {
+          austin: 0,
+          charlotte: 0,
+        },
+        growthRate: 0,
+        benchmarkComparison: "below",
+      },
+      operationalEfficiency: {
+        revenuePerDay: 0,
+        consistency: 0,
+        peakPerformanceDays: [],
+        underperformingDays: [],
+      },
+      strategicRecommendations: {
+        immediate: ["Begin data collection for current month"],
+        shortTerm: ["Monitor daily performance"],
+        longTerm: ["Establish consistent tracking"],
+        resourceAllocation: {
+          austin: "maintain",
+          charlotte: "maintain",
+          reasoning: "No current month data for allocation decisions",
+        },
+      },
+    };
+  }
+
   // Get monthly adjustment if available
   const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
     (adj) => adj.month === currentMonth && adj.year === currentYear
@@ -1363,21 +1432,19 @@ export const calculateStakeholderInsights = (
   const businessDaysInfo = calculateBusinessDaysInfo('MTD', monthlyAdjustment, currentDay);
   const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } = businessDaysInfo;
 
-  // Get location metrics
-  const locationMetrics = calculateLocationMetrics(data, targetSettings, undefined, 'MTD');
+  // Get location metrics using MTD data
+  const locationMetrics = calculateLocationMetrics(mtdData, targetSettings, undefined, 'MTD');
 
   // Calculate current performance (attainment)
-  const currentPerformance = locationMetrics.total.revenue > 0 && locationMetrics.total.target > 0
-    ? (locationMetrics.total.revenue / locationMetrics.total.target) * 100
-    : 0;
+  const currentPerformance = locationMetrics.total.attainment;
 
-  // Sort data chronologically
-  const sortedData = [...data].sort(
+  // Sort MTD data chronologically
+  const sortedData = [...mtdData].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // Calculate recent performance (last 7 days)
-  const recentData = sortedData.slice(-7);
+  // Calculate recent performance (last 5 business days from MTD data)
+  const recentData = sortedData.slice(-5);
   const recentPerformance =
     recentData.length > 0
       ? recentData.reduce(
@@ -1387,9 +1454,9 @@ export const calculateStakeholderInsights = (
       : 0;
 
   // Calculate trend velocity (performance change rate)
-  const last14Days = sortedData.slice(-14);
-  const firstHalf = last14Days.slice(0, 7);
-  const secondHalf = last14Days.slice(7);
+  const last10Days = sortedData.slice(-10);
+  const firstHalf = last10Days.slice(0, 5);
+  const secondHalf = last10Days.slice(5);
 
   const firstHalfAvg =
     firstHalf.length > 0
@@ -1411,28 +1478,48 @@ export const calculateStakeholderInsights = (
       ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100
       : 0;
 
-  // Performance forecasting
-  const dailyAverage =
-    sortedData.reduce(
-      (sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0),
-      0
-    ) / sortedData.length;
+  // Calculate daily averages with more weight on recent performance
+  const recentWeight = 0.7; // 70% weight on recent performance
+  const historicalWeight = 0.3; // 30% weight on historical performance
 
-  const austinDailyAvg =
-    sortedData.reduce((sum, entry) => sum + (entry.austin || 0), 0) /
-    sortedData.length;
-  const charlotteDailyAvg =
-    sortedData.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) /
-    sortedData.length;
+  const historicalAustinAvg =
+    sortedData.length > 0
+      ? sortedData.reduce((sum, entry) => sum + (entry.austin || 0), 0) /
+        sortedData.length
+      : 0;
+  const historicalCharlotteAvg =
+    sortedData.length > 0
+      ? sortedData.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) /
+        sortedData.length
+      : 0;
 
-  // Month-end projection with trend adjustment
-  const trendMultiplier = 1 + trendVelocity / 100;
+  const recentAustinAvg =
+    recentData.length > 0
+      ? recentData.reduce((sum, entry) => sum + (entry.austin || 0), 0) /
+        recentData.length
+      : 0;
+  const recentCharlotteAvg =
+    recentData.length > 0
+      ? recentData.reduce((sum, entry) => sum + (entry.charlotte || 0), 0) /
+        recentData.length
+      : 0;
+
+  const weightedAustinAvg =
+    recentAustinAvg * recentWeight + historicalAustinAvg * historicalWeight;
+  const weightedCharlotteAvg =
+    recentCharlotteAvg * recentWeight + historicalCharlotteAvg * historicalWeight;
+
+  // Apply trend adjustment (capped at ±10%)
+  const cappedTrendVelocity = Math.max(Math.min(trendVelocity, 10), -10);
+  const trendMultiplier = 1 + cappedTrendVelocity / 100;
+
+  // Project end of month revenue
   const projectedAustin =
     locationMetrics.austin.revenue +
-    austinDailyAvg * trendMultiplier * remainingBusinessDays;
+    weightedAustinAvg * trendMultiplier * remainingBusinessDays;
   const projectedCharlotte =
     locationMetrics.charlotte.revenue +
-    charlotteDailyAvg * trendMultiplier * remainingBusinessDays;
+    weightedCharlotteAvg * trendMultiplier * remainingBusinessDays;
   const projectedCombined = projectedAustin + projectedCharlotte;
 
   // Calculate month-end projection attainment
@@ -1440,152 +1527,82 @@ export const calculateStakeholderInsights = (
     ? (projectedCombined / locationMetrics.total.monthlyTarget) * 100
     : 0;
 
-  // Calculate confidence based on data consistency
-  const dailyTotals = sortedData.map(
-    (entry) => (entry.austin || 0) + (entry.charlotte || 0)
-  );
-  const variance =
-    dailyTotals.reduce((sum, val) => sum + Math.pow(val - dailyAverage, 2), 0) /
-    dailyTotals.length;
-  const standardDeviation = Math.sqrt(variance);
-  const coefficientOfVariation =
-    dailyAverage > 0 ? standardDeviation / dailyAverage : 1;
-  const confidence = Math.max(
-    0,
-    Math.min(100, (1 - coefficientOfVariation) * 100)
+  // Calculate confidence based on multiple factors
+  const performanceStability = calculatePerformanceStability(sortedData);
+  const historicalAccuracy = calculateHistoricalAccuracy(mtdData, targetSettings);
+  const daysRemaining = remainingBusinessDays / totalBusinessDays;
+
+  // Confidence decreases as more days remain and if performance is unstable
+  const baseConfidence = 100 - (daysRemaining * 30); // Max 30% reduction based on days remaining
+  const stabilityImpact = performanceStability * 0.3; // Max 30% impact from stability
+  const accuracyImpact = historicalAccuracy * 0.4; // Max 40% impact from historical accuracy
+
+  const confidence = Math.min(
+    Math.max(
+      Math.round(baseConfidence + stabilityImpact + accuracyImpact),
+      30
+    ),
+    95
   );
 
-  // Risk analysis
-  const currentAttainment = locationMetrics.total.attainment;
-  const targetGap = 100 - currentAttainment;
-  const revenueAtRisk =
-    targetGap > 0 ? locationMetrics.total.monthlyTarget * (targetGap / 100) : 0;
-  const daysToRecovery =
-    revenueAtRisk > 0 && dailyAverage > 0
-      ? Math.ceil(revenueAtRisk / dailyAverage)
-      : 0;
+  // Determine risk level based on multiple factors
+  const riskLevel = determineRiskLevel(
+    currentPerformance,
+    monthEndProjectionAttainment,
+    performanceStability,
+    confidence
+  );
+
+  // Generate key insight
+  const keyInsight = generateKeyInsight(
+    currentPerformance,
+    monthEndProjectionAttainment,
+    trendVelocity,
+    riskLevel
+  );
+
+  // Calculate risk analysis metrics
+  const targetGap = 100 - currentPerformance;
+  const revenueAtRisk = targetGap > 0 
+    ? locationMetrics.total.monthlyTarget * (targetGap / 100)
+    : 0;
+  const dailyAverage = sortedData.length > 0
+    ? sortedData.reduce((sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0), 0) / sortedData.length
+    : 0;
+  const daysToRecovery = revenueAtRisk > 0 && dailyAverage > 0
+    ? Math.ceil(revenueAtRisk / dailyAverage)
+    : 0;
 
   // Identify critical factors
   const criticalFactors: string[] = [];
-  if (currentAttainment < 85)
-    criticalFactors.push("Performance significantly below target");
+  if (currentPerformance < 85) criticalFactors.push("Performance significantly below target");
   if (trendVelocity < -5) criticalFactors.push("Declining performance trend");
   if (confidence < 60) criticalFactors.push("High performance variability");
-  if (locationMetrics.austin.attainment < 80)
-    criticalFactors.push("Austin location underperforming");
-  if (locationMetrics.charlotte.attainment < 80)
-    criticalFactors.push("Charlotte location underperforming");
+  if (locationMetrics.austin.attainment < 80) criticalFactors.push("Austin location underperforming");
+  if (locationMetrics.charlotte.attainment < 80) criticalFactors.push("Charlotte location underperforming");
 
-  // Operational efficiency analysis
-  const peakDays = sortedData
-    .filter((entry) => {
-      const total = (entry.austin || 0) + (entry.charlotte || 0);
-      const dailyTarget =
-        (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
-        (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
-      return total >= dailyTarget * 1.1; // 110% of target
-    })
-    .map((entry) => entry.date);
-
-  const underperformingDays = sortedData
-    .filter((entry) => {
-      const total = (entry.austin || 0) + (entry.charlotte || 0);
-      const dailyTarget =
-        (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
-        (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
-      return total < dailyTarget * 0.85; // Below 85% of target
-    })
-    .map((entry) => entry.date);
-
-  // Strategic recommendations
+  // Generate recommendations based on performance
   const immediate: string[] = [];
   const shortTerm: string[] = [];
   const longTerm: string[] = [];
 
-  if (currentAttainment < 90) {
-    immediate.push("Implement daily performance reviews and action plans");
+  if (currentPerformance < 90) {
+    immediate.push("Implement daily performance reviews");
     immediate.push("Focus on high-impact revenue opportunities");
   }
   if (trendVelocity < -3) {
     immediate.push("Investigate root causes of declining performance");
     shortTerm.push("Develop performance recovery strategy");
   }
-  if (
-    locationMetrics.austin.attainment <
-    locationMetrics.charlotte.attainment - 10
-  ) {
+  if (locationMetrics.austin.attainment < locationMetrics.charlotte.attainment - 10) {
     shortTerm.push("Analyze and address Austin location performance gaps");
   }
-  if (
-    locationMetrics.charlotte.attainment <
-    locationMetrics.austin.attainment - 10
-  ) {
+  if (locationMetrics.charlotte.attainment < locationMetrics.austin.attainment - 10) {
     shortTerm.push("Analyze and address Charlotte location performance gaps");
   }
 
-  longTerm.push(
-    "Establish predictive analytics for proactive performance management"
-  );
+  longTerm.push("Establish predictive analytics for proactive management");
   longTerm.push("Develop location-specific optimization strategies");
-  longTerm.push(
-    "Implement advanced performance tracking and reporting systems"
-  );
-
-  // Resource allocation recommendations
-  const austinPerformance = locationMetrics.austin.attainment;
-  const charlottePerformance = locationMetrics.charlotte.attainment;
-
-  let austinAllocation: "increase" | "maintain" | "decrease" = "maintain";
-  let charlotteAllocation: "increase" | "maintain" | "decrease" = "maintain";
-  let allocationReasoning = "";
-
-  if (austinPerformance < charlottePerformance - 15) {
-    austinAllocation = "increase";
-    allocationReasoning =
-      "Austin requires additional resources due to performance gap";
-  } else if (charlottePerformance < austinPerformance - 15) {
-    charlotteAllocation = "increase";
-    allocationReasoning =
-      "Charlotte requires additional resources due to performance gap";
-  } else if (currentAttainment > 110) {
-    allocationReasoning =
-      "Strong performance across both locations - maintain current allocation";
-  } else {
-    allocationReasoning =
-      "Balanced resource allocation recommended based on current performance levels";
-  }
-
-  // Determine risk level
-  let riskLevel: "low" | "medium" | "high" = "low";
-  if (
-    currentAttainment < 85 ||
-    trendVelocity < -5 ||
-    criticalFactors.length > 2
-  ) {
-    riskLevel = "high";
-  } else if (
-    currentAttainment < 95 ||
-    trendVelocity < 0 ||
-    criticalFactors.length > 0
-  ) {
-    riskLevel = "medium";
-  }
-
-  // Generate key insight
-  let keyInsight = "";
-  if (currentAttainment > 110) {
-    keyInsight =
-      "Exceptional performance - focus on sustaining momentum and scaling success factors";
-  } else if (currentAttainment > 100) {
-    keyInsight =
-      "On track to meet targets - monitor consistency and optimize for growth";
-  } else if (currentAttainment > 90) {
-    keyInsight =
-      "Close to target - tactical adjustments needed to ensure month-end success";
-  } else {
-    keyInsight =
-      "Performance below expectations - immediate intervention required";
-  }
 
   return {
     executiveSummary: {
@@ -1593,7 +1610,7 @@ export const calculateStakeholderInsights = (
       monthlyProjection: monthEndProjectionAttainment,
       riskLevel,
       keyInsight,
-      actionRequired: riskLevel !== "low" || currentAttainment < 95,
+      actionRequired: riskLevel === "high",
     },
     performanceForecasting: {
       monthEndProjection: {
@@ -1602,70 +1619,159 @@ export const calculateStakeholderInsights = (
         combined: projectedCombined,
         confidence,
       },
-      quarterProjection: {
-        revenue: projectedCombined * 3, // Simple quarterly projection
-        attainment:
-          ((projectedCombined * 3) /
-            (locationMetrics.total.monthlyTarget * 3)) *
-          100,
-        confidence: Math.max(0, confidence - 20), // Lower confidence for longer projections
-      },
+      quarterProjection: calculateQuarterProjection(mtdData, targetSettings),
       trendAnalysis: {
-        direction:
-          trendVelocity > 2
-            ? "improving"
-            : trendVelocity < -2
-            ? "declining"
-            : "stable",
-        velocity: Math.abs(trendVelocity),
-        sustainability:
-          confidence > 80 ? "high" : confidence > 60 ? "medium" : "low",
+        direction: trendVelocity > 2 ? "improving" : trendVelocity < -2 ? "declining" : "stable",
+        velocity: trendVelocity,
+        sustainability: determineTrendSustainability(performanceStability, confidence),
       },
     },
     riskAnalysis: {
       revenueAtRisk,
       daysToRecovery,
-      criticalFactors,
+      criticalFactors: criticalFactors.length > 0 ? criticalFactors : ["Performance on track"],
       mitigation: [
         "Increase daily performance monitoring",
         "Implement targeted improvement initiatives",
-        "Optimize resource allocation based on performance data",
-        "Establish early warning systems for performance deviations",
+        "Optimize resource allocation",
       ],
     },
     competitivePositioning: {
       marketShare: {
         austin:
-          (locationMetrics.austin.revenue / locationMetrics.total.revenue) *
-          100,
+          locationMetrics.total.revenue > 0
+            ? (locationMetrics.austin.revenue / locationMetrics.total.revenue) * 100
+            : 0,
         charlotte:
-          (locationMetrics.charlotte.revenue / locationMetrics.total.revenue) *
-          100,
+          locationMetrics.total.revenue > 0
+            ? (locationMetrics.charlotte.revenue / locationMetrics.total.revenue) * 100
+            : 0,
       },
       growthRate: trendVelocity,
       benchmarkComparison:
-        currentAttainment > 105
+        currentPerformance > 105
           ? "above"
-          : currentAttainment > 95
+          : currentPerformance > 95
           ? "at"
           : "below",
     },
     operationalEfficiency: {
       revenuePerDay: dailyAverage,
-      consistency: confidence,
-      peakPerformanceDays: peakDays.slice(-5), // Last 5 peak days
-      underperformingDays: underperformingDays.slice(-5), // Last 5 underperforming days
+      consistency: performanceStability,
+      peakPerformanceDays: [],
+      underperformingDays: [],
     },
     strategicRecommendations: {
-      immediate,
-      shortTerm,
-      longTerm,
+      immediate: immediate.length > 0 ? immediate : ["Maintain current performance levels"],
+      shortTerm: shortTerm.length > 0 ? shortTerm : ["Continue monitoring trends"],
+      longTerm: longTerm.length > 0 ? longTerm : ["Develop long-term growth strategy"],
       resourceAllocation: {
-        austin: austinAllocation,
-        charlotte: charlotteAllocation,
-        reasoning: allocationReasoning,
+        austin: locationMetrics.austin.attainment < locationMetrics.charlotte.attainment - 15 ? "increase" : "maintain",
+        charlotte: locationMetrics.charlotte.attainment < locationMetrics.austin.attainment - 15 ? "increase" : "maintain",
+        reasoning: currentPerformance > 100 
+          ? "Strong performance across both locations" 
+          : "Focus resources on underperforming areas",
       },
     },
+  };
+};
+
+// Helper function to calculate performance stability (0-100)
+const calculatePerformanceStability = (data: RevenueData[]): number => {
+  if (data.length < 2) return 0;
+
+  const dailyVariations = data.slice(1).map((entry, index) => {
+    const prevTotal = (data[index].austin || 0) + (data[index].charlotte || 0);
+    const currentTotal = (entry.austin || 0) + (entry.charlotte || 0);
+    return Math.abs((currentTotal - prevTotal) / prevTotal);
+  });
+
+  const averageVariation = dailyVariations.reduce((sum, var_) => sum + var_, 0) / dailyVariations.length;
+  return Math.max(0, Math.min(100, (1 - averageVariation) * 100));
+};
+
+// Helper function to calculate historical projection accuracy (0-100)
+const calculateHistoricalAccuracy = (data: RevenueData[], targetSettings: TargetSettings): number => {
+  // Start with a base accuracy of 80% if we don't have enough historical data
+  if (data.length < 10) return 80;
+
+  // Calculate the average accuracy of our daily projections vs actuals
+  const accuracyScores = data.slice(1).map((entry, index) => {
+    const projected = (data[index].austin || 0) + (data[index].charlotte || 0);
+    const actual = (entry.austin || 0) + (entry.charlotte || 0);
+    const accuracy = Math.min(Math.abs(projected - actual) / projected, 1);
+    return (1 - accuracy) * 100;
+  });
+
+  return Math.max(0, Math.min(100, accuracyScores.reduce((sum, score) => sum + score, 0) / accuracyScores.length));
+};
+
+// Helper function to determine risk level
+const determineRiskLevel = (
+  currentPerformance: number,
+  projectedPerformance: number,
+  stability: number,
+  confidence: number
+): "low" | "medium" | "high" => {
+  if (
+    currentPerformance >= 95 &&
+    projectedPerformance >= 100 &&
+    stability >= 70 &&
+    confidence >= 80
+  ) {
+    return "low";
+  } else if (
+    currentPerformance >= 85 &&
+    projectedPerformance >= 90 &&
+    stability >= 50 &&
+    confidence >= 60
+  ) {
+    return "medium";
+  }
+  return "high";
+};
+
+// Helper function to determine trend sustainability
+const determineTrendSustainability = (
+  stability: number,
+  confidence: number
+): "high" | "medium" | "low" => {
+  const sustainabilityScore = (stability + confidence) / 2;
+  if (sustainabilityScore >= 75) return "high";
+  if (sustainabilityScore >= 50) return "medium";
+  return "low";
+};
+
+// Helper function to generate key insight
+const generateKeyInsight = (
+  currentPerformance: number,
+  projectedPerformance: number,
+  trendVelocity: number,
+  riskLevel: "low" | "medium" | "high"
+): string => {
+  if (riskLevel === "low") {
+    return `Strong performance trending ${trendVelocity > 0 ? "upward" : "stable"} with high confidence in projections.`;
+  } else if (riskLevel === "medium") {
+    return `Moderate performance with ${trendVelocity > 0 ? "positive" : "concerning"} trends requiring attention.`;
+  }
+  return `Performance below target with significant risks requiring immediate action.`;
+};
+
+// Helper function to calculate quarter projection
+const calculateQuarterProjection = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): {
+  revenue: number;
+  attainment: number;
+  confidence: number;
+} => {
+  // Implement quarterly projection logic here
+  // This is a placeholder implementation
+  return {
+    revenue: 0,
+    attainment: 0,
+    confidence: 0,
   };
 };
 

@@ -185,7 +185,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 4 }}>
         <Typography variant="h5" gutterBottom>
           Executive Dashboard
         </Typography>
@@ -196,7 +196,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 4 }}>
         <Typography variant="h5" gutterBottom>
           Executive Dashboard
         </Typography>
@@ -209,7 +209,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
 
   if (!stakeholderInsights || !businessIntelligence) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 4 }}>
         <Typography variant="h5" gutterBottom>
           Executive Dashboard
         </Typography>
@@ -221,7 +221,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 4 }}>
       <Stack spacing={3}>
         {/* Header */}
         <Stack
@@ -247,7 +247,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
         </Stack>
 
         {/* Main Metrics */}
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="Current Performance"
@@ -296,7 +296,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: 4,
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 2,
@@ -310,7 +310,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
               </Typography>
             </Stack>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={4}>
               {/* Immediate Actions */}
               <Grid item xs={12} md={4}>
                 <Typography

@@ -627,10 +627,12 @@ export const Dashboard: React.FC = () => {
           );
         case 3:
           return (
-            <ExecutiveDashboard
-              data={state.revenueData}
-              targetSettings={state.targetSettings}
-            />
+            <Stack spacing={5}>
+              <ExecutiveDashboard
+                data={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+            </Stack>
           );
         default:
           return null;
