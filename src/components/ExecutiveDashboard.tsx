@@ -24,7 +24,10 @@ import {
   Lightbulb,
 } from "@mui/icons-material";
 import { RevenueData, TargetSettings } from "../types/revenue";
-import { calculateStakeholderInsights, calculateBusinessIntelligence } from "../utils/calculations";
+import {
+  calculateStakeholderInsights,
+  calculateBusinessIntelligence,
+} from "../utils/calculations";
 import { formatCurrency } from "../utils/formatters";
 
 interface ExecutiveDashboardProps {
@@ -39,9 +42,9 @@ const MetricCard: React.FC<{
   subtitle?: string;
   trend?: number;
   icon: React.ReactNode;
-  color?: 'primary' | 'success' | 'warning' | 'error';
+  color?: "primary" | "success" | "warning" | "error";
   progress?: number;
-}> = ({ title, value, subtitle, trend, icon, color = 'primary', progress }) => {
+}> = ({ title, value, subtitle, trend, icon, color = "primary", progress }) => {
   const getTrendIcon = () => {
     if (trend === undefined) return null;
     if (trend > 2) return <TrendingUp color="success" fontSize="small" />;
@@ -50,45 +53,58 @@ const MetricCard: React.FC<{
   };
 
   const getTrendColor = () => {
-    if (trend === undefined) return 'text.secondary';
-    if (trend > 2) return 'success.main';
-    if (trend < -2) return 'error.main';
-    return 'text.secondary';
+    if (trend === undefined) return "text.secondary";
+    if (trend > 2) return "success.main";
+    if (trend < -2) return "error.main";
+    return "text.secondary";
   };
 
   return (
-    <Card elevation={3} sx={{ height: '100%' }}>
+    <Card elevation={3} sx={{ height: "100%" }}>
       <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 2 }}
+        >
           <Box sx={{ color: `${color}.main` }}>{icon}</Box>
           {getTrendIcon()}
         </Stack>
-        
-        <Typography variant="h4" sx={{ fontWeight: 700, color: `${color}.main`, mb: 1 }}>
-          {typeof value === 'number' ? value.toFixed(1) : value}
+
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 700, color: `${color}.main`, mb: 1 }}
+        >
+          {typeof value === "number" ? value.toFixed(1) : value}
         </Typography>
-        
-        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600, mb: 1 }}>
+
+        <Typography
+          variant="h6"
+          color="text.primary"
+          sx={{ fontWeight: 600, mb: 1 }}
+        >
           {title}
         </Typography>
-        
+
         {subtitle && (
           <Typography variant="body2" color="text.secondary">
             {subtitle}
           </Typography>
         )}
-        
+
         {trend !== undefined && (
           <Typography variant="body2" sx={{ color: getTrendColor(), mt: 1 }}>
-            {trend > 0 ? '+' : ''}{trend.toFixed(1)}% trend
+            {trend > 0 ? "+" : ""}
+            {trend.toFixed(1)}% trend
           </Typography>
         )}
-        
+
         {progress !== undefined && (
           <Box sx={{ mt: 2 }}>
-            <LinearProgress 
-              variant="determinate" 
-              value={Math.min(100, Math.max(0, progress))} 
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(100, Math.max(0, progress))}
               sx={{ height: 6, borderRadius: 3 }}
               color={color}
             />
@@ -99,28 +115,36 @@ const MetricCard: React.FC<{
   );
 };
 
-const RiskIndicator: React.FC<{ level: 'low' | 'medium' | 'high' }> = ({ level }) => {
+const RiskIndicator: React.FC<{ level: "low" | "medium" | "high" }> = ({
+  level,
+}) => {
   const getColor = () => {
     switch (level) {
-      case 'low': return 'success';
-      case 'medium': return 'warning';
-      case 'high': return 'error';
+      case "low":
+        return "success";
+      case "medium":
+        return "warning";
+      case "high":
+        return "error";
     }
   };
 
   const getIcon = () => {
     switch (level) {
-      case 'low': return <CheckCircle />;
-      case 'medium': return <Warning />;
-      case 'high': return <Warning />;
+      case "low":
+        return <CheckCircle />;
+      case "medium":
+        return <Warning />;
+      case "high":
+        return <Warning />;
     }
   };
 
   return (
-    <Chip 
-      icon={getIcon()} 
-      label={`${level.toUpperCase()} RISK`} 
-      color={getColor()} 
+    <Chip
+      icon={getIcon()}
+      label={`${level.toUpperCase()} RISK`}
+      color={getColor()}
       variant="filled"
       sx={{ fontWeight: 600 }}
     />
@@ -146,21 +170,36 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   if (isLoading || !stakeholderInsights || !businessIntelligence) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>Executive Dashboard</Typography>
+        <Typography variant="h4" gutterBottom>
+          Executive Dashboard
+        </Typography>
         <Typography>Loading executive insights...</Typography>
       </Box>
     );
   }
 
-  const { executiveSummary, performanceForecasting, riskAnalysis, strategicRecommendations } = stakeholderInsights;
+  const {
+    executiveSummary,
+    performanceForecasting,
+    riskAnalysis,
+    strategicRecommendations,
+  } = stakeholderInsights;
   const { performanceMetrics, locationAnalysis } = businessIntelligence;
 
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 4 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 4 }}
+      >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, color: "text.primary" }}
+          >
             Executive Dashboard
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
@@ -172,9 +211,9 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
 
       {/* Executive Summary Alert */}
       {executiveSummary.actionRequired && (
-        <Alert 
-          severity={executiveSummary.riskLevel === 'high' ? 'error' : 'warning'} 
-          sx={{ mb: 3, fontSize: '1.1rem' }}
+        <Alert
+          severity={executiveSummary.riskLevel === "high" ? "error" : "warning"}
+          sx={{ mb: 3, fontSize: "1.1rem" }}
           icon={<Assessment />}
         >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -184,7 +223,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
       )}
 
       {/* Key Performance Metrics */}
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={3} sx={{ mb: 4 }}>
         <Box sx={{ flex: 1 }}>
           <MetricCard
             title="Current Performance"
@@ -192,39 +231,61 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
             subtitle="Monthly attainment"
             trend={performanceForecasting.trendAnalysis.velocity}
             icon={<Speed />}
-            color={executiveSummary.currentPerformance >= 100 ? 'success' : executiveSummary.currentPerformance >= 90 ? 'warning' : 'error'}
+            color={
+              executiveSummary.currentPerformance >= 100
+                ? "success"
+                : executiveSummary.currentPerformance >= 90
+                ? "warning"
+                : "error"
+            }
             progress={executiveSummary.currentPerformance}
           />
         </Box>
-        
+
         <Box sx={{ flex: 1 }}>
           <MetricCard
             title="Month-End Projection"
             value={`${executiveSummary.monthlyProjection.toFixed(1)}%`}
-            subtitle={`${performanceForecasting.monthEndProjection.confidence.toFixed(0)}% confidence`}
+            subtitle={`${performanceForecasting.monthEndProjection.confidence.toFixed(
+              0
+            )}% confidence`}
             icon={<Timeline />}
-            color={executiveSummary.monthlyProjection >= 100 ? 'success' : 'warning'}
+            color={
+              executiveSummary.monthlyProjection >= 100 ? "success" : "warning"
+            }
             progress={executiveSummary.monthlyProjection}
           />
         </Box>
-        
+
         <Box sx={{ flex: 1 }}>
           <MetricCard
             title="Revenue at Risk"
             value={formatCurrency(riskAnalysis.revenueAtRisk)}
             subtitle={`${riskAnalysis.daysToRecovery} days to recover`}
             icon={<AccountBalance />}
-            color={riskAnalysis.revenueAtRisk > 50000 ? 'error' : riskAnalysis.revenueAtRisk > 20000 ? 'warning' : 'success'}
+            color={
+              riskAnalysis.revenueAtRisk > 50000
+                ? "error"
+                : riskAnalysis.revenueAtRisk > 20000
+                ? "warning"
+                : "success"
+            }
           />
         </Box>
-        
+
         <Box sx={{ flex: 1 }}>
           <MetricCard
             title="Consistency Score"
             value={`${performanceMetrics.consistencyScore.toFixed(1)}%`}
             subtitle="Performance stability"
             icon={<Assessment />}
-            color={performanceMetrics.consistencyScore >= 80 ? 'success' : performanceMetrics.consistencyScore >= 60 ? 'warning' : 'error'}
+            color={
+              performanceMetrics.consistencyScore >= 80
+                ? "success"
+                : performanceMetrics.consistencyScore >= 60
+                ? "warning"
+                : "error"
+            }
             progress={performanceMetrics.consistencyScore}
           />
         </Box>
@@ -238,10 +299,17 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
             Strategic Recommendations
           </Typography>
         </Stack>
-        
+
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Box sx={{ p: 3, bgcolor: 'error.light', borderRadius: 2, color: 'error.contrastText' }}>
+          <Grid xs={12} md={4}>
+            <Box
+              sx={{
+                p: 3,
+                bgcolor: "error.light",
+                borderRadius: 2,
+                color: "error.contrastText",
+              }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Immediate Actions (Today)
               </Typography>
@@ -254,9 +322,16 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
               </Stack>
             </Box>
           </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Box sx={{ p: 3, bgcolor: 'warning.light', borderRadius: 2, color: 'warning.contrastText' }}>
+
+          <Grid xs={12} md={4}>
+            <Box
+              sx={{
+                p: 3,
+                bgcolor: "warning.light",
+                borderRadius: 2,
+                color: "warning.contrastText",
+              }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Short-term (This Week)
               </Typography>
@@ -269,9 +344,16 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
               </Stack>
             </Box>
           </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Box sx={{ p: 3, bgcolor: 'info.light', borderRadius: 2, color: 'info.contrastText' }}>
+
+          <Grid xs={12} md={4}>
+            <Box
+              sx={{
+                p: 3,
+                bgcolor: "info.light",
+                borderRadius: 2,
+                color: "info.contrastText",
+              }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Long-term (This Month)
               </Typography>
@@ -292,41 +374,65 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
           Resource Allocation Strategy
         </Typography>
-        
+
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
             {strategicRecommendations.resourceAllocation.reasoning}
           </Typography>
         </Alert>
-        
+
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ p: 3, border: '2px solid', borderColor: 'primary.main', borderRadius: 2 }}>
+          <Grid xs={12} md={6}>
+            <Box
+              sx={{
+                p: 3,
+                border: "2px solid",
+                borderColor: "primary.main",
+                borderRadius: 2,
+              }}
+            >
               <Typography variant="h6" color="primary" gutterBottom>
                 Austin Resource Allocation
               </Typography>
-              <Chip 
-                label={strategicRecommendations.resourceAllocation.austin.toUpperCase()} 
+              <Chip
+                label={strategicRecommendations.resourceAllocation.austin.toUpperCase()}
                 color={
-                  strategicRecommendations.resourceAllocation.austin === 'increase' ? 'success' :
-                  strategicRecommendations.resourceAllocation.austin === 'decrease' ? 'error' : 'primary'
+                  strategicRecommendations.resourceAllocation.austin ===
+                  "increase"
+                    ? "success"
+                    : strategicRecommendations.resourceAllocation.austin ===
+                      "decrease"
+                    ? "error"
+                    : "primary"
                 }
                 size="large"
                 sx={{ fontWeight: 600 }}
               />
             </Box>
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Box sx={{ p: 3, border: '2px solid', borderColor: 'secondary.main', borderRadius: 2 }}>
+
+          <Grid xs={12} md={6}>
+            <Box
+              sx={{
+                p: 3,
+                border: "2px solid",
+                borderColor: "secondary.main",
+                borderRadius: 2,
+              }}
+            >
               <Typography variant="h6" color="secondary" gutterBottom>
                 Charlotte Resource Allocation
               </Typography>
-              <Chip 
-                label={strategicRecommendations.resourceAllocation.charlotte.toUpperCase()} 
+              <Chip
+                label={strategicRecommendations.resourceAllocation.charlotte.toUpperCase()}
                 color={
-                  strategicRecommendations.resourceAllocation.charlotte === 'increase' ? 'success' :
-                  strategicRecommendations.resourceAllocation.charlotte === 'decrease' ? 'error' : 'primary'
+                  strategicRecommendations.resourceAllocation.charlotte ===
+                  "increase"
+                    ? "success"
+                    : strategicRecommendations.resourceAllocation.charlotte ===
+                      "decrease"
+                    ? "error"
+                    : "primary"
                 }
                 size="large"
                 sx={{ fontWeight: 600 }}
@@ -337,4 +443,4 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
       </Paper>
     </Box>
   );
-}; 
+};

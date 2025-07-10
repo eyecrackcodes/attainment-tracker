@@ -18,18 +18,17 @@ import {
   TableCell,
   TableRow,
   InputAdornment,
+  Stack,
 } from "@mui/material";
 import {
   Close as CloseIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { RevenueData, TargetSettings } from "../types/revenue";
-import {
-  isBusinessDay,
-  getTargetForDate,
-} from "../utils/calculations";
+import { isBusinessDay, getTargetForDate } from "../utils/calculations";
 import { parseISO, format } from "date-fns";
 
 interface DailyEntryFormProps {
@@ -245,6 +244,11 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
     }
   };
 
+  const handleOverwriteCancel = () => {
+    setShowOverwriteDialog(false);
+    setSubmitting(false);
+  };
+
   const resetForm = () => {
     setAustinRevenue("");
     setCharlotteRevenue("");
@@ -261,26 +265,36 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
       maximumFractionDigits: 0,
     }).format(value);
 
+  const isValid =
+    warnings.austin.type === "success" &&
+    warnings.charlotte.type === "success" &&
+    warnings.future.type === "success" &&
+    warnings.weekend.type === "success";
+
   return (
     <>
-      <Paper 
+      <Paper
         elevation={2}
-        sx={{ 
-          p: 4, 
+        sx={{
+          p: 4,
           mb: 3,
           borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+          border: "1px solid",
+          borderColor: "divider",
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
         }}
       >
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
+        >
           Daily Revenue Entry
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 type="date"
@@ -303,7 +317,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Austin Revenue"
@@ -321,7 +335,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Charlotte Revenue"
@@ -365,16 +379,18 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
               </Grid>
             )}
 
-            <Grid item xs={12}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Add Revenue Data"}
-              </Button>
+            <Grid xs={12}>
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                  disabled={!isValid}
+                  startIcon={<SaveIcon />}
+                >
+                  Save Entry
+                </Button>
+              </Stack>
             </Grid>
           </Grid>
         </Box>
@@ -421,57 +437,41 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
       </Paper>
 
       {/* Overwrite Confirmation Dialog */}
-      <Dialog
-        open={showOverwriteDialog}
-        onClose={() => setShowOverwriteDialog(false)}
-      >
-        <DialogTitle>
-          <WarningIcon
-            color="warning"
-            sx={{ verticalAlign: "middle", mr: 1 }}
-          />
-          Confirm Data Update
-        </DialogTitle>
+      <Dialog open={showOverwriteDialog} onClose={handleOverwriteCancel}>
+        <DialogTitle>Overwrite Existing Entry?</DialogTitle>
         <DialogContent>
-          <Typography gutterBottom>
-            You are about to overwrite existing data for {date}:
+          <Typography>
+            An entry already exists for {date}. Do you want to overwrite it?
           </Typography>
-          {existingEntry && (
-            <Table size="small">
-              <TableBody>
-                <TableRow>
-                  <TableCell></TableCell>
-                  <TableCell>Existing</TableCell>
-                  <TableCell>New</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Austin:</TableCell>
-                  <TableCell>{formatCurrency(existingEntry.austin)}</TableCell>
-                  <TableCell>
-                    {formatCurrency(parseFloat(austinRevenue))}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Charlotte:</TableCell>
-                  <TableCell>
-                    {formatCurrency(existingEntry.charlotte)}
-                  </TableCell>
-                  <TableCell>
-                    {formatCurrency(parseFloat(charlotteRevenue))}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          )}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Existing Data:
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid xs={6}>
+                <Typography>
+                  Austin: {formatCurrency(Number(existingEntry?.austin || 0))}
+                </Typography>
+              </Grid>
+              <Grid xs={6}>
+                <Typography>
+                  Charlotte:{" "}
+                  {formatCurrency(Number(existingEntry?.charlotte || 0))}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowOverwriteDialog(false)}>Cancel</Button>
+          <Button onClick={handleOverwriteCancel} color="inherit">
+            Cancel
+          </Button>
           <Button
             onClick={handleOverwriteConfirm}
-            color="warning"
+            color="primary"
             variant="contained"
           >
-            Update Data
+            Overwrite
           </Button>
         </DialogActions>
       </Dialog>

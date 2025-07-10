@@ -37,13 +37,13 @@ import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
 import { DailyPatternsView } from "./charts/DailyPatternsView";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
-import { 
-  filterDataByTimeFrame, 
-  calculateLocationMetrics, 
-  calculateTimePeriodsMetrics, 
+import {
+  filterDataByTimeFrame,
+  calculateLocationMetrics,
+  calculateTimePeriodsMetrics,
   validateDataIntegrity,
   validateDataConsistency,
-  recalculateMonthlyGoals
+  recalculateMonthlyGoals,
 } from "../utils/calculations";
 import { DaysBehindAlert } from "./DaysBehindAlert";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
@@ -131,27 +131,32 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     if (state.revenueData.length > 0 && state.targetSettings) {
       // Existing data integrity validation
-      const validation = validateDataIntegrity(state.revenueData, state.targetSettings);
-      
+      const validation = validateDataIntegrity(
+        state.revenueData,
+        state.targetSettings
+      );
+
       if (!validation.isValid) {
         console.error("Data validation errors:", validation.errors);
         setState((prevState) => ({
           ...prevState,
           snackbar: {
             open: true,
-            message: `Data validation failed: ${validation.errors.join(', ')}`,
+            message: `Data validation failed: ${validation.errors.join(", ")}`,
             severity: "error",
           },
         }));
       } else if (validation.warnings.length > 0) {
         console.warn("Data validation warnings:", validation.warnings);
         // Only show first few warnings to avoid overwhelming the user
-        const warningMessage = validation.warnings.slice(0, 3).join(', ');
+        const warningMessage = validation.warnings.slice(0, 3).join(", ");
         setState((prevState) => ({
           ...prevState,
           snackbar: {
             open: true,
-            message: `Data warnings: ${warningMessage}${validation.warnings.length > 3 ? ' and more...' : ''}`,
+            message: `Data warnings: ${warningMessage}${
+              validation.warnings.length > 3 ? " and more..." : ""
+            }`,
             severity: "warning",
           },
         }));
@@ -179,13 +184,17 @@ export const Dashboard: React.FC = () => {
 
       // Handle critical consistency errors
       if (!consistencyCheck.isValid && consistencyCheck.errors.length > 0) {
-        console.error("Critical data consistency errors:", consistencyCheck.errors);
-        
-        // Show error notification for critical issues
-        const criticalErrors = consistencyCheck.errors.filter(error => 
-          error.includes("mismatch") || error.includes("filter not working")
+        console.error(
+          "Critical data consistency errors:",
+          consistencyCheck.errors
         );
-        
+
+        // Show error notification for critical issues
+        const criticalErrors = consistencyCheck.errors.filter(
+          (error) =>
+            error.includes("mismatch") || error.includes("filter not working")
+        );
+
         if (criticalErrors.length > 0) {
           setState((prevState) => ({
             ...prevState,
@@ -200,20 +209,31 @@ export const Dashboard: React.FC = () => {
 
       // Automatically recalculate monthly goals if needed
       if (!consistencyCheck.summary.monthlyGoalConsistency) {
-        console.log("Monthly goal inconsistency detected, attempting recalculation...");
-        
+        console.log(
+          "Monthly goal inconsistency detected, attempting recalculation..."
+        );
+
         try {
-          const recalculatedSettings = recalculateMonthlyGoals(state.targetSettings, false);
-          
+          const recalculatedSettings = recalculateMonthlyGoals(
+            state.targetSettings,
+            false
+          );
+
           // Only update if there are actual changes
-          if (JSON.stringify(recalculatedSettings) !== JSON.stringify(state.targetSettings)) {
-            console.log("Updating target settings with recalculated monthly goals");
+          if (
+            JSON.stringify(recalculatedSettings) !==
+            JSON.stringify(state.targetSettings)
+          ) {
+            console.log(
+              "Updating target settings with recalculated monthly goals"
+            );
             setState((prevState) => ({
               ...prevState,
               targetSettings: recalculatedSettings,
               snackbar: {
                 open: true,
-                message: "Monthly goals have been automatically recalculated for consistency",
+                message:
+                  "Monthly goals have been automatically recalculated for consistency",
                 severity: "info",
               },
             }));
@@ -366,7 +386,7 @@ export const Dashboard: React.FC = () => {
             <Stack spacing={5}>
               {/* Days Behind Alert */}
               <Box>
-                <DaysBehindAlert 
+                <DaysBehindAlert
                   data={state.revenueData}
                   targetSettings={state.targetSettings}
                 />
@@ -395,32 +415,32 @@ export const Dashboard: React.FC = () => {
               {/* Daily Entry Form and Filters Row */}
               <Box sx={{ mt: 1 }}>
                 <Grid container spacing={4}>
-                  <Grid size={{ xs: 12, lg: 5 }}>
+                  <Grid xs={12} lg={5}>
                     <DailyEntryForm
                       onSubmit={handleDailyDataAdd}
                       existingData={state.revenueData}
                       targets={state.targetSettings}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, lg: 7 }}>
-                    <Paper 
-                      elevation={2} 
-                      sx={{ 
-                        p: 4, 
+                  <Grid xs={12} lg={7}>
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 4,
                         height: "100%",
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider'
+                        border: "1px solid",
+                        borderColor: "divider",
                       }}
                     >
                       <Grid container spacing={3}>
-                        <Grid size={{ xs: 12, md: 8 }}>
+                        <Grid xs={12} md={8}>
                           <FilterPanel
                             filters={state.filters}
                             onFilterChange={handleFilterChange}
                           />
                         </Grid>
-                        <Grid size={{ xs: 12, md: 4 }}>
+                        <Grid xs={12} md={4}>
                           <DataImportExport
                             onDataUpdate={handleDataUpdate}
                             currentData={state.revenueData}
@@ -438,15 +458,16 @@ export const Dashboard: React.FC = () => {
                 // Show regular charts for combined view
                 <Stack spacing={6}>
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 550,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <RevenueComparisonChart
@@ -461,15 +482,16 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 550,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <DailyAttainmentChart
@@ -481,15 +503,16 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 550,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <TimePeriodsChart
@@ -501,15 +524,16 @@ export const Dashboard: React.FC = () => {
                   </Box>
 
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 650,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <DistributionCharts
@@ -524,15 +548,16 @@ export const Dashboard: React.FC = () => {
                 // Show location-specific charts
                 <Stack spacing={6}>
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 550,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <LocationDailyChart
@@ -552,15 +577,16 @@ export const Dashboard: React.FC = () => {
                     </Paper>
                   </Box>
                   <Box>
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 4, 
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
                         height: 550,
                         borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       }}
                     >
                       <LocationMTDChart
@@ -635,7 +661,10 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ flexGrow: 1, bgcolor: "#F3F4F6", minHeight: "100vh", pt: 2 }}>
-      <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}>
+      <Container
+        maxWidth={false}
+        sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}
+      >
         <Snackbar
           open={state.snackbar.open}
           autoHideDuration={6000}
