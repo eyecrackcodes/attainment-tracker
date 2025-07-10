@@ -69,7 +69,7 @@ export const countBusinessDays = (startDate: Date, endDate: Date): number => {
 // Shared business days calculation
 const calculateBusinessDaysInfo = (
   timeFrame: TimeFrame,
-  monthlyAdjustment: MonthlyAdjustment | undefined,
+  monthlyAdjustment: MonthlyTargetAdjustment | undefined,
   currentDay: number
 ): {
   totalBusinessDays: number;
@@ -670,7 +670,11 @@ export const calculateTimePeriodsMetrics = (
   const lastEntryDate = new Date(lastYear, lastMonth, lastDay);
 
   // Define week boundaries based on actual data range
-  const weekBoundaries = [];
+  const weekBoundaries: Array<{
+    start: Date;
+    end: Date;
+    label: string;
+  }> = [];
 
   // Start with the first day that has data
   let weekStart = new Date(firstEntryDate);
@@ -711,7 +715,8 @@ export const calculateTimePeriodsMetrics = (
 
     // Find which week this entry belongs to
     const weekIndex = weekBoundaries.findIndex(
-      (week) => entryDate >= week.start && entryDate <= week.end
+      (week: { start: Date; end: Date }) =>
+        entryDate >= week.start && entryDate <= week.end
     );
 
     if (weekIndex >= 0) {
@@ -2223,7 +2228,11 @@ const calculateMonthlyPatterns = (
   averageRevenue: number;
   attainmentRate: number;
 }> => {
-  const patterns = [];
+  const patterns: Array<{
+    dayOfMonth: number;
+    averageRevenue: number;
+    attainmentRate: number;
+  }> = [];
   const dayGroups: { [key: number]: number[] } = {};
   const dailyTarget =
     (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
@@ -2312,4 +2321,252 @@ const calculatePredictiveIndicators = (
   };
 };
 
-// ... existing code ...
+// Comprehensive data validation and consistency checker
+export const validateDataConsistency = (
+  data: RevenueData[],
+  targetSettings: TargetSettings,
+  filters: {
+    timeFrame: TimeFrame;
+    location: string;
+    startDate?: string | null;
+    endDate?: string | null;
+  }
+): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  summary: {
+    totalRecords: number;
+    filteredRecords: number;
+    dateRange: { start: string; end: string };
+    monthlyGoalConsistency: boolean;
+    targetCalculationAccuracy: boolean;
+  };
+} => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Basic data validation
+  if (!data || data.length === 0) {
+    errors.push("No revenue data available");
+    return {
+      isValid: false,
+      errors,
+      warnings,
+      summary: {
+        totalRecords: 0,
+        filteredRecords: 0,
+        dateRange: { start: "", end: "" },
+        monthlyGoalConsistency: false,
+        targetCalculationAccuracy: false,
+      },
+    };
+  }
+
+  // Filter data using our function
+  const filteredData = filterDataByTimeFrame(
+    data,
+    filters.timeFrame,
+    undefined,
+    targetSettings,
+    filters.startDate,
+    filters.endDate,
+    filters.location
+  );
+
+  // Calculate metrics
+  const metrics = calculateLocationMetrics(
+    filteredData,
+    targetSettings,
+    filters.location,
+    filters.timeFrame
+  );
+
+  // Validate date consistency
+  const dates = filteredData.map((item) => item.date).sort();
+  const dateRange = {
+    start: dates[0] || "",
+    end: dates[dates.length - 1] || "",
+  };
+
+  // Check for data gaps
+  if (dates.length > 1) {
+    const startDate = new Date(dates[0]);
+    const endDate = new Date(dates[dates.length - 1]);
+    const expectedBusinessDays = countBusinessDays(startDate, endDate);
+
+    if (filteredData.length < expectedBusinessDays * 0.8) {
+      warnings.push(
+        `Potential data gaps detected: ${filteredData.length} records vs ${expectedBusinessDays} expected business days`
+      );
+    }
+  }
+
+  // Validate monthly goal consistency
+  let monthlyGoalConsistency = true;
+  const periodInfo = metrics.total.periodInfo;
+
+  if (periodInfo) {
+    const monthlyAdjustment = targetSettings.monthlyAdjustments?.find(
+      (adj) =>
+        adj.month === periodInfo.relevantMonth &&
+        adj.year === periodInfo.relevantYear
+    );
+
+    if (monthlyAdjustment && periodInfo.hasMonthlyAdjustment) {
+      const expectedAustinMonthly =
+        (monthlyAdjustment.austin ??
+          targetSettings.dailyTargets?.austin ??
+          TARGETS.austin) * periodInfo.workingDaysInPeriod;
+      const expectedCharlotteMonthly =
+        (monthlyAdjustment.charlotte ??
+          targetSettings.dailyTargets?.charlotte ??
+          TARGETS.charlotte) * periodInfo.workingDaysInPeriod;
+
+      if (
+        Math.abs(metrics.austin.monthlyTarget - expectedAustinMonthly) > 0.01
+      ) {
+        errors.push(
+          `Austin monthly target mismatch: calculated ${metrics.austin.monthlyTarget}, expected ${expectedAustinMonthly}`
+        );
+        monthlyGoalConsistency = false;
+      }
+
+      if (
+        Math.abs(metrics.charlotte.monthlyTarget - expectedCharlotteMonthly) >
+        0.01
+      ) {
+        errors.push(
+          `Charlotte monthly target mismatch: calculated ${metrics.charlotte.monthlyTarget}, expected ${expectedCharlotteMonthly}`
+        );
+        monthlyGoalConsistency = false;
+      }
+    }
+  }
+
+  // Validate target calculation accuracy
+  let targetCalculationAccuracy = true;
+
+  if (
+    metrics.austin.target > 0 &&
+    (metrics.austin.attainment < 0 || metrics.austin.attainment > 1000)
+  ) {
+    warnings.push(
+      `Austin attainment percentage seems unusual: ${metrics.austin.attainment.toFixed(
+        1
+      )}%`
+    );
+    targetCalculationAccuracy = false;
+  }
+
+  if (
+    metrics.charlotte.target > 0 &&
+    (metrics.charlotte.attainment < 0 || metrics.charlotte.attainment > 1000)
+  ) {
+    warnings.push(
+      `Charlotte attainment percentage seems unusual: ${metrics.charlotte.attainment.toFixed(
+        1
+      )}%`
+    );
+    targetCalculationAccuracy = false;
+  }
+
+  // Check for negative revenue values
+  const negativeRevenue = filteredData.filter(
+    (item) =>
+      (item.austin && item.austin < 0) || (item.charlotte && item.charlotte < 0)
+  );
+
+  if (negativeRevenue.length > 0) {
+    warnings.push(
+      `Found ${negativeRevenue.length} records with negative revenue values`
+    );
+  }
+
+  // Validate location filtering
+  if (filters.location === "Austin") {
+    const hasCharlotteRevenue = filteredData.some(
+      (item) => item.charlotte && item.charlotte > 0
+    );
+    if (hasCharlotteRevenue) {
+      errors.push(
+        "Austin location filter not working correctly - Charlotte revenue found"
+      );
+    }
+  } else if (filters.location === "Charlotte") {
+    const hasAustinRevenue = filteredData.some(
+      (item) => item.austin && item.austin > 0
+    );
+    if (hasAustinRevenue) {
+      errors.push(
+        "Charlotte location filter not working correctly - Austin revenue found"
+      );
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    summary: {
+      totalRecords: data.length,
+      filteredRecords: filteredData.length,
+      dateRange,
+      monthlyGoalConsistency,
+      targetCalculationAccuracy,
+    },
+  };
+};
+
+// Optimized monthly goal recalculation function
+export const recalculateMonthlyGoals = (
+  targetSettings: TargetSettings,
+  forceRecalculate: boolean = false
+): TargetSettings => {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Create a deep copy of target settings
+  const updatedSettings = JSON.parse(
+    JSON.stringify(targetSettings)
+  ) as TargetSettings;
+
+  // Find current month adjustment
+  const currentAdjustmentIndex = updatedSettings.monthlyAdjustments.findIndex(
+    (adj) => adj.month === currentMonth && adj.year === currentYear
+  );
+
+  if (currentAdjustmentIndex >= 0) {
+    const adjustment =
+      updatedSettings.monthlyAdjustments[currentAdjustmentIndex];
+
+    if (
+      forceRecalculate ||
+      !adjustment.workingDays ||
+      adjustment.workingDays.length === 0
+    ) {
+      // Recalculate working days for current month
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const lastDay = new Date(currentYear, currentMonth + 1, 0);
+      const workingDays: number[] = [];
+
+      let currentDay = new Date(firstDay);
+      while (currentDay <= lastDay) {
+        // Skip weekends
+        if (currentDay.getDay() !== 0 && currentDay.getDay() !== 6) {
+          workingDays.push(currentDay.getDate());
+        }
+        currentDay.setDate(currentDay.getDate() + 1);
+      }
+
+      // Update the adjustment
+      updatedSettings.monthlyAdjustments[currentAdjustmentIndex] = {
+        ...adjustment,
+        workingDays,
+      };
+    }
+  }
+
+  return updatedSettings;
+};
