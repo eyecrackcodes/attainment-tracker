@@ -9,6 +9,7 @@ import {
   push,
   update,
   get,
+  Database,
 } from "firebase/database";
 import { RevenueData, DailyTarget, TargetSettings } from "../types/revenue";
 import { TARGETS } from "../utils/calculations";
@@ -27,7 +28,7 @@ const firebaseConfig = {
 // Initialize Firebase only if we have valid configuration
 let app;
 let analytics;
-let database;
+let database: Database | undefined;
 
 try {
   app = initializeApp(firebaseConfig);
@@ -40,6 +41,13 @@ try {
 export const revenueService = {
   // Subscribe to revenue data changes
   subscribeToRevenueData: (callback: (data: RevenueData[]) => void) => {
+    // Check if database is initialized
+    if (!database) {
+      console.warn("Firebase database not initialized. Using empty data.");
+      callback([]);
+      return () => {}; // Return no-op unsubscribe function
+    }
+    
     const revenueRef = ref(database, "revenue");
     onValue(revenueRef, (snapshot) => {
       const data = snapshot.val();
@@ -95,6 +103,13 @@ export const revenueService = {
   // Add new revenue entry
   addRevenueEntry: async (entry: RevenueData) => {
     try {
+      // Check if database is initialized
+      if (!database) {
+        console.warn("Firebase database not initialized. Cannot save data.");
+        // Return false to indicate the save failed, but don't throw an error
+        return false;
+      }
+      
       const revenueRef = ref(database, "revenue");
       const newEntryRef = push(revenueRef);
       await set(newEntryRef, {
@@ -111,6 +126,12 @@ export const revenueService = {
   // Update existing revenue entry
   updateRevenueEntry: async (entryId: string, entry: RevenueData) => {
     try {
+      // Check if database is initialized
+      if (!database) {
+        console.warn("Firebase database not initialized. Cannot update data.");
+        return false;
+      }
+      
       const updates: { [key: string]: any } = {};
       updates[`/revenue/${entryId}`] = entry;
       await update(ref(database), updates);
@@ -124,6 +145,13 @@ export const revenueService = {
   // Get all revenue data once
   getAllRevenueData: () => {
     return new Promise<RevenueData[]>((resolve, reject) => {
+      // Check if database is initialized
+      if (!database) {
+        console.warn("Firebase database not initialized. Returning empty data.");
+        resolve([]);
+        return;
+      }
+      
       const revenueRef = ref(database, "revenue");
       onValue(
         revenueRef,

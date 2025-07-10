@@ -31,6 +31,7 @@ import { DistributionCharts } from "./charts/DistributionCharts";
 import SummaryMetrics from "./SummaryMetrics";
 import { DailyEntryForm } from "./DailyEntryForm";
 import { revenueService } from "../services/firebase";
+import { localStorageService } from "../services/localStorage";
 import { TargetSettings as TargetSettingsComponent } from "./TargetSettings";
 import { MonthlyTargetSettings as MonthlyTargetSettingsComponent } from "./MonthlyTargetSettings";
 import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
@@ -104,12 +105,23 @@ export const Dashboard: React.FC = () => {
   const showLocationCharts = state.filters.location !== "Combined";
 
   useEffect(() => {
+    // Try Firebase first, fallback to localStorage
     const unsubscribeRevenue = revenueService.subscribeToRevenueData((data) => {
-      setState((prevState) => ({
-        ...prevState,
-        revenueData: data,
-        loading: false,
-      }));
+      // If Firebase returns empty data, try localStorage
+      if (data.length === 0) {
+        const localData = localStorageService.getRevenueData();
+        setState((prevState) => ({
+          ...prevState,
+          revenueData: localData,
+          loading: false,
+        }));
+      } else {
+        setState((prevState) => ({
+          ...prevState,
+          revenueData: data,
+          loading: false,
+        }));
+      }
     });
 
     const unsubscribeTargets = revenueService.subscribeToTargetSettings(
@@ -121,6 +133,16 @@ export const Dashboard: React.FC = () => {
         }));
       }
     );
+
+    // Also load from localStorage initially
+    const localData = localStorageService.getRevenueData();
+    const localSettings = localStorageService.getTargetSettings();
+    
+    setState((prevState) => ({
+      ...prevState,
+      revenueData: localData,
+      targetSettings: localSettings,
+    }));
 
     return () => {
       unsubscribeRevenue();
@@ -247,6 +269,9 @@ export const Dashboard: React.FC = () => {
 
     try {
       await revenueService.saveTargetSettings(newTargets);
+      
+      // Also save to localStorage as backup
+      localStorageService.saveTargetSettings(newTargets);
 
       // Update local state regardless of whether the save was successful
       setState((prevState) => ({
@@ -261,6 +286,9 @@ export const Dashboard: React.FC = () => {
       }));
     } catch (error) {
       console.error("Error in handleTargetsChange:", error);
+      
+      // Save to localStorage as fallback
+      localStorageService.saveTargetSettings(newTargets);
 
       // Still update local state even if the save failed
       setState((prevState) => ({
@@ -270,7 +298,7 @@ export const Dashboard: React.FC = () => {
         snackbar: {
           open: true,
           message:
-            "Target settings updated locally only. Changes will not persist after reload.",
+            "Target settings saved locally. Firebase connection unavailable.",
           severity: "warning",
         },
       }));
@@ -283,10 +311,31 @@ export const Dashboard: React.FC = () => {
       loading: true,
     }));
     try {
-      // This will trigger the Firebase subscription update
-      await Promise.all(
+      // Try Firebase first
+      const results = await Promise.all(
         newData.map((entry) => revenueService.addRevenueEntry(entry))
       );
+      
+      const firebaseFailures = results.filter(result => !result).length;
+      
+      // If any Firebase saves failed, save all to localStorage
+      if (firebaseFailures > 0) {
+        newData.forEach(entry => localStorageService.addRevenueEntry(entry));
+        const updatedData = localStorageService.getRevenueData();
+        
+        setState((prevState) => ({
+          ...prevState,
+          revenueData: updatedData,
+          loading: false,
+          snackbar: {
+            open: true,
+            message: `Imported ${newData.length} entries to local storage`,
+            severity: "warning",
+          },
+        }));
+        return;
+      }
+      
       setState((prevState) => ({
         ...prevState,
         loading: false,
@@ -315,14 +364,36 @@ export const Dashboard: React.FC = () => {
       loading: true,
     }));
     try {
-      await revenueService.addRevenueEntry(newEntry);
+      // Try Firebase first
+      const firebaseSuccess = await revenueService.addRevenueEntry(newEntry);
+      
+      // If Firebase fails, use localStorage
+      if (!firebaseSuccess) {
+        const localSuccess = localStorageService.addRevenueEntry(newEntry);
+        if (localSuccess) {
+          // Update state with new data from localStorage
+          const updatedData = localStorageService.getRevenueData();
+          setState((prevState) => ({
+            ...prevState,
+            revenueData: updatedData,
+            loading: false,
+            snackbar: {
+              open: true,
+              message: "Revenue data saved locally!",
+              severity: "success",
+            },
+          }));
+          return;
+        }
+      }
+      
       setState((prevState) => ({
         ...prevState,
         loading: false,
         snackbar: {
           open: true,
-          message: "Revenue data added successfully!",
-          severity: "success",
+          message: firebaseSuccess ? "Revenue data added successfully!" : "Failed to add data. Please try again.",
+          severity: firebaseSuccess ? "success" : "error",
         },
       }));
     } catch (err) {
