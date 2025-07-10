@@ -1293,7 +1293,7 @@ export const calculateStakeholderInsights = (
       executiveSummary: {
         currentPerformance: 0,
         monthlyProjection: 0,
-        riskLevel: "high" as const,
+        riskLevel: "high",
         keyInsight: "No data available for analysis",
         actionRequired: true,
       },
@@ -1304,23 +1304,30 @@ export const calculateStakeholderInsights = (
           combined: 0,
           confidence: 0,
         },
-        quarterProjection: { revenue: 0, attainment: 0, confidence: 0 },
+        quarterProjection: {
+          revenue: 0,
+          attainment: 0,
+          confidence: 0,
+        },
         trendAnalysis: {
-          direction: "stable" as const,
+          direction: "stable",
           velocity: 0,
-          sustainability: "low" as const,
+          sustainability: "low",
         },
       },
       riskAnalysis: {
         revenueAtRisk: 0,
         daysToRecovery: 0,
         criticalFactors: ["No data available"],
-        mitigation: ["Implement data collection process"],
+        mitigation: ["Begin data collection"],
       },
       competitivePositioning: {
-        marketShare: { austin: 0, charlotte: 0 },
+        marketShare: {
+          austin: 0,
+          charlotte: 0,
+        },
         growthRate: 0,
-        benchmarkComparison: "below" as const,
+        benchmarkComparison: "below",
       },
       operationalEfficiency: {
         revenuePerDay: 0,
@@ -1329,20 +1336,19 @@ export const calculateStakeholderInsights = (
         underperformingDays: [],
       },
       strategicRecommendations: {
-        immediate: ["Establish data collection and tracking systems"],
-        shortTerm: ["Set performance baselines and targets"],
-        longTerm: ["Develop comprehensive performance management strategy"],
+        immediate: ["Establish data collection process"],
+        shortTerm: ["Analyze initial trends"],
+        longTerm: ["Develop comprehensive strategy"],
         resourceAllocation: {
-          austin: "maintain" as const,
-          charlotte: "maintain" as const,
-          reasoning:
-            "Insufficient data for strategic resource allocation decisions",
+          austin: "maintain",
+          charlotte: "maintain",
+          reasoning: "Insufficient data for allocation decisions",
         },
       },
     };
   }
 
-  // Current month analysis
+  // Get current date information
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -1354,21 +1360,16 @@ export const calculateStakeholderInsights = (
   );
 
   // Calculate business days using shared function
-  const businessDaysInfo = calculateBusinessDaysInfo(
-    "MTD",
-    monthlyAdjustment,
-    currentDay
-  );
-  const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } =
-    businessDaysInfo;
+  const businessDaysInfo = calculateBusinessDaysInfo('MTD', monthlyAdjustment, currentDay);
+  const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } = businessDaysInfo;
 
   // Get location metrics
-  const locationMetrics = calculateLocationMetrics(
-    data,
-    targetSettings,
-    undefined,
-    "MTD"
-  );
+  const locationMetrics = calculateLocationMetrics(data, targetSettings, undefined, 'MTD');
+
+  // Calculate current performance (attainment)
+  const currentPerformance = locationMetrics.total.revenue > 0 && locationMetrics.total.target > 0
+    ? (locationMetrics.total.revenue / locationMetrics.total.target) * 100
+    : 0;
 
   // Sort data chronologically
   const sortedData = [...data].sort(
@@ -1416,8 +1417,6 @@ export const calculateStakeholderInsights = (
       (sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0),
       0
     ) / sortedData.length;
-  const remainingBusinessDays =
-    locationMetrics.total.totalDays - locationMetrics.total.elapsedDays;
 
   const austinDailyAvg =
     sortedData.reduce((sum, entry) => sum + (entry.austin || 0), 0) /
@@ -1435,6 +1434,11 @@ export const calculateStakeholderInsights = (
     locationMetrics.charlotte.revenue +
     charlotteDailyAvg * trendMultiplier * remainingBusinessDays;
   const projectedCombined = projectedAustin + projectedCharlotte;
+
+  // Calculate month-end projection attainment
+  const monthEndProjectionAttainment = locationMetrics.total.monthlyTarget > 0
+    ? (projectedCombined / locationMetrics.total.monthlyTarget) * 100
+    : 0;
 
   // Calculate confidence based on data consistency
   const dailyTotals = sortedData.map(
@@ -1585,9 +1589,8 @@ export const calculateStakeholderInsights = (
 
   return {
     executiveSummary: {
-      currentPerformance: currentAttainment,
-      monthlyProjection:
-        (projectedCombined / locationMetrics.total.monthlyTarget) * 100,
+      currentPerformance,
+      monthlyProjection: monthEndProjectionAttainment,
       riskLevel,
       keyInsight,
       actionRequired: riskLevel !== "low" || currentAttainment < 95,
@@ -1742,6 +1745,26 @@ export const calculateBusinessIntelligence = (
       },
     };
   }
+
+  // Get current date information
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+
+  // Get monthly adjustment if available
+  const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
+    (adj) => adj.month === currentMonth && adj.year === currentYear
+  );
+
+  // Calculate business days using shared function
+  const businessDaysInfo = calculateBusinessDaysInfo(
+    "MTD",
+    monthlyAdjustment,
+    currentDay
+  );
+  const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } =
+    businessDaysInfo;
 
   const sortedData = [...data].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
