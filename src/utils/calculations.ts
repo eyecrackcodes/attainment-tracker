@@ -1380,7 +1380,12 @@ export const calculateStakeholderInsights = (
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const locationMetrics = calculateLocationMetrics(data, targetSettings);
+  const locationMetrics = calculateLocationMetrics(
+    data,
+    targetSettings,
+    undefined,
+    "MTD"
+  );
 
   // Sort data chronologically
   const sortedData = [...data].sort(

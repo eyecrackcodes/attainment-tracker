@@ -157,23 +157,58 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   isLoading = false,
 }) => {
   const { stakeholderInsights, businessIntelligence } = useMemo(() => {
-    if (!data || data.length === 0) {
+    if (!data || data.length === 0 || !targetSettings) {
       return { stakeholderInsights: null, businessIntelligence: null };
     }
 
-    return {
-      stakeholderInsights: calculateStakeholderInsights(data, targetSettings),
-      businessIntelligence: calculateBusinessIntelligence(data, targetSettings),
-    };
+    try {
+      return {
+        stakeholderInsights: calculateStakeholderInsights(data, targetSettings),
+        businessIntelligence: calculateBusinessIntelligence(
+          data,
+          targetSettings
+        ),
+      };
+    } catch (error) {
+      console.error("Error calculating insights:", error);
+      return { stakeholderInsights: null, businessIntelligence: null };
+    }
   }, [data, targetSettings]);
 
-  if (isLoading || !stakeholderInsights || !businessIntelligence) {
+  if (isLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom>
           Executive Dashboard
         </Typography>
-        <Typography>Loading executive insights...</Typography>
+        <LinearProgress />
+        <Typography sx={{ mt: 2 }}>Loading executive insights...</Typography>
+      </Box>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Executive Dashboard
+        </Typography>
+        <Alert severity="info">
+          No data available. Please enter some revenue data to see insights.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!stakeholderInsights || !businessIntelligence) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Executive Dashboard
+        </Typography>
+        <Alert severity="error">
+          Error calculating insights. Please check the console for details.
+        </Alert>
       </Box>
     );
   }
