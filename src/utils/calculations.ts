@@ -30,7 +30,20 @@ export const TARGETS: DailyTarget = {
 };
 
 export const calculateAttainment = (actual: number, target: number): number => {
-  return (actual / target) * 100;
+  return target > 0 ? (actual / target) * 100 : 0;
+};
+
+// Performance-optimized attainment calculation
+export const calculateOptimizedAttainment = (
+  revenue: number,
+  target: number,
+  precision: number = 2
+): number => {
+  if (target === 0) return 0;
+  const attainment = (revenue / target) * 100;
+  return (
+    Math.round(attainment * Math.pow(10, precision)) / Math.pow(10, precision)
+  );
 };
 
 // Helper function to check if a date is a business day (not a weekend)
@@ -114,6 +127,21 @@ export const calculateLocationMetrics = (
   timeFrame: TimeFrame = "MTD"
 ) => {
   if (!data || data.length === 0) {
+    const emptyPeriodInfo = {
+      startDate: "",
+      endDate: "",
+      periodType: timeFrame,
+      workingDaysInPeriod: 0,
+      actualDataDays: 0,
+      relevantMonth: 0,
+      relevantYear: 0,
+      hasMonthlyAdjustment: false,
+      dailyTargets: {
+        austin: 0,
+        charlotte: 0,
+      },
+    };
+
     return {
       austin: {
         revenue: 0,
@@ -121,7 +149,10 @@ export const calculateLocationMetrics = (
         monthlyTarget: 0,
         attainment: 0,
         elapsedDays: 0,
+        remainingDays: 0,
         totalDays: 0,
+        dailyPaceNeeded: 0,
+        periodInfo: emptyPeriodInfo,
       },
       charlotte: {
         revenue: 0,
@@ -129,7 +160,10 @@ export const calculateLocationMetrics = (
         monthlyTarget: 0,
         attainment: 0,
         elapsedDays: 0,
+        remainingDays: 0,
         totalDays: 0,
+        dailyPaceNeeded: 0,
+        periodInfo: emptyPeriodInfo,
       },
       total: {
         revenue: 0,
@@ -137,7 +171,10 @@ export const calculateLocationMetrics = (
         monthlyTarget: 0,
         attainment: 0,
         elapsedDays: 0,
+        remainingDays: 0,
         totalDays: 0,
+        dailyPaceNeeded: 0,
+        periodInfo: emptyPeriodInfo,
       },
     };
   }
@@ -240,6 +277,33 @@ export const calculateLocationMetrics = (
     monthlyAustinTarget,
     monthlyCharlotteTarget
   );
+  const filteredDailyPaceNeeded = getLocationFilteredTarget(
+    austinDailyPaceNeeded,
+    charlotteDailyPaceNeeded
+  );
+
+  // Get date range from data
+  const dates = data
+    .map((item) => new Date(item.date))
+    .sort((a, b) => a.getTime() - b.getTime());
+  const startDate = dates[0]?.toISOString().split("T")[0] || "";
+  const endDate = dates[dates.length - 1]?.toISOString().split("T")[0] || "";
+
+  // Create period info
+  const periodInfo = {
+    startDate,
+    endDate,
+    periodType: timeFrame,
+    workingDaysInPeriod: totalBusinessDays,
+    actualDataDays: data.length,
+    relevantMonth: currentMonth,
+    relevantYear: currentYear,
+    hasMonthlyAdjustment: !!monthlyAdjustment,
+    dailyTargets: {
+      austin: dailyAustinTarget,
+      charlotte: dailyCharlotteTarget,
+    },
+  };
 
   return {
     austin: {
@@ -248,7 +312,10 @@ export const calculateLocationMetrics = (
       monthlyTarget: monthlyAustinTarget,
       attainment: austinAttainment,
       elapsedDays: elapsedBusinessDays,
+      remainingDays: remainingBusinessDays,
       totalDays: totalBusinessDays,
+      dailyPaceNeeded: austinDailyPaceNeeded,
+      periodInfo,
     },
     charlotte: {
       revenue: totalCharlotte,
@@ -256,7 +323,10 @@ export const calculateLocationMetrics = (
       monthlyTarget: monthlyCharlotteTarget,
       attainment: charlotteAttainment,
       elapsedDays: elapsedBusinessDays,
+      remainingDays: remainingBusinessDays,
       totalDays: totalBusinessDays,
+      dailyPaceNeeded: charlotteDailyPaceNeeded,
+      periodInfo,
     },
     total: {
       revenue: totalRevenue,
@@ -264,7 +334,10 @@ export const calculateLocationMetrics = (
       monthlyTarget: filteredMonthlyTarget,
       attainment: totalAttainment,
       elapsedDays: elapsedBusinessDays,
+      remainingDays: remainingBusinessDays,
       totalDays: totalBusinessDays,
+      dailyPaceNeeded: filteredDailyPaceNeeded,
+      periodInfo,
     },
   };
 };
@@ -2086,6 +2159,157 @@ const calculateLocationEfficiency = (
   targetRevenue: number
 ): number => {
   return targetRevenue > 0 ? (actualRevenue / targetRevenue) * 100 : 0;
+};
+
+// Helper function to calculate weekly trends
+const calculateWeeklyTrends = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): Array<{
+  week: string;
+  revenue: number;
+  attainment: number;
+  growth: number;
+}> => {
+  const trends = [];
+  const dailyTarget =
+    (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
+    (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+
+  for (let i = 0; i < data.length; i += 7) {
+    const weekData = data.slice(i, i + 7);
+    if (weekData.length > 0) {
+      const weekRevenue = weekData.reduce(
+        (sum, entry) => sum + (entry.austin || 0) + (entry.charlotte || 0),
+        0
+      );
+      const weekAttainment =
+        (weekRevenue / (dailyTarget * weekData.length)) * 100;
+
+      const prevWeekRevenue =
+        i > 0
+          ? data
+              .slice(Math.max(0, i - 7), i)
+              .reduce(
+                (sum, entry) =>
+                  sum + (entry.austin || 0) + (entry.charlotte || 0),
+                0
+              )
+          : 0;
+
+      const weekGrowth =
+        prevWeekRevenue > 0
+          ? ((weekRevenue - prevWeekRevenue) / prevWeekRevenue) * 100
+          : 0;
+
+      trends.push({
+        week: `Week ${Math.floor(i / 7) + 1}`,
+        revenue: weekRevenue,
+        attainment: weekAttainment,
+        growth: weekGrowth,
+      });
+    }
+  }
+
+  return trends;
+};
+
+// Helper function to calculate monthly patterns
+const calculateMonthlyPatterns = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+): Array<{
+  dayOfMonth: number;
+  averageRevenue: number;
+  attainmentRate: number;
+}> => {
+  const patterns = [];
+  const dayGroups: { [key: number]: number[] } = {};
+  const dailyTarget =
+    (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
+    (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+
+  data.forEach((entry) => {
+    const day = new Date(entry.date).getDate();
+    if (!dayGroups[day]) dayGroups[day] = [];
+    dayGroups[day].push((entry.austin || 0) + (entry.charlotte || 0));
+  });
+
+  Object.entries(dayGroups).forEach(([day, revenues]) => {
+    const avgRevenue =
+      revenues.reduce((sum, val) => sum + val, 0) / revenues.length;
+    const attainmentRate = (avgRevenue / dailyTarget) * 100;
+
+    patterns.push({
+      dayOfMonth: parseInt(day),
+      averageRevenue: avgRevenue,
+      attainmentRate: attainmentRate,
+    });
+  });
+
+  return patterns.sort((a, b) => a.dayOfMonth - b.dayOfMonth);
+};
+
+// Helper function to calculate predictive indicators
+const calculatePredictiveIndicators = (
+  data: RevenueData[],
+  targetSettings: TargetSettings,
+  consistencyScore: number,
+  growthRate: number
+): {
+  probabilityOfTarget: number;
+  expectedVariance: number;
+  riskFactors: string[];
+  opportunities: string[];
+} => {
+  const dailyTarget =
+    (targetSettings?.dailyTargets?.austin || TARGETS.austin) +
+    (targetSettings?.dailyTargets?.charlotte || TARGETS.charlotte);
+
+  const dailyRevenues = data.map(
+    (entry) => (entry.austin || 0) + (entry.charlotte || 0)
+  );
+  const avgRevenue =
+    dailyRevenues.reduce((sum, val) => sum + val, 0) / dailyRevenues.length;
+  const efficiency = (avgRevenue / dailyTarget) * 100;
+
+  const probabilityOfTarget = Math.min(100, Math.max(0, efficiency));
+  const variance =
+    dailyRevenues.reduce((sum, val) => sum + Math.pow(val - avgRevenue, 2), 0) /
+    dailyRevenues.length;
+  const expectedVariance = Math.sqrt(variance);
+
+  const riskFactors = [];
+  const opportunities = [];
+
+  if (consistencyScore < 70) riskFactors.push("High performance variability");
+  if (growthRate < 0) riskFactors.push("Declining performance trend");
+  if (efficiency < 90) riskFactors.push("Below-target efficiency");
+
+  const peakRevenue = Math.max(...dailyRevenues);
+  if (peakRevenue > dailyTarget * 1.2) {
+    opportunities.push("Replicate peak performance strategies");
+  }
+
+  // Check location-specific opportunities
+  const austinRevenues = data.map((entry) => entry.austin || 0);
+  const charlotteRevenues = data.map((entry) => entry.charlotte || 0);
+  const austinGrowth = calculateLocationGrowth(austinRevenues);
+  const charlotteGrowth = calculateLocationGrowth(charlotteRevenues);
+
+  if (austinGrowth > charlotteGrowth + 5) {
+    opportunities.push("Apply Austin growth strategies to Charlotte");
+  }
+  if (charlotteGrowth > austinGrowth + 5) {
+    opportunities.push("Apply Charlotte growth strategies to Austin");
+  }
+
+  return {
+    probabilityOfTarget,
+    expectedVariance,
+    riskFactors,
+    opportunities,
+  };
 };
 
 // ... existing code ...
