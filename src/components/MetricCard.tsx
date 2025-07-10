@@ -1,7 +1,6 @@
 import React from "react";
 import { Paper, Typography, Box, Divider } from "@mui/material";
 import { formatCurrency } from "../utils/formatters";
-import { calculateOptimizedAttainment } from "../utils/calculations";
 import { TrendingUp, TrendingDown } from "@mui/icons-material";
 
 interface MetricCardProps {
@@ -11,7 +10,10 @@ interface MetricCardProps {
   monthlyTarget: number;
   attainment: number;
   elapsedDays?: number;
+  remainingDays?: number;
   totalDays?: number;
+  dailyPaceNeeded?: number;
+  dailyTarget?: number;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({
@@ -20,116 +22,94 @@ const MetricCard: React.FC<MetricCardProps> = ({
   target,
   monthlyTarget,
   attainment,
-  elapsedDays,
-  totalDays,
+  elapsedDays = 0,
+  remainingDays = 0,
+  totalDays = 0,
+  dailyPaceNeeded = 0,
+  dailyTarget = 0,
 }) => {
-  // Use optimized attainment calculation for consistency
-  const optimizedAttainment = calculateOptimizedAttainment(revenue, target);
-  
-  // Determine color based on attainment percentage
-  const getAttainmentColor = (attainment: number) => {
-    if (attainment >= 100) return "success.main";
-    if (attainment >= 85) return "warning.main";
+  // Determine color based on attainment
+  const getAttainmentColor = (value: number) => {
+    if (value >= 100) return "success.main";
+    if (value >= 90) return "warning.main";
     return "error.main";
   };
 
-  // Calculate daily average needed to hit monthly target
-  const remainingDays = totalDays ? totalDays - (elapsedDays || 0) : 0;
-  const remainingRevenue = monthlyTarget - revenue;
-  const dailyNeeded = remainingDays > 0 ? remainingRevenue / remainingDays : 0;
-  const isAheadOfTarget = revenue >= target;
-  const amountAhead = revenue - target;
-  
-  // Fix: Show daily pace needed even when ahead of on-pace target but behind monthly target
-  const showDailyPace = remainingRevenue > 0 && remainingDays > 0;
-  
-  // Enhanced status logic for better messaging
-  const isMonthComplete = remainingRevenue <= 0;
-  const isStartOfMonth = (elapsedDays || 0) === 0;
+  // Determine daily pace status
+  const getDailyPaceStatus = () => {
+    if (remainingDays === 0) return null;
 
-  // Calculate monthly attainment percentage for additional context
-  const monthlyAttainment = monthlyTarget > 0 ? calculateOptimizedAttainment(revenue, monthlyTarget) : 0;
+    const paceRatio = dailyPaceNeeded / dailyTarget;
+    if (paceRatio <= 1) {
+      return {
+        icon: <TrendingDown color="success" />,
+        color: "success.main",
+        message: `On track - Daily pace needed (${formatCurrency(
+          dailyPaceNeeded
+        )}) is at or below daily target`,
+      };
+    } else if (paceRatio <= 1.25) {
+      return {
+        icon: <TrendingUp color="warning" />,
+        color: "warning.main",
+        message: `Caution - Need ${formatCurrency(
+          dailyPaceNeeded
+        )} per day (${Math.round((paceRatio - 1) * 100)}% above target)`,
+      };
+    } else {
+      return {
+        icon: <TrendingUp color="error" />,
+        color: "error.main",
+        message: `Alert - Need ${formatCurrency(
+          dailyPaceNeeded
+        )} per day (${Math.round((paceRatio - 1) * 100)}% above target)`,
+      };
+    }
+  };
+
+  const paceStatus = getDailyPaceStatus();
 
   return (
-    <Paper 
-      elevation={1} 
-      sx={{ 
-        p: 3, 
-        height: "100%",
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        transition: 'all 0.2s ease-in-out',
-        '&:hover': {
-          elevation: 3,
-          borderColor: 'primary.light',
-          transform: 'translateY(-2px)'
-        }
-      }}
-    >
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
+    <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
+      <Typography variant="h6" gutterBottom>
         {title}
       </Typography>
-      <Divider sx={{ mb: 3, borderColor: 'divider' }} />
+      <Typography variant="h4" component="div" gutterBottom>
+        {formatCurrency(revenue)}
+      </Typography>
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
-          MTD Revenue
+      <Divider sx={{ my: 2 }} />
+
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Monthly Target ({totalDays} days)
         </Typography>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
-          {formatCurrency(revenue)}
+        <Typography variant="h6">{formatCurrency(monthlyTarget)}</Typography>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          MTD Attainment ({elapsedDays} elapsed, {remainingDays} remaining)
+        </Typography>
+        <Typography variant="h6" sx={{ color: getAttainmentColor(attainment) }}>
+          {attainment.toFixed(1)}%
         </Typography>
       </Box>
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
-          Monthly Target ({elapsedDays} of {totalDays} days) - {monthlyAttainment.toFixed(1)}% Complete
-        </Typography>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-          {formatCurrency(monthlyTarget)}
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: showDailyPace ? 'warning.light' : isMonthComplete ? 'success.light' : 'info.light', opacity: 0.8 }}>
+      {paceStatus && (
+        <Box sx={{ mt: 2 }}>
           <Typography
             variant="body2"
-            color={showDailyPace ? "warning.dark" : isMonthComplete ? "success.dark" : "info.dark"}
-            sx={{ display: "flex", alignItems: "center", fontWeight: 500 }}
+            color="text.secondary"
+            sx={{ display: "flex", alignItems: "center", gap: 1 }}
           >
-            {showDailyPace ? (
-              <>
-                <TrendingDown sx={{ mr: 0.5, fontSize: "1.1rem" }} />
-                Daily Pace Needed: {formatCurrency(Math.abs(dailyNeeded))}
-              </>
-            ) : isMonthComplete ? (
-              <>
-                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
-                Monthly Target Exceeded by {formatCurrency(Math.abs(remainingRevenue))}
-              </>
-            ) : isStartOfMonth ? (
-              <>
-                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
-                Month Starting - {remainingDays} days remaining
-              </>
-            ) : (
-              <>
-                <TrendingUp sx={{ mr: 0.5, fontSize: "1.1rem" }} />
-                On Track - {remainingDays} days remaining
-              </>
-            )}
+            Daily Pace Status {paceStatus.icon}
+          </Typography>
+          <Typography variant="body2" sx={{ color: paceStatus.color }}>
+            {paceStatus.message}
           </Typography>
         </Box>
-      </Box>
-
-      <Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
-          MTD Attainment (vs. On-Pace Target)
-        </Typography>
-        <Typography variant="h5" sx={{ color: getAttainmentColor(optimizedAttainment), fontWeight: 700 }}>
-          {optimizedAttainment.toFixed(1)}%
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: 'italic' }}>
-          On-Pace Target: {formatCurrency(target)}
-        </Typography>
-      </Box>
+      )}
     </Paper>
   );
 };

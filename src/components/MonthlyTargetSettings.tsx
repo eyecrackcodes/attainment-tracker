@@ -282,7 +282,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         <Divider />
         <DialogContent>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+            <Grid xs={12} md={8}>
               <Typography variant="body2" color="text.secondary" paragraph>
                 Adjust targets for specific months to account for holidays,
                 office closures, or other variations. Select working days and
@@ -290,7 +290,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
               </Typography>
 
               <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <FormControl fullWidth>
                     <InputLabel>Month</InputLabel>
                     <Select
@@ -308,7 +308,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <FormControl fullWidth>
                     <InputLabel>Year</InputLabel>
                     <Select
@@ -359,12 +359,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
               <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={1} sx={{ mb: 1 }}>
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-                    <Grid
-                      item
-                      xs={1.7}
-                      key={index}
-                      sx={{ textAlign: "center" }}
-                    >
+                    <Grid xs={1.7} key={index} sx={{ textAlign: "center" }}>
                       <Typography
                         variant="subtitle2"
                         sx={{
@@ -388,7 +383,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                       length: new Date(selectedYear, selectedMonth, 1).getDay(),
                     },
                     (_, i) => (
-                      <Grid item xs={1.7} key={`empty-${i}`} />
+                      <Grid xs={1.7} key={`empty-${i}`} />
                     )
                   )}
 
@@ -400,7 +395,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     const isSelected = workingDays.includes(day);
 
                     return (
-                      <Grid item xs={1.7} key={day}>
+                      <Grid xs={1.7} key={day}>
                         <Button
                           fullWidth
                           variant={isSelected ? "contained" : "outlined"}
@@ -441,7 +436,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                 {formatCurrency(currentSettings.dailyTargets.charlotte)})
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Austin Daily Target"
@@ -456,7 +451,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     )}`}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Charlotte Daily Target"
@@ -474,7 +469,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
               </Grid>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid xs={12} md={4}>
               <Typography variant="subtitle2" gutterBottom>
                 Existing Adjustments
               </Typography>
