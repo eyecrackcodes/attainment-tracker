@@ -53,13 +53,66 @@ export const countBusinessDays = (startDate: Date, endDate: Date): number => {
   return count;
 };
 
+// Shared business days calculation
+const calculateBusinessDaysInfo = (
+  timeFrame: TimeFrame,
+  monthlyAdjustment: MonthlyAdjustment | undefined,
+  currentDay: number
+): {
+  totalBusinessDays: number;
+  elapsedBusinessDays: number;
+  remainingBusinessDays: number;
+} => {
+  let totalBusinessDays = 0;
+  let elapsedBusinessDays = 0;
+  let remainingBusinessDays = 0;
+
+  if (timeFrame === "MTD") {
+    if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
+      // Use monthly adjustment working days
+      totalBusinessDays = monthlyAdjustment.workingDays.length;
+
+      // Count elapsed days (days up to but not including today)
+      elapsedBusinessDays = monthlyAdjustment.workingDays.filter(
+        (day) => day < currentDay
+      ).length;
+
+      // Count remaining days (including today)
+      remainingBusinessDays = monthlyAdjustment.workingDays.filter(
+        (day) => day >= currentDay
+      ).length;
+    } else {
+      // Calculate standard business days
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      totalBusinessDays = countBusinessDays(firstDay, lastDay);
+      elapsedBusinessDays = countBusinessDays(
+        firstDay,
+        new Date(now.getFullYear(), now.getMonth(), currentDay - 1)
+      );
+      remainingBusinessDays = countBusinessDays(
+        new Date(now.getFullYear(), now.getMonth(), currentDay),
+        lastDay
+      );
+    }
+  }
+
+  return {
+    totalBusinessDays,
+    elapsedBusinessDays,
+    remainingBusinessDays,
+  };
+};
+
+// Update calculateLocationMetrics to use the shared function
 export const calculateLocationMetrics = (
   data: RevenueData[],
   targetSettings?: TargetSettings,
   location?: string,
-  timeFrame?: TimeFrame
+  timeFrame: TimeFrame = "MTD"
 ) => {
-  // Early return if no data
   if (!data || data.length === 0) {
     return {
       austin: {
@@ -89,153 +142,66 @@ export const calculateLocationMetrics = (
     };
   }
 
-  // Calculate totals efficiently using reduce
-  const { totalAustin, totalCharlotte } = data.reduce(
-    (acc, entry) => ({
-      totalAustin: acc.totalAustin + (entry.austin || 0),
-      totalCharlotte: acc.totalCharlotte + (entry.charlotte || 0),
-    }),
-    { totalAustin: 0, totalCharlotte: 0 }
-  );
-
-  const totalRevenue = totalAustin + totalCharlotte;
-
-  // Get current date info for consistent calculations
+  // Get current date information
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   const currentDay = now.getDate();
 
-  // Check for monthly adjustment - this is the "etched in stone" part
+  // Get monthly adjustment if available
   const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
     (adj) => adj.month === currentMonth && adj.year === currentYear
   );
 
-  let totalBusinessDays = 0;
-  let elapsedBusinessDays = 0;
-  let dailyAustinTarget = 0;
-  let dailyCharlotteTarget = 0;
+  // Calculate business days using shared function
+  const businessDaysInfo = calculateBusinessDaysInfo(
+    timeFrame,
+    monthlyAdjustment,
+    currentDay
+  );
+  const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } =
+    businessDaysInfo;
 
-  if (monthlyAdjustment && monthlyAdjustment.workingDays.length > 0) {
-    // Use monthly adjustment - "etched in stone" values
-    totalBusinessDays = monthlyAdjustment.workingDays.length;
+  // Calculate daily targets
+  let dailyAustinTarget =
+    targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
+  let dailyCharlotteTarget =
+    targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
 
-    // Calculate elapsed working days based on the adjustment
-    elapsedBusinessDays = monthlyAdjustment.workingDays.filter(
-      (day) => day < currentDay
-    ).length;
-
-    // Get targets from monthly adjustment or fall back to settings
-    dailyAustinTarget =
-      monthlyAdjustment.austin ??
-      targetSettings?.dailyTargets?.austin ??
-      TARGETS.austin;
-    dailyCharlotteTarget =
-      monthlyAdjustment.charlotte ??
-      targetSettings?.dailyTargets?.charlotte ??
-      TARGETS.charlotte;
-  } else {
-    // Calculate standard business days for the month
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-
-    // Count total business days in month
-    let currentCalendarDay = new Date(firstDayOfMonth);
-    while (currentCalendarDay <= lastDayOfMonth) {
-      if (
-        currentCalendarDay.getDay() !== 0 &&
-        currentCalendarDay.getDay() !== 6
-      ) {
-        totalBusinessDays++;
-      }
-      currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
+  // Apply monthly adjustments if available
+  if (monthlyAdjustment) {
+    if (monthlyAdjustment.austin !== undefined) {
+      dailyAustinTarget = monthlyAdjustment.austin;
     }
-
-    // Count elapsed business days (up to yesterday)
-    currentCalendarDay = new Date(firstDayOfMonth);
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    while (
-      currentCalendarDay <= yesterday &&
-      currentCalendarDay.getMonth() === currentMonth
-    ) {
-      if (
-        currentCalendarDay.getDay() !== 0 &&
-        currentCalendarDay.getDay() !== 6
-      ) {
-        elapsedBusinessDays++;
-      }
-      currentCalendarDay.setDate(currentCalendarDay.getDate() + 1);
+    if (monthlyAdjustment.charlotte !== undefined) {
+      dailyCharlotteTarget = monthlyAdjustment.charlotte;
     }
-
-    // Use standard daily targets
-    dailyAustinTarget = targetSettings?.dailyTargets?.austin ?? TARGETS.austin;
-    dailyCharlotteTarget =
-      targetSettings?.dailyTargets?.charlotte ?? TARGETS.charlotte;
   }
 
-  // Debug target sources
-  console.log(`Target settings debug:
-    Austin target: ${dailyAustinTarget}
-    - From monthly adjustment: ${monthlyAdjustment?.austin}
-    - From target settings: ${targetSettings?.dailyTargets?.austin}
-    - From default TARGETS: ${TARGETS.austin}
-    
-    Charlotte target: ${dailyCharlotteTarget}
-    - From monthly adjustment: ${monthlyAdjustment?.charlotte}
-    - From target settings: ${targetSettings?.dailyTargets?.charlotte}
-    - From default TARGETS: ${TARGETS.charlotte}
-    
-    Monthly adjustment active: ${monthlyAdjustment ? "Yes" : "No"}
-    - Month: ${monthlyAdjustment?.month}
-    - Year: ${monthlyAdjustment?.year}
-    - Working days: ${monthlyAdjustment?.workingDays?.join(", ") || "N/A"}
-  `);
-
-  // Calculate monthly targets (full month)
+  // Calculate monthly targets
   const monthlyAustinTarget = dailyAustinTarget * totalBusinessDays;
   const monthlyCharlotteTarget = dailyCharlotteTarget * totalBusinessDays;
 
-  // Log target calculation details for transparency
-  if (
-    monthlyAdjustment ||
-    targetSettings?.dailyTargets?.austin !== TARGETS.austin
-  ) {
-    console.info(
-      `Austin target calculation:
-      - Daily target: ${dailyAustinTarget} (${
-        monthlyAdjustment?.austin
-          ? "from monthly adjustment"
-          : targetSettings?.dailyTargets?.austin
-          ? "from target settings"
-          : "from default TARGETS"
-      })
-      - Working days: ${totalBusinessDays} (${
-        monthlyAdjustment?.workingDays?.length
-          ? "from monthly adjustment"
-          : "from standard business days calculation"
-      })
-      - Monthly target: ${monthlyAustinTarget}
-      `
-    );
-  }
+  // Calculate total revenue
+  const totalAustin = data.reduce((sum, entry) => sum + (entry.austin || 0), 0);
+  const totalCharlotte = data.reduce(
+    (sum, entry) => sum + (entry.charlotte || 0),
+    0
+  );
+  const totalRevenue = totalAustin + totalCharlotte;
 
   // Calculate on-pace targets based on elapsed days (excluding today)
   const onPaceAustinTarget = dailyAustinTarget * elapsedBusinessDays;
   const onPaceCharlotteTarget = dailyCharlotteTarget * elapsedBusinessDays;
 
   // Calculate daily pace needed based on remaining revenue and days
-  const austinRemainingRevenue = monthlyAustinTarget - totalAustin;
-  const charlotteRemainingRevenue = monthlyCharlotteTarget - totalCharlotte;
-
   const austinDailyPaceNeeded =
     remainingBusinessDays > 0
-      ? austinRemainingRevenue / remainingBusinessDays
+      ? (monthlyAustinTarget - totalAustin) / remainingBusinessDays
       : 0;
   const charlotteDailyPaceNeeded =
     remainingBusinessDays > 0
-      ? charlotteRemainingRevenue / remainingBusinessDays
+      ? (monthlyCharlotteTarget - totalCharlotte) / remainingBusinessDays
       : 0;
 
   // Calculate attainment percentages using optimized function
@@ -1380,6 +1346,23 @@ export const calculateStakeholderInsights = (
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+
+  // Get monthly adjustment if available
+  const monthlyAdjustment = targetSettings?.monthlyAdjustments?.find(
+    (adj) => adj.month === currentMonth && adj.year === currentYear
+  );
+
+  // Calculate business days using shared function
+  const businessDaysInfo = calculateBusinessDaysInfo(
+    "MTD",
+    monthlyAdjustment,
+    currentDay
+  );
+  const { totalBusinessDays, elapsedBusinessDays, remainingBusinessDays } =
+    businessDaysInfo;
+
+  // Get location metrics
   const locationMetrics = calculateLocationMetrics(
     data,
     targetSettings,
