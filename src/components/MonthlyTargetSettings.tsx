@@ -63,6 +63,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
   const [austinTarget, setAustinTarget] = useState<string>("");
   const [charlotteTarget, setCharlotteTarget] = useState<string>("");
   const [workingDays, setWorkingDays] = useState<number[]>([]);
+  const [agentCount, setAgentCount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -104,12 +105,14 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
       setWorkingDays(existingAdjustment.workingDays);
       setAustinTarget(existingAdjustment.austin?.toString() || "");
       setCharlotteTarget(existingAdjustment.charlotte?.toString() || "");
+      setAgentCount(existingAdjustment.agentCount?.toString() || "");
     } else {
       // Default to business days
       const businessDays = daysInSelectedMonth.filter((day) => !isWeekend(day));
       setWorkingDays(businessDays);
       setAustinTarget("");
       setCharlotteTarget("");
+      setAgentCount("");
     }
   }, [selectedMonth, selectedYear, currentSettings.monthlyAdjustments]);
 
@@ -140,6 +143,8 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         ? parseFloat(charlotteTarget)
         : undefined;
 
+      const agentCountValue = agentCount ? parseInt(agentCount, 10) : undefined;
+
       if (
         (austinTarget && isNaN(austinValue!)) ||
         (charlotteTarget && isNaN(charlotteValue!))
@@ -163,6 +168,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         workingDays: [...workingDays].sort((a, b) => a - b), // Sort days in ascending order
         ...(austinValue && { austin: austinValue }),
         ...(charlotteValue && { charlotte: charlotteValue }),
+        ...(agentCountValue && { agentCount: agentCountValue }),
       };
 
       // Update settings
@@ -211,6 +217,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
     setWorkingDays(adjustment.workingDays);
     setAustinTarget(adjustment.austin?.toString() || "");
     setCharlotteTarget(adjustment.charlotte?.toString() || "");
+    setAgentCount(adjustment.agentCount?.toString() || "");
     setEditMode(true);
     setEditIndex(index);
   };
@@ -464,6 +471,21 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     placeholder={`Default: ${formatCurrency(
                       currentSettings.dailyTargets.charlotte
                     )}`}
+                  />
+                </Grid>
+              </Grid>
+              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                Additional Metrics (Optional)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Number of Agents"
+                    type="number"
+                    value={agentCount}
+                    onChange={(e) => setAgentCount(e.target.value)}
+                    placeholder="e.g., 15"
                   />
                 </Grid>
               </Grid>

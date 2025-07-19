@@ -66,6 +66,22 @@ export const countBusinessDays = (startDate: Date, endDate: Date): number => {
   return count;
 };
 
+// Helper function to get all business days in a month
+export const getBusinessDaysInMonth = (
+  year: number,
+  month: number
+): number[] => {
+  const date = new Date(year, month, 1);
+  const days = [];
+  while (date.getMonth() === month) {
+    if (isBusinessDay(date)) {
+      days.push(date.getDate());
+    }
+    date.setDate(date.getDate() + 1);
+  }
+  return days;
+};
+
 // Shared business days calculation
 const calculateBusinessDaysInfo = (
   timeFrame: TimeFrame,
@@ -871,7 +887,10 @@ export const calculateTrend = (
   return "stable";
 };
 
-export const calculateMonthlyTrends = (data: RevenueData[]) => {
+export const calculateMonthlyTrends = (
+  data: RevenueData[],
+  targetSettings: TargetSettings
+) => {
   // console.log("\n=== Monthly Trends Calculation ===");
   // console.log(`Input data points: ${data.length}`);
 
@@ -888,17 +907,27 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
         year,
         austin: 0,
         charlotte: 0,
-        austinTarget: TARGETS.austin, // Use default target
-        charlotteTarget: TARGETS.charlotte, // Use default target
+        austinTarget: 0,
+        charlotteTarget: 0,
         count: 0,
         date: date.toISOString().split("T")[0],
+        agentCount: 0,
       };
     }
+
+    const dailyTarget = getTargetForDate(date, targetSettings);
+    const monthlyAdjustment = targetSettings.monthlyAdjustments.find(
+      (adj) => adj.month === month && adj.year === year
+    );
 
     // Sum up daily values
     acc[key].austin += entry.austin || 0;
     acc[key].charlotte += entry.charlotte || 0;
-    // Note: RevenueData doesn't have target properties, so we use default targets
+    acc[key].austinTarget += dailyTarget.austin;
+    acc[key].charlotteTarget += dailyTarget.charlotte;
+    if (monthlyAdjustment?.agentCount) {
+      acc[key].agentCount = monthlyAdjustment.agentCount;
+    }
     acc[key].count++;
 
     return acc;
@@ -931,8 +960,8 @@ export const calculateMonthlyTrends = (data: RevenueData[]) => {
     const monthlyTotal = monthlyAustin + monthlyCharlotte;
 
     // Calculate monthly targets using daily targets * number of days
-    const monthlyAustinTarget = month.austinTarget * month.count;
-    const monthlyCharlotteTarget = month.charlotteTarget * month.count;
+    const monthlyAustinTarget = month.austinTarget;
+    const monthlyCharlotteTarget = month.charlotteTarget;
 
     // Calculate attainment percentages
     const austinAttainment = (monthlyAustin / monthlyAustinTarget) * 100;
@@ -2569,4 +2598,62 @@ export const recalculateMonthlyGoals = (
   }
 
   return updatedSettings;
+};
+
+export const forecastWithLinearRegression = (
+  monthlyTrends: any[],
+  futureAgentCounts: { [key: string]: number }
+) => {
+  const historicalData = monthlyTrends.filter(
+    (entry) => entry.currentYear && entry.agentCount
+  );
+
+  if (historicalData.length < 2) {
+    return []; // Not enough data for regression
+  }
+
+  // Calculate revenue per agent
+  const dataForRegression = historicalData.map((entry) => ({
+    agents: entry.agentCount,
+    revenue: entry.currentYear,
+    revenuePerAgent: entry.currentYear / entry.agentCount,
+  }));
+
+  // Perform linear regression: y = mx + b
+  // where y = revenuePerAgent, x = index (time)
+  const n = dataForRegression.length;
+  const sumX = (n * (n - 1)) / 2;
+  const sumY = dataForRegression.reduce(
+    (sum, entry) => sum + entry.revenuePerAgent,
+    0
+  );
+  const sumXY = dataForRegression.reduce(
+    (sum, entry, index) => sum + index * entry.revenuePerAgent,
+    0
+  );
+  const sumX2 = dataForRegression.reduce(
+    (sum, _, index) => sum + index * index,
+    0
+  );
+
+  const m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX); // slope
+  const b = (sumY - m * sumX) / n; // intercept
+
+  const forecast = Object.keys(futureAgentCounts).map((key, index) => {
+    const [year, monthStr] = key.split("-");
+    const month = parseInt(monthStr, 10);
+    const futureIndex = n + index;
+    const predictedRevenuePerAgent = m * futureIndex + b;
+    const agentCount = futureAgentCounts[key];
+    const predictedRevenue = predictedRevenuePerAgent * agentCount;
+
+    return {
+      year: parseInt(year, 10),
+      month,
+      agentCount,
+      predictedRevenue,
+    };
+  });
+
+  return forecast;
 };

@@ -39,30 +39,36 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const getDailyPaceStatus = () => {
     if (remainingDays === 0) return null;
 
+    if (dailyPaceNeeded <= 0) {
+      return {
+        icon: <TrendingUp color="success" />,
+        color: "success.main",
+        message: `Pacing Ahead! Target already met or exceeded.`,
+      };
+    }
+
     const paceRatio = dailyPaceNeeded / dailyTarget;
     if (paceRatio <= 1) {
       return {
         icon: <TrendingDown color="success" />,
         color: "success.main",
-        message: `On track - Daily pace needed (${formatCurrency(
-          dailyPaceNeeded
-        )}) is at or below daily target`,
+        message: `On Track: Need ${formatCurrency(dailyPaceNeeded)} per day.`,
       };
     } else if (paceRatio <= 1.25) {
       return {
         icon: <TrendingUp color="warning" />,
         color: "warning.main",
-        message: `Caution - Need ${formatCurrency(
+        message: `Caution: Need ${formatCurrency(
           dailyPaceNeeded
-        )} per day (${Math.round((paceRatio - 1) * 100)}% above target)`,
+        )} per day (${Math.round((paceRatio - 1) * 100)}% above target).`,
       };
     } else {
       return {
         icon: <TrendingUp color="error" />,
         color: "error.main",
-        message: `Alert - Need ${formatCurrency(
+        message: `Alert: Need ${formatCurrency(
           dailyPaceNeeded
-        )} per day (${Math.round((paceRatio - 1) * 100)}% above target)`,
+        )} per day (${Math.round((paceRatio - 1) * 100)}% above target).`,
       };
     }
   };

@@ -1,17 +1,19 @@
 // Historical Trends View - Enhanced with forecasting and improved visibility
 // Version: 2.1 - Updated chart heights, added forecasting, full-width moving average
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   useTheme,
   Skeleton,
   Stack,
-  Chip,
+  Tabs,
+  Tab,
   Divider,
+  TextField,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
   ResponsiveContainer,
   LineChart,
@@ -32,6 +34,7 @@ import { RevenueData, TargetSettings } from "../../types/revenue";
 import {
   calculateMonthlyTrends,
   calculateMovingAverage,
+  forecastWithLinearRegression,
 } from "../../utils/calculations";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -245,56 +248,84 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
   isLoading = false,
 }) => {
   const theme = useTheme();
+  const [activeTab, setActiveTab] = useState(0);
+  const [futureAgentCounts, setFutureAgentCounts] = useState<{
+    [key: string]: number;
+  }>({});
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleAgentCountChange = (key: string, value: string) => {
+    const count = parseInt(value, 10);
+    setFutureAgentCounts((prev) => ({
+      ...prev,
+      [key]: isNaN(count) ? 0 : count,
+    }));
+  };
 
   // Memoize calculations to prevent unnecessary recalculations
-  const { monthlyTrends, movingAverageData, insights } = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { monthlyTrends: [], movingAverageData: [], insights: null };
-    }
+  const { monthlyTrends, movingAverageData, insights, forecastData } =
+    useMemo(() => {
+      if (!data || data.length === 0) {
+        return {
+          monthlyTrends: [],
+          movingAverageData: [],
+          insights: null,
+          forecastData: [],
+        };
+      }
 
-    const trends = calculateMonthlyTrends(data);
-    const maData = calculateMovingAverage(trends, 3);
+      const trends = calculateMonthlyTrends(data, targetSettings);
+      const maData = calculateMovingAverage(trends, 3);
+      const forecast = forecastWithLinearRegression(trends, futureAgentCounts);
 
-    // Calculate insights
-    const currentMonth = trends[trends.length - 1];
-    const previousMonth = trends[trends.length - 2];
+      // Calculate insights
+      const currentMonth = trends[trends.length - 1];
+      const previousMonth = trends[trends.length - 2];
 
-    const calculateTrend = (current: number, previous: number) =>
-      previous ? ((current - previous) / previous) * 100 : 0;
+      const calculateTrend = (current: number, previous: number) =>
+        previous ? ((current - previous) / previous) * 100 : 0;
 
-    const insights = {
-      revenue: {
-        current: currentMonth?.currentYear || 0,
-        trend: calculateTrend(
-          currentMonth?.currentYear || 0,
-          previousMonth?.currentYear || 0
-        ),
-      },
-      austinAttainment: {
-        current: currentMonth?.austinAttainment || 0,
-        trend: calculateTrend(
-          currentMonth?.austinAttainment || 0,
-          previousMonth?.austinAttainment || 0
-        ),
-      },
-      charlotteAttainment: {
-        current: currentMonth?.charlotteAttainment || 0,
-        trend: calculateTrend(
-          currentMonth?.charlotteAttainment || 0,
-          previousMonth?.charlotteAttainment || 0
-        ),
-      },
-      combinedAttainment: {
-        current: currentMonth?.combinedAttainment || 0,
-        trend: calculateTrend(
-          currentMonth?.combinedAttainment || 0,
-          previousMonth?.combinedAttainment || 0
-        ),
-      },
-    };
+      const insights = {
+        revenue: {
+          current: currentMonth?.currentYear || 0,
+          trend: calculateTrend(
+            currentMonth?.currentYear || 0,
+            previousMonth?.currentYear || 0
+          ),
+        },
+        austinAttainment: {
+          current: currentMonth?.austinAttainment || 0,
+          trend: calculateTrend(
+            currentMonth?.austinAttainment || 0,
+            previousMonth?.austinAttainment || 0
+          ),
+        },
+        charlotteAttainment: {
+          current: currentMonth?.charlotteAttainment || 0,
+          trend: calculateTrend(
+            currentMonth?.charlotteAttainment || 0,
+            previousMonth?.charlotteAttainment || 0
+          ),
+        },
+        combinedAttainment: {
+          current: currentMonth?.combinedAttainment || 0,
+          trend: calculateTrend(
+            currentMonth?.combinedAttainment || 0,
+            previousMonth?.combinedAttainment || 0
+          ),
+        },
+      };
 
-    return { monthlyTrends: trends, movingAverageData: maData, insights };
-  }, [data]);
+      return {
+        monthlyTrends: trends,
+        movingAverageData: maData,
+        insights,
+        forecastData: forecast,
+      };
+    }, [data, targetSettings, futureAgentCounts]);
 
   // Calculate data availability flags
   const dataAvailability = useMemo(() => {
@@ -349,13 +380,13 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
     console.log("Historical trends view is loading");
     return (
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <ChartSkeleton />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <ChartSkeleton />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid xs={12} md={6}>
           <ChartSkeleton />
         </Grid>
       </Grid>
@@ -439,261 +470,24 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
           </>
         )}
 
-        {/* Enhanced Historical Trends */}
         <Grid xs={12}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 4,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-            }}
-          >
-            <Typography
-              variant="h5"
-              gutterBottom
-              sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
+          <Paper sx={{ width: "100%" }}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              indicatorColor="primary"
+              textColor="primary"
+              variant="fullWidth"
             >
-              Historical Performance Overview
-            </Typography>
-            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
-              <ResponsiveContainer>
-                <ComposedChart
-                  data={monthlyTrends}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={theme.palette.divider}
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                    stroke={theme.palette.divider}
-                    tickLine={false}
-                    axisLine={{ stroke: theme.palette.divider }}
-                    height={50}
-                  />
-                  {/* Revenue Axis */}
-                  <YAxis
-                    yAxisId="revenue"
-                    tickFormatter={formatCurrency}
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                    stroke={theme.palette.divider}
-                    domain={[0, (dataMax: number) => dataMax * 1.1]}
-                    tickLine={false}
-                    axisLine={{ stroke: theme.palette.divider }}
-                  />
-                  {/* Attainment Axis */}
-                  <YAxis
-                    yAxisId="attainment"
-                    orientation="right"
-                    tickFormatter={formatPercent}
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                    stroke={theme.palette.divider}
-                    domain={[0, 1.5]}
-                    tickLine={false}
-                    axisLine={{ stroke: theme.palette.divider }}
-                  />
-                  <Tooltip content={<EnhancedTooltip />} />
-                  <Legend
-                    verticalAlign="top"
-                    height={36}
-                    formatter={(value) => (
-                      <span
-                        style={{
-                          color: theme.palette.text.primary,
-                          fontSize: 12,
-                        }}
-                      >
-                        {value}
-                      </span>
-                    )}
-                  />
-                  {/* Revenue Bar */}
-                  <Bar
-                    yAxisId="revenue"
-                    dataKey="currentYear"
-                    name="Revenue"
-                    fill={theme.palette.primary.main}
-                    fillOpacity={0.8}
-                    barSize={60}
-                  />
-                  {/* Attainment Lines */}
-                  <Line
-                    yAxisId="attainment"
-                    type="monotone"
-                    dataKey="austinAttainment"
-                    name="Austin Attainment"
-                    stroke={theme.palette.info.main}
-                    strokeWidth={2}
-                    dot={{ r: 4, strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    yAxisId="attainment"
-                    type="monotone"
-                    dataKey="charlotteAttainment"
-                    name="Charlotte Attainment"
-                    stroke={theme.palette.secondary.main}
-                    strokeWidth={2}
-                    dot={{ r: 4, strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    yAxisId="attainment"
-                    type="monotone"
-                    dataKey="combinedAttainment"
-                    name="Combined Attainment"
-                    stroke={theme.palette.success.main}
-                    strokeWidth={3}
-                    dot={{ r: 5, strokeWidth: 2 }}
-                    activeDot={{ r: 7 }}
-                  />
-                  {/* Target Reference Line */}
-                  <ReferenceLine
-                    yAxisId="attainment"
-                    y={100}
-                    stroke={theme.palette.warning.main}
-                    strokeDasharray="3 3"
-                    label={{
-                      value: "Target",
-                      fill: theme.palette.warning.main,
-                      position: "right",
-                      fontSize: 12,
-                    }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 2, textAlign: "center" }}
-            >
-              Bars represent monthly revenue while lines show attainment
-              percentages
-            </Typography>
+              <Tab label="Performance Overview" />
+              <Tab label="Moving Average & Forecast" />
+            </Tabs>
           </Paper>
         </Grid>
 
-        {/* Moving Average */}
-        <Grid item xs={12}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 4,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-            }}
-          >
-            <Typography
-              variant="h5"
-              gutterBottom
-              sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
-            >
-              3-Month Moving Average & Forecast
-            </Typography>
-            <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2 }}>
-              <ResponsiveContainer>
-                <AreaChart
-                  data={movingAverageData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={theme.palette.divider}
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                    stroke={theme.palette.divider}
-                    tickLine={false}
-                    axisLine={{ stroke: theme.palette.divider }}
-                    height={50}
-                  />
-                  <YAxis
-                    tickFormatter={formatPercent}
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                    stroke={theme.palette.divider}
-                    tickLine={false}
-                    axisLine={{ stroke: theme.palette.divider }}
-                  />
-                  <Tooltip
-                    formatter={(value: any) => [
-                      formatPercent(value),
-                      "Moving Average",
-                    ]}
-                    contentStyle={{
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    height={36}
-                    formatter={(value) => (
-                      <span
-                        style={{
-                          color: theme.palette.text.primary,
-                          fontSize: 12,
-                        }}
-                      >
-                        {value}
-                      </span>
-                    )}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="austin"
-                    name="Austin MA"
-                    fill={theme.palette.primary.light}
-                    stroke={theme.palette.primary.main}
-                    fillOpacity={0.3}
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="charlotte"
-                    name="Charlotte MA"
-                    fill={theme.palette.secondary.light}
-                    stroke={theme.palette.secondary.main}
-                    fillOpacity={0.3}
-                    strokeWidth={2}
-                  />
-                  {/* Target Reference Line */}
-                  <ReferenceLine
-                    y={100}
-                    stroke={theme.palette.warning.main}
-                    strokeDasharray="3 3"
-                    label={{
-                      value: "Target",
-                      fill: theme.palette.warning.main,
-                      position: "right",
-                      fontSize: 12,
-                    }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 2, textAlign: "center" }}
-            >
-              3-month moving average shows smoothed performance trends over time
-            </Typography>
-          </Paper>
-        </Grid>
-
-        {/* Forecasting Section */}
-        {monthlyTrends && monthlyTrends.length >= 3 && (
-          <Grid item xs={12}>
+        {/* Tab Content */}
+        {activeTab === 0 && (
+          <Grid xs={12}>
             <Paper
               elevation={3}
               sx={{
@@ -701,7 +495,7 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 borderRadius: 2,
                 border: "1px solid",
                 borderColor: "divider",
-                background: "linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%)",
+                background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
               }}
             >
               <Typography
@@ -709,110 +503,325 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 gutterBottom
                 sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
               >
-                Performance Forecast & Insights
+                Historical Performance Overview
               </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      bgcolor: "background.paper",
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                    }}
+              <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
+                <ResponsiveContainer>
+                  <ComposedChart
+                    data={monthlyTrends}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                   >
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      Trend Analysis
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Based on the last 3 months of data, your performance trend
-                      shows:
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        mt: 2,
-                        color:
-                          insights?.combinedAttainment.trend > 0
-                            ? "success.main"
-                            : "error.main",
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={theme.palette.divider}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{
+                        fill: theme.palette.text.secondary,
+                        fontSize: 12,
                       }}
-                    >
-                      {insights?.combinedAttainment.trend > 0 ? "↗" : "↘"}{" "}
-                      {Math.abs(
-                        insights?.combinedAttainment.trend || 0
-                      ).toFixed(1)}
-                      %
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {insights?.combinedAttainment.trend > 0
-                        ? "Improving"
-                        : "Declining"}{" "}
-                      monthly trend
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      bgcolor: "background.paper",
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                    }}
-                  >
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      Next Month Forecast
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Projected attainment based on current trends:
-                    </Typography>
-                    <Typography variant="h4" sx={{ mt: 2, color: "info.main" }}>
-                      {(
-                        (insights?.combinedAttainment.current || 0) +
-                        (insights?.combinedAttainment.trend || 0)
-                      ).toFixed(1)}
-                      %
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Estimated combined attainment
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      bgcolor: "background.paper",
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                    }}
-                  >
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      Revenue Projection
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Expected revenue next month:
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{ mt: 2, color: "success.main" }}
-                    >
-                      {formatCurrency(
-                        (insights?.revenue.current || 0) *
-                          (1 + (insights?.revenue.trend || 0) / 100)
+                      stroke={theme.palette.divider}
+                      tickLine={false}
+                      axisLine={{ stroke: theme.palette.divider }}
+                      height={50}
+                    />
+                    {/* Revenue Axis */}
+                    <YAxis
+                      yAxisId="revenue"
+                      tickFormatter={formatCurrency}
+                      tick={{
+                        fill: theme.palette.text.secondary,
+                        fontSize: 12,
+                      }}
+                      stroke={theme.palette.divider}
+                      domain={[0, (dataMax: number) => dataMax * 1.1]}
+                      tickLine={false}
+                      axisLine={{ stroke: theme.palette.divider }}
+                    />
+                    {/* Attainment Axis */}
+                    <YAxis
+                      yAxisId="attainment"
+                      orientation="right"
+                      tickFormatter={formatPercent}
+                      tick={{
+                        fill: theme.palette.text.secondary,
+                        fontSize: 12,
+                      }}
+                      stroke={theme.palette.divider}
+                      domain={[0, 1.5]}
+                      tickLine={false}
+                      axisLine={{ stroke: theme.palette.divider }}
+                    />
+                    <Tooltip content={<EnhancedTooltip />} />
+                    <Legend
+                      verticalAlign="top"
+                      height={36}
+                      formatter={(value) => (
+                        <span
+                          style={{
+                            color: theme.palette.text.primary,
+                            fontSize: 12,
+                          }}
+                        >
+                          {value}
+                        </span>
                       )}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Based on trend analysis
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
+                    />
+                    {/* Revenue Bar */}
+                    <Bar
+                      yAxisId="revenue"
+                      dataKey="currentYear"
+                      name="Revenue"
+                      fill={theme.palette.primary.main}
+                      fillOpacity={0.8}
+                      barSize={60}
+                    />
+                    {/* Attainment Lines */}
+                    <Line
+                      yAxisId="attainment"
+                      type="monotone"
+                      dataKey="austinAttainment"
+                      name="Austin Attainment"
+                      stroke={theme.palette.info.main}
+                      strokeWidth={2}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      yAxisId="attainment"
+                      type="monotone"
+                      dataKey="charlotteAttainment"
+                      name="Charlotte Attainment"
+                      stroke={theme.palette.secondary.main}
+                      strokeWidth={2}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      yAxisId="attainment"
+                      type="monotone"
+                      dataKey="combinedAttainment"
+                      name="Combined Attainment"
+                      stroke={theme.palette.success.main}
+                      strokeWidth={3}
+                      dot={{ r: 5, strokeWidth: 2 }}
+                      activeDot={{ r: 7 }}
+                    />
+                    {/* Target Reference Line */}
+                    <ReferenceLine
+                      yAxisId="attainment"
+                      y={100}
+                      stroke={theme.palette.warning.main}
+                      strokeDasharray="3 3"
+                      label={{
+                        value: "Target",
+                        fill: theme.palette.warning.main,
+                        position: "right",
+                        fontSize: 12,
+                      }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </Box>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 2, textAlign: "center" }}
+              >
+                Bars represent monthly revenue while lines show attainment
+                percentages
+              </Typography>
             </Paper>
+          </Grid>
+        )}
+
+        {activeTab === 1 && (
+          <Grid container spacing={4} xs={12}>
+            {/* Moving Average */}
+            <Grid xs={12}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 4,
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  background:
+                    "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
+                >
+                  3-Month Moving Average & Forecast
+                </Typography>
+                <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2 }}>
+                  <ResponsiveContainer>
+                    <AreaChart
+                      data={movingAverageData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={theme.palette.divider}
+                      />
+                      <XAxis
+                        dataKey="month"
+                        tick={{
+                          fill: theme.palette.text.secondary,
+                          fontSize: 12,
+                        }}
+                        stroke={theme.palette.divider}
+                        tickLine={false}
+                        axisLine={{ stroke: theme.palette.divider }}
+                        height={50}
+                      />
+                      <YAxis
+                        tickFormatter={formatPercent}
+                        tick={{
+                          fill: theme.palette.text.secondary,
+                          fontSize: 12,
+                        }}
+                        stroke={theme.palette.divider}
+                        tickLine={false}
+                        axisLine={{ stroke: theme.palette.divider }}
+                      />
+                      <Tooltip
+                        formatter={(value: any) => [
+                          formatPercent(value),
+                          "Moving Average",
+                        ]}
+                        contentStyle={{
+                          backgroundColor: theme.palette.background.paper,
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        formatter={(value) => (
+                          <span
+                            style={{
+                              color: theme.palette.text.primary,
+                              fontSize: 12,
+                            }}
+                          >
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="austin"
+                        name="Austin MA"
+                        fill={theme.palette.primary.light}
+                        stroke={theme.palette.primary.main}
+                        fillOpacity={0.3}
+                        strokeWidth={2}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="charlotte"
+                        name="Charlotte MA"
+                        fill={theme.palette.secondary.light}
+                        stroke={theme.palette.secondary.main}
+                        fillOpacity={0.3}
+                        strokeWidth={2}
+                      />
+                      {/* Target Reference Line */}
+                      <ReferenceLine
+                        y={100}
+                        stroke={theme.palette.warning.main}
+                        strokeDasharray="3 3"
+                        label={{
+                          value: "Target",
+                          fill: theme.palette.warning.main,
+                          position: "right",
+                          fontSize: 12,
+                        }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 2, textAlign: "center" }}
+                >
+                  3-month moving average shows smoothed performance trends over
+                  time
+                </Typography>
+              </Paper>
+            </Grid>
+
+            {/* Forecasting Section */}
+            <Grid xs={12}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 4,
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{ fontWeight: 600, color: "text.primary", mb: 3 }}
+                >
+                  Revenue Forecast
+                </Typography>
+                <Grid container spacing={2}>
+                  {Array.from({ length: 3 }).map((_, index) => {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() + index + 1);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const key = `${year}-${month}`;
+                    return (
+                      <Grid xs={12} md={4} key={key}>
+                        <TextField
+                          fullWidth
+                          label={`${date.toLocaleString("default", {
+                            month: "long",
+                          })} ${year} - Agents`}
+                          type="number"
+                          value={futureAgentCounts[key] || ""}
+                          onChange={(e) =>
+                            handleAgentCountChange(key, e.target.value)
+                          }
+                        />
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+                {forecastData.length > 0 && (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Predicted Revenue
+                    </Typography>
+                    {forecastData.map((forecast) => (
+                      <Typography
+                        key={`${forecast.year}-${forecast.month}`}
+                        variant="body1"
+                      >
+                        {new Date(forecast.year, forecast.month).toLocaleString(
+                          "default",
+                          { month: "long" }
+                        )}{" "}
+                        {forecast.year}:{" "}
+                        {formatCurrency(forecast.predictedRevenue)}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
           </Grid>
         )}
       </Grid>
