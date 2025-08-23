@@ -203,9 +203,9 @@ export const Dashboard: React.FC = () => {
       // console.log("Data Consistency Check:", {
       //   isValid: consistencyCheck.isValid,
       //   summary: consistencyCheck.summary,
-        errors: consistencyCheck.errors,
-        warnings: consistencyCheck.warnings,
-      });
+      //   errors: consistencyCheck.errors,
+      //   warnings: consistencyCheck.warnings,
+      // });
 
       // Handle critical consistency errors
       if (!consistencyCheck.isValid && consistencyCheck.errors.length > 0) {
