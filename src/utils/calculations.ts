@@ -1880,10 +1880,10 @@ const calculatePerformanceStability = (data: RevenueData[]): number => {
   // console.log("Performance Stability Calculation:", {
   //   dataPoints: data.length,
   //   mean: mean.toFixed(2),
-    standardDeviation: standardDeviation.toFixed(2),
-    coefficientOfVariation: coefficientOfVariation.toFixed(4),
-    stabilityScore: stability.toFixed(1),
-  });
+  //   standardDeviation: standardDeviation.toFixed(2),
+  //   coefficientOfVariation: coefficientOfVariation.toFixed(4),
+  //   stabilityScore: stability.toFixed(1),
+  // });
 
   return stability;
 };
@@ -2097,9 +2097,9 @@ export const calculateBusinessIntelligence = (
   // console.log("Business Intelligence - Consistency Calculation:", {
   //   averageDailyRevenue: averageDailyRevenue.toFixed(2),
   //   standardDeviation: standardDeviation.toFixed(2),
-    coefficientOfVariation: coefficientOfVariation.toFixed(4),
-    consistencyScore: consistencyScore.toFixed(1),
-  });
+  //   coefficientOfVariation: coefficientOfVariation.toFixed(4),
+  //   consistencyScore: consistencyScore.toFixed(1),
+  // });
 
   // Growth rate calculation
   const firstWeekAvg =
