@@ -705,10 +705,12 @@ export const Dashboard: React.FC = () => {
           );
         case 4:
           return (
-            <CombinedInsights
-              revenueData={state.revenueData}
-              targetSettings={state.targetSettings}
-            />
+            <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
+              <CombinedInsights
+                revenueData={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+            </Box>
           );
         default:
           return null;
@@ -717,7 +719,7 @@ export const Dashboard: React.FC = () => {
 
     return (
       <Fade in={!isTabLoading} timeout={300}>
-        <Box>{view}</Box>
+        <Box sx={{ width: "100%" }}>{view}</Box>
       </Fade>
     );
   };

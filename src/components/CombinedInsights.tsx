@@ -239,9 +239,9 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     combinedMetrics.reduce((sum, m) => sum + m.salesAttainmentCombined, 0) /
     combinedMetrics.length;
 
-  return (
-    <Box sx={{ width: "100%", minWidth: 0 }}>
-      <Stack spacing={3}>
+    return (
+    <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflow: "visible" }}>
+    <Stack spacing={3} sx={{ width: "100%" }}>
         <Typography
           variant="h5"
           sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
@@ -249,8 +249,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
           Lead & Sales Correlation Analysis
         </Typography>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3}>
+              {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ width: "100%" }}>
           <Grid item xs={12} md={3}>
             <Card
               elevation={0}
@@ -375,6 +375,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 2,
+            width: "100%",
           }}
         >
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
@@ -430,6 +431,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 2,
+            width: "100%",
           }}
         >
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
