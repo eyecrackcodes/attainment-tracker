@@ -9,6 +9,9 @@ import {
   Chip,
   Divider,
   Alert,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   Groups as GroupsIcon,
@@ -19,8 +22,11 @@ import {
   CheckCircle,
   Assessment,
   LocationOn,
+  CalendarMonth,
+  DateRange,
+  Today,
 } from "@mui/icons-material";
-import { format, subDays, startOfMonth, endOfMonth, isWeekend } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, isWeekend, parseISO, differenceInDays } from "date-fns";
 import { leadService, LeadEntryStored, SiteKey } from "../services/leadService";
 
 interface DailyMetrics {
@@ -50,9 +56,12 @@ interface LocationStats {
   outages: number; // days with <80% of average agents
 }
 
+type DateRangePreset = "yesterday" | "7d" | "30d" | "mtd" | "custom";
+
 export const AgentSummary: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [yesterdayMetrics, setYesterdayMetrics] = useState<DailyMetrics | null>(null);
+  const [selectedDayMetrics, setSelectedDayMetrics] = useState<DailyMetrics | null>(null);
+  const [rangeMetrics, setRangeMetrics] = useState<DailyMetrics[]>([]);
   const [locationStats, setLocationStats] = useState<{
     atx: LocationStats;
     clt: LocationStats;
@@ -62,87 +71,141 @@ export const AgentSummary: React.FC = () => {
     clt: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 },
     combined: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 },
   });
+  
+  const [preset, setPreset] = useState<DateRangePreset>("yesterday");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  
+  // Calculate date range based on preset
+  const getDateRange = () => {
+    const today = new Date();
+    let start: Date;
+    let end: Date;
+
+    switch (preset) {
+      case "yesterday":
+        start = subDays(today, 1);
+        end = subDays(today, 1);
+        break;
+      case "7d":
+        start = subDays(today, 7);
+        end = subDays(today, 1);
+        break;
+      case "30d":
+        start = subDays(today, 30);
+        end = subDays(today, 1);
+        break;
+      case "mtd":
+        start = startOfMonth(today);
+        end = subDays(today, 1);
+        break;
+      case "custom":
+        start = customStartDate ? new Date(customStartDate) : subDays(today, 7);
+        end = customEndDate ? new Date(customEndDate) : subDays(today, 1);
+        break;
+      default:
+        start = subDays(today, 1);
+        end = subDays(today, 1);
+    }
+
+    return {
+      start: format(start, "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd"),
+    };
+  };
+
+  const dateRange = getDateRange();
+  const isDateRangeValid = dateRange.start <= dateRange.end;
+
+  // Initialize custom dates when switching to custom preset
+  useEffect(() => {
+    if (preset === "custom" && !customStartDate && !customEndDate) {
+      const today = new Date();
+      const sevenDaysAgo = subDays(today, 7);
+      const yesterday = subDays(today, 1);
+      setCustomStartDate(format(sevenDaysAgo, "yyyy-MM-dd"));
+      setCustomEndDate(format(yesterday, "yyyy-MM-dd"));
+    }
+  }, [preset, customStartDate, customEndDate]);
 
   useEffect(() => {
-    // Get yesterday's date (since data is from previous day)
-    const yesterday = subDays(new Date(), 1);
-    const yesterdayStr = format(yesterday, "yyyy-MM-dd");
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const monthEnd = format(endOfMonth(new Date()), "yyyy-MM-dd");
+    setLoading(true);
+    
+    if (!isDateRangeValid) {
+      setLoading(false);
+      return;
+    }
 
-    // Subscribe to yesterday's data
-    const unsubYesterday = leadService.subscribeToDate(yesterdayStr, (data) => {
-      const atx = data.ATX;
-      const clt = data.CLT;
+    // Subscribe to the date range data
+    const unsubRange = leadService.subscribeToRange(dateRange.start, dateRange.end, (dataMap) => {
+      // Collect all metrics for the range
+      const metrics: DailyMetrics[] = [];
       
-      setYesterdayMetrics({
-        date: yesterdayStr,
-        atx: {
-          agents: atx?.availableAgents || 0,
-          meetingMin: atx?.agentsMeetingMin || 0,
-          attainmentPct: atx?.derived?.attainmentPct ? atx.derived.attainmentPct * 100 : 0,
-        },
-        clt: {
-          agents: clt?.availableAgents || 0,
-          meetingMin: clt?.agentsMeetingMin || 0,
-          attainmentPct: clt?.derived?.attainmentPct ? clt.derived.attainmentPct * 100 : 0,
-        },
-        total: {
-          agents: (atx?.availableAgents || 0) + (clt?.availableAgents || 0),
-          meetingMin: (atx?.agentsMeetingMin || 0) + (clt?.agentsMeetingMin || 0),
-          meetingMinPct: 0, // Will be calculated below
-        },
+      dataMap.forEach((dayData, date) => {
+        const atx = dayData.ATX;
+        const clt = dayData.CLT;
+        
+        const totalAgents = (atx?.availableAgents || 0) + (clt?.availableAgents || 0);
+        const totalMeetingMin = (atx?.agentsMeetingMin || 0) + (clt?.agentsMeetingMin || 0);
+        
+        metrics.push({
+          date,
+          atx: {
+            agents: atx?.availableAgents || 0,
+            meetingMin: atx?.agentsMeetingMin || 0,
+            attainmentPct: atx?.derived?.attainmentPct ? atx.derived.attainmentPct * 100 : 0,
+          },
+          clt: {
+            agents: clt?.availableAgents || 0,
+            meetingMin: clt?.agentsMeetingMin || 0,
+            attainmentPct: clt?.derived?.attainmentPct ? clt.derived.attainmentPct * 100 : 0,
+          },
+          total: {
+            agents: totalAgents,
+            meetingMin: totalMeetingMin,
+            meetingMinPct: totalAgents > 0 ? (totalMeetingMin / totalAgents) * 100 : 0,
+          },
+        });
       });
       
-      // Calculate meeting min percentage
-      const totalAgents = (atx?.availableAgents || 0) + (clt?.availableAgents || 0);
-      const totalMeetingMin = (atx?.agentsMeetingMin || 0) + (clt?.agentsMeetingMin || 0);
-      if (totalAgents > 0) {
-        setYesterdayMetrics((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            total: {
-              ...prev.total,
-              meetingMinPct: (totalMeetingMin / totalAgents) * 100,
-            },
-          };
-        });
+      // Sort by date
+      metrics.sort((a, b) => a.date.localeCompare(b.date));
+      setRangeMetrics(metrics);
+      
+      // Set the most recent day as selected (or the only day for single day ranges)
+      if (metrics.length > 0) {
+        setSelectedDayMetrics(metrics[metrics.length - 1]);
+      } else {
+        setSelectedDayMetrics(null);
       }
-    });
-
-    // Subscribe to month data for statistics
-    const unsubMonth = leadService.subscribeToRange(monthStart, monthEnd, (dataMap) => {
-      // Initialize stats
+      
+      // Calculate statistics from the range metrics
       const stats = {
         atx: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, daysWithData: 0, agentsByDay: [] as number[] },
         clt: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, daysWithData: 0, agentsByDay: [] as number[] },
       };
 
-      // Process each day
-      dataMap.forEach((dayData, date) => {
+      // Process each day's metrics
+      metrics.forEach((dayMetrics) => {
         // Skip weekends for business metrics
-        if (isWeekend(new Date(date))) return;
-
-        const atx = dayData.ATX;
-        const clt = dayData.CLT;
+        if (isWeekend(new Date(dayMetrics.date))) return;
         
         // ATX stats
-        if (atx && atx.availableAgents > 0) {
+        if (dayMetrics.atx.agents > 0) {
           stats.atx.daysWithData++;
-          stats.atx.totalAgents += atx.availableAgents;
-          stats.atx.totalMeetingMin += atx.agentsMeetingMin || 0;
-          stats.atx.totalAttainment += atx.derived?.attainmentPct || 0;
-          stats.atx.agentsByDay.push(atx.availableAgents);
+          stats.atx.totalAgents += dayMetrics.atx.agents;
+          stats.atx.totalMeetingMin += dayMetrics.atx.meetingMin;
+          stats.atx.totalAttainment += dayMetrics.atx.attainmentPct / 100; // Convert back to decimal
+          stats.atx.agentsByDay.push(dayMetrics.atx.agents);
         }
         
         // CLT stats
-        if (clt && clt.availableAgents > 0) {
+        if (dayMetrics.clt.agents > 0) {
           stats.clt.daysWithData++;
-          stats.clt.totalAgents += clt.availableAgents;
-          stats.clt.totalMeetingMin += clt.agentsMeetingMin || 0;
-          stats.clt.totalAttainment += clt.derived?.attainmentPct || 0;
-          stats.clt.agentsByDay.push(clt.availableAgents);
+          stats.clt.totalAgents += dayMetrics.clt.agents;
+          stats.clt.totalMeetingMin += dayMetrics.clt.meetingMin;
+          stats.clt.totalAttainment += dayMetrics.clt.attainmentPct / 100; // Convert back to decimal
+          stats.clt.agentsByDay.push(dayMetrics.clt.agents);
         }
       });
 
@@ -194,10 +257,9 @@ export const AgentSummary: React.FC = () => {
     });
 
     return () => {
-      unsubYesterday();
-      unsubMonth();
+      unsubRange();
     };
-  }, []);
+  }, [dateRange.start, dateRange.end]);
 
   if (loading) {
     return (
@@ -216,9 +278,11 @@ export const AgentSummary: React.FC = () => {
     );
   }
 
-  const hasYesterdayData = yesterdayMetrics && yesterdayMetrics.total.agents > 0;
-  const yesterdayDate = subDays(new Date(), 1);
-  const isYesterdayWeekend = isWeekend(yesterdayDate);
+  const hasSelectedDayData = selectedDayMetrics && selectedDayMetrics.total.agents > 0;
+  const selectedDate = selectedDayMetrics ? new Date(selectedDayMetrics.date) : new Date();
+  const isSelectedDateWeekend = selectedDayMetrics ? isWeekend(new Date(selectedDayMetrics.date)) : false;
+  const isSingleDay = dateRange.start === dateRange.end;
+  const dayCount = differenceInDays(new Date(dateRange.end), new Date(dateRange.start)) + 1;
 
   return (
     <Paper
@@ -232,55 +296,141 @@ export const AgentSummary: React.FC = () => {
       }}
     >
       <Stack spacing={3}>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <GroupsIcon sx={{ fontSize: 28, color: "primary.main" }} />
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Agent Performance Insights
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {format(yesterdayDate, "MMMM d, yyyy")} performance and MTD trends
-            </Typography>
-          </Box>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <GroupsIcon sx={{ fontSize: 28, color: "primary.main" }} />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Agent Performance Insights
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {isSingleDay 
+                  ? format(new Date(dateRange.start), "MMMM d, yyyy")
+                  : `${format(new Date(dateRange.start), "MMM d")} - ${format(new Date(dateRange.end), "MMM d, yyyy")}`
+                } performance {!isSingleDay && `(${dayCount} days)`}
+              </Typography>
+            </Box>
+          </Stack>
+          
+          {/* Date Range Selector */}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <ToggleButtonGroup
+              value={preset}
+              exclusive
+              onChange={(_, newPreset) => {
+                if (newPreset !== null) {
+                  setPreset(newPreset);
+                }
+              }}
+              size="small"
+              sx={{ bgcolor: "background.paper" }}
+            >
+              <ToggleButton value="yesterday" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Today fontSize="small" />
+                  <Typography variant="body2">Yesterday</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="7d" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateRange fontSize="small" />
+                  <Typography variant="body2">7D</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="30d" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateRange fontSize="small" />
+                  <Typography variant="body2">30D</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="mtd" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CalendarMonth fontSize="small" />
+                  <Typography variant="body2">MTD</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="custom" sx={{ px: 2 }}>
+                <Typography variant="body2">Custom</Typography>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            
+            {preset === "custom" && (
+              <>
+                <TextField
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    if (customEndDate && e.target.value > customEndDate) {
+                      setCustomEndDate(e.target.value);
+                    }
+                  }}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: 140 }}
+                />
+                <Typography variant="body2">to</Typography>
+                <TextField
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    if (!customStartDate || e.target.value >= customStartDate) {
+                      setCustomEndDate(e.target.value);
+                    }
+                  }}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: 140 }}
+                  inputProps={{
+                    min: customStartDate || undefined,
+                  }}
+                />
+              </>
+            )}
+          </Stack>
         </Stack>
 
         <Grid container spacing={3}>
-          {/* Yesterday's Performance */}
+          {/* Selected Period Performance */}
           <Grid item xs={12} sm={6} md={3}>
             <Box sx={{ 
               p: 2, 
-              bgcolor: hasYesterdayData ? "primary.lighter" : "grey.100", 
+              bgcolor: hasSelectedDayData ? "primary.lighter" : "grey.100", 
               borderRadius: 2,
               border: "1px solid",
-              borderColor: hasYesterdayData ? "primary.light" : "grey.300",
+              borderColor: hasSelectedDayData ? "primary.light" : "grey.300",
             }}>
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Assessment fontSize="small" color={hasYesterdayData ? "primary" : "disabled"} />
+                  <Assessment fontSize="small" color={hasSelectedDayData ? "primary" : "disabled"} />
                   <Typography variant="body2" color="text.secondary">
-                    Yesterday's Total
+                    {isSingleDay ? format(selectedDate, "MMM d") : "Period"} Total
                   </Typography>
                 </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: hasYesterdayData ? "primary.main" : "text.disabled" }}>
-                  {hasYesterdayData ? yesterdayMetrics.total.agents : "-"}
+                <Typography variant="h4" sx={{ fontWeight: 700, color: hasSelectedDayData ? "primary.main" : "text.disabled" }}>
+                  {isSingleDay && hasSelectedDayData 
+                    ? selectedDayMetrics.total.agents 
+                    : !isSingleDay && locationStats.combined.avgAgents > 0
+                    ? locationStats.combined.avgAgents.toFixed(0)
+                    : "-"}
                 </Typography>
                 <Stack direction="row" spacing={1}>
-                  {hasYesterdayData ? (
+                  {hasSelectedDayData || locationStats.combined.avgAgents > 0 ? (
                     <>
                       <Chip 
-                        label={`ATX: ${yesterdayMetrics.atx.agents}`} 
+                        label={`ATX: ${isSingleDay ? selectedDayMetrics.atx.agents : locationStats.atx.avgAgents.toFixed(0)}`} 
                         size="small" 
                         sx={{ bgcolor: "background.paper" }}
                       />
                       <Chip 
-                        label={`CLT: ${yesterdayMetrics.clt.agents}`} 
+                        label={`CLT: ${isSingleDay ? selectedDayMetrics.clt.agents : locationStats.clt.avgAgents.toFixed(0)}`} 
                         size="small"
                         sx={{ bgcolor: "background.paper" }}
                       />
                     </>
                   ) : (
                     <Typography variant="caption" color="text.secondary">
-                      {isYesterdayWeekend ? "Weekend - No data" : "No data entered"}
+                      {isSelectedDateWeekend && isSingleDay ? "Weekend - No data" : "No data entered"}
                     </Typography>
                   )}
                 </Stack>
@@ -288,32 +438,38 @@ export const AgentSummary: React.FC = () => {
             </Box>
           </Grid>
 
-          {/* Yesterday's Meeting Minimum */}
+          {/* Meeting Minimum Performance */}
           <Grid item xs={12} sm={6} md={3}>
             <Box sx={{ 
               p: 2, 
-              bgcolor: hasYesterdayData 
-                ? (yesterdayMetrics.total.meetingMinPct >= 80 ? "success.lighter" : "warning.lighter")
+              bgcolor: hasSelectedDayData || locationStats.combined.avgAgents > 0
+                ? ((isSingleDay ? selectedDayMetrics.total.meetingMinPct : (locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100) >= 80 ? "success.lighter" : "warning.lighter")
                 : "grey.100", 
               borderRadius: 2,
               border: "1px solid",
-              borderColor: hasYesterdayData 
-                ? (yesterdayMetrics.total.meetingMinPct >= 80 ? "success.light" : "warning.light")
+              borderColor: hasSelectedDayData || locationStats.combined.avgAgents > 0
+                ? ((isSingleDay ? selectedDayMetrics.total.meetingMinPct : (locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100) >= 80 ? "success.light" : "warning.light")
                 : "grey.300",
             }}>
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Person fontSize="small" color={hasYesterdayData ? "inherit" : "disabled"} />
+                  <Person fontSize="small" color={hasSelectedDayData || locationStats.combined.avgAgents > 0 ? "inherit" : "disabled"} />
                   <Typography variant="body2" color="text.secondary">
                     Met 8+ Leads
                   </Typography>
                 </Stack>
                 <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {hasYesterdayData ? yesterdayMetrics.total.meetingMin : "-"}
+                  {isSingleDay && hasSelectedDayData 
+                    ? selectedDayMetrics.total.meetingMin 
+                    : !isSingleDay && locationStats.combined.avgMeetingMin > 0
+                    ? locationStats.combined.avgMeetingMin.toFixed(0)
+                    : "-"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {hasYesterdayData 
-                    ? `${yesterdayMetrics.total.meetingMinPct.toFixed(0)}% of agents`
+                  {isSingleDay && hasSelectedDayData 
+                    ? `${selectedDayMetrics.total.meetingMinPct.toFixed(0)}% of agents`
+                    : !isSingleDay && locationStats.combined.avgAgents > 0
+                    ? `${((locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100).toFixed(0)}% avg`
                     : "No data"
                   }
                 </Typography>
@@ -321,7 +477,7 @@ export const AgentSummary: React.FC = () => {
             </Box>
           </Grid>
 
-          {/* MTD Average Agents */}
+          {/* Average Agents in Range */}
           <Grid item xs={12} sm={6} md={3}>
             <Box sx={{ 
               p: 2, 
@@ -334,7 +490,7 @@ export const AgentSummary: React.FC = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <TrendingUp fontSize="small" />
                   <Typography variant="body2" color="text.secondary">
-                    MTD Average
+                    {preset === "mtd" ? "MTD" : "Range"} Average
                   </Typography>
                 </Stack>
                 <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -356,7 +512,7 @@ export const AgentSummary: React.FC = () => {
             </Box>
           </Grid>
 
-          {/* MTD Performance */}
+          {/* Period Performance */}
           <Grid item xs={12} sm={6} md={3}>
             <Box sx={{ 
               p: 2, 
@@ -373,7 +529,7 @@ export const AgentSummary: React.FC = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <CheckCircle fontSize="small" color="info" />
                   <Typography variant="body2" color="text.secondary">
-                    MTD Performance
+                    {preset === "mtd" ? "MTD" : "Period"} Performance
                   </Typography>
                 </Stack>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: "info.main" }}>
@@ -452,46 +608,76 @@ export const AgentSummary: React.FC = () => {
             Key Insights:
           </Typography>
           <Stack spacing={0.5}>
-            {/* Staffing comparison */}
-            {hasYesterdayData && locationStats.combined.avgAgents > 0 && (
+            {/* Staffing comparison for single day */}
+            {isSingleDay && hasSelectedDayData && locationStats.combined.avgAgents > 0 && (
               <Typography 
                 variant="caption" 
-                color={yesterdayMetrics.total.agents < locationStats.combined.avgAgents * 0.9 ? "error.dark" : "success.dark"}
+                color={selectedDayMetrics.total.agents < locationStats.combined.avgAgents * 0.9 ? "error.dark" : "success.dark"}
               >
-                • Yesterday's staffing was {
-                  yesterdayMetrics.total.agents < locationStats.combined.avgAgents * 0.9
-                    ? `${((1 - yesterdayMetrics.total.agents / locationStats.combined.avgAgents) * 100).toFixed(0)}% below`
-                    : yesterdayMetrics.total.agents > locationStats.combined.avgAgents * 1.1
-                    ? `${((yesterdayMetrics.total.agents / locationStats.combined.avgAgents - 1) * 100).toFixed(0)}% above`
+                • {format(selectedDate, "MMM d")} staffing was {
+                  selectedDayMetrics.total.agents < locationStats.combined.avgAgents * 0.9
+                    ? `${((1 - selectedDayMetrics.total.agents / locationStats.combined.avgAgents) * 100).toFixed(0)}% below`
+                    : selectedDayMetrics.total.agents > locationStats.combined.avgAgents * 1.1
+                    ? `${((selectedDayMetrics.total.agents / locationStats.combined.avgAgents - 1) * 100).toFixed(0)}% above`
                     : "on par with"
-                } the MTD average
+                } the period average
               </Typography>
+            )}
+            
+            {/* Range statistics */}
+            {!isSingleDay && rangeMetrics.length > 0 && (
+              <>
+                <Typography variant="caption" color="info.dark">
+                  • Analyzed {rangeMetrics.length} days with data in selected range
+                </Typography>
+                {locationStats.combined.daysWithData < dayCount * 0.8 && (
+                  <Typography variant="caption" color="warning.dark">
+                    • Data missing for {dayCount - locationStats.combined.daysWithData} days in range
+                  </Typography>
+                )}
+              </>
             )}
             
             {/* Performance insights */}
             {locationStats.atx.avgAttainment < 100 && locationStats.atx.daysWithData > 0 && (
               <Typography variant="caption" color="warning.dark">
-                • Austin is averaging {(100 - locationStats.atx.avgAttainment).toFixed(0)}% below lead targets
+                • Austin is averaging {(100 - locationStats.atx.avgAttainment).toFixed(0)}% below lead targets {!isSingleDay && "in this period"}
               </Typography>
             )}
             
             {locationStats.clt.avgAttainment < 100 && locationStats.clt.daysWithData > 0 && (
               <Typography variant="caption" color="warning.dark">
-                • Charlotte is averaging {(100 - locationStats.clt.avgAttainment).toFixed(0)}% below lead targets
+                • Charlotte is averaging {(100 - locationStats.clt.avgAttainment).toFixed(0)}% below lead targets {!isSingleDay && "in this period"}
               </Typography>
             )}
             
             {/* Outage warnings */}
-            {locationStats.combined.outages > 2 && (
+            {locationStats.combined.outages > 0 && (
               <Typography variant="caption" color="error.dark">
-                • {locationStats.combined.outages} days this month had significant staffing shortages
+                • {locationStats.combined.outages} day{locationStats.combined.outages !== 1 ? 's' : ''} in the {preset === "mtd" ? "month" : "period"} had significant staffing shortages
+              </Typography>
+            )}
+            
+            {/* Meeting minimum insights */}
+            {locationStats.combined.avgAgents > 0 && (
+              <Typography 
+                variant="caption" 
+                color={
+                  (locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100 >= 80 
+                    ? "success.dark" 
+                    : (locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100 >= 60
+                    ? "warning.dark"
+                    : "error.dark"
+                }
+              >
+                • {((locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100).toFixed(0)}% of agents meeting 8+ lead requirement on average
               </Typography>
             )}
             
             {/* No data warning */}
-            {!hasYesterdayData && !isYesterdayWeekend && (
+            {!hasSelectedDayData && rangeMetrics.length === 0 && (
               <Typography variant="caption" color="info.dark">
-                • Yesterday's data has not been entered yet
+                • No data available for the selected {isSingleDay ? "date" : "date range"}
               </Typography>
             )}
           </Stack>
