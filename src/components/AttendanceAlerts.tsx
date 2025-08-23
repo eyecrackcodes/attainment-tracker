@@ -58,7 +58,9 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
   revenueData,
   targetSettings,
 }) => {
-  const [expandedLocation, setExpandedLocation] = React.useState<string | null>(null);
+  const [expandedLocation, setExpandedLocation] = React.useState<string | null>(
+    null
+  );
 
   const weeklyComparisons = useMemo(() => {
     if (!revenueData || revenueData.length === 0 || !targetSettings) {
@@ -72,19 +74,15 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
     const previousWeekEnd = subDays(currentWeekEnd, 7);
 
     // Filter data for current and previous weeks
-    const currentWeekData = revenueData.filter(
-      (d) => {
-        const date = parseISO(d.date);
-        return date >= currentWeekStart && date <= currentWeekEnd;
-      }
-    );
+    const currentWeekData = revenueData.filter((d) => {
+      const date = parseISO(d.date);
+      return date >= currentWeekStart && date <= currentWeekEnd;
+    });
 
-    const previousWeekData = revenueData.filter(
-      (d) => {
-        const date = parseISO(d.date);
-        return date >= previousWeekStart && date <= previousWeekEnd;
-      }
-    );
+    const previousWeekData = revenueData.filter((d) => {
+      const date = parseISO(d.date);
+      return date >= previousWeekStart && date <= previousWeekEnd;
+    });
 
     const comparisons: WeeklyComparison[] = [];
 
@@ -104,33 +102,38 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
         "custom"
       );
 
-      const currentTotal = location === "Austin" 
-        ? currentMetrics.austin.revenue
-        : location === "Charlotte"
-        ? currentMetrics.charlotte.revenue
-        : currentMetrics.total.revenue;
+      const currentTotal =
+        location === "Austin"
+          ? currentMetrics.austin.revenue
+          : location === "Charlotte"
+          ? currentMetrics.charlotte.revenue
+          : currentMetrics.total.revenue;
 
-      const previousTotal = location === "Austin"
-        ? previousMetrics.austin.revenue
-        : location === "Charlotte"
-        ? previousMetrics.charlotte.revenue
-        : previousMetrics.total.revenue;
+      const previousTotal =
+        location === "Austin"
+          ? previousMetrics.austin.revenue
+          : location === "Charlotte"
+          ? previousMetrics.charlotte.revenue
+          : previousMetrics.total.revenue;
 
-      const currentAttainment = location === "Austin"
-        ? currentMetrics.austin.attainment
-        : location === "Charlotte"
-        ? currentMetrics.charlotte.attainment
-        : currentMetrics.total.attainment;
+      const currentAttainment =
+        location === "Austin"
+          ? currentMetrics.austin.attainment
+          : location === "Charlotte"
+          ? currentMetrics.charlotte.attainment
+          : currentMetrics.total.attainment;
 
-      const previousAttainment = location === "Austin"
-        ? previousMetrics.austin.attainment
-        : location === "Charlotte"
-        ? previousMetrics.charlotte.attainment
-        : previousMetrics.total.attainment;
+      const previousAttainment =
+        location === "Austin"
+          ? previousMetrics.austin.attainment
+          : location === "Charlotte"
+          ? previousMetrics.charlotte.attainment
+          : previousMetrics.total.attainment;
 
-      const changePercentage = previousTotal > 0
-        ? ((currentTotal - previousTotal) / previousTotal) * 100
-        : 0;
+      const changePercentage =
+        previousTotal > 0
+          ? ((currentTotal - previousTotal) / previousTotal) * 100
+          : 0;
 
       // Check daily alerts
       const dailyAlerts: DailyAlert[] = [];
@@ -145,25 +148,32 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
         const currentDateStr = format(currentDate, "yyyy-MM-dd");
         const previousDateStr = format(previousDate, "yyyy-MM-dd");
 
-        const currentDayData = currentWeekData.find(d => d.date === currentDateStr);
-        const previousDayData = previousWeekData.find(d => d.date === previousDateStr);
+        const currentDayData = currentWeekData.find(
+          (d) => d.date === currentDateStr
+        );
+        const previousDayData = previousWeekData.find(
+          (d) => d.date === previousDateStr
+        );
 
         if (currentDayData && previousDayData) {
-          const currentRevenue = location === "Austin"
-            ? currentDayData.austin
-            : location === "Charlotte"
-            ? currentDayData.charlotte
-            : currentDayData.austin + currentDayData.charlotte;
+          const currentRevenue =
+            location === "Austin"
+              ? currentDayData.austin
+              : location === "Charlotte"
+              ? currentDayData.charlotte
+              : currentDayData.austin + currentDayData.charlotte;
 
-          const previousRevenue = location === "Austin"
-            ? previousDayData.austin
-            : location === "Charlotte"
-            ? previousDayData.charlotte
-            : previousDayData.austin + previousDayData.charlotte;
+          const previousRevenue =
+            location === "Austin"
+              ? previousDayData.austin
+              : location === "Charlotte"
+              ? previousDayData.charlotte
+              : previousDayData.austin + previousDayData.charlotte;
 
-          const dropPercentage = previousRevenue > 0
-            ? ((previousRevenue - currentRevenue) / previousRevenue) * 100
-            : 0;
+          const dropPercentage =
+            previousRevenue > 0
+              ? ((previousRevenue - currentRevenue) / previousRevenue) * 100
+              : 0;
 
           // Calculate daily attainment
           const dailyMetrics = calculateLocationMetrics(
@@ -180,17 +190,19 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
             "custom"
           );
 
-          const currentDayAttainment = location === "Austin"
-            ? dailyMetrics.austin.attainment
-            : location === "Charlotte"
-            ? dailyMetrics.charlotte.attainment
-            : dailyMetrics.total.attainment;
+          const currentDayAttainment =
+            location === "Austin"
+              ? dailyMetrics.austin.attainment
+              : location === "Charlotte"
+              ? dailyMetrics.charlotte.attainment
+              : dailyMetrics.total.attainment;
 
-          const previousDayAttainment = location === "Austin"
-            ? previousDailyMetrics.austin.attainment
-            : location === "Charlotte"
-            ? previousDailyMetrics.charlotte.attainment
-            : previousDailyMetrics.total.attainment;
+          const previousDayAttainment =
+            location === "Austin"
+              ? previousDailyMetrics.austin.attainment
+              : location === "Charlotte"
+              ? previousDailyMetrics.charlotte.attainment
+              : previousDailyMetrics.total.attainment;
 
           if (dropPercentage > 7) {
             dailyAlerts.push({
@@ -254,7 +266,9 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
             Weekly Performance Alerts
           </Typography>
           <Chip
-            label={`${weeklyComparisons.length} Alert${weeklyComparisons.length > 1 ? 's' : ''}`}
+            label={`${weeklyComparisons.length} Alert${
+              weeklyComparisons.length > 1 ? "s" : ""
+            }`}
             color="warning"
             size="small"
           />
@@ -289,20 +303,26 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                   <LocationOn fontSize="small" />
                   <span>{comparison.location}</span>
                   <TrendingDown fontSize="small" />
-                  <span>{Math.abs(comparison.changePercentage).toFixed(1)}% Drop</span>
+                  <span>
+                    {Math.abs(comparison.changePercentage).toFixed(1)}% Drop
+                  </span>
                 </Stack>
               </AlertTitle>
-              
+
               <Stack spacing={1}>
                 <Typography variant="body2">
-                  Current Week: {formatCurrency(comparison.currentWeekTotal)} ({comparison.currentWeekAttainment.toFixed(1)}% attainment)
+                  Current Week: {formatCurrency(comparison.currentWeekTotal)} (
+                  {comparison.currentWeekAttainment.toFixed(1)}% attainment)
                 </Typography>
                 <Typography variant="body2">
-                  Previous Week: {formatCurrency(comparison.previousWeekTotal)} ({comparison.previousWeekAttainment.toFixed(1)}% attainment)
+                  Previous Week: {formatCurrency(comparison.previousWeekTotal)}{" "}
+                  ({comparison.previousWeekAttainment.toFixed(1)}% attainment)
                 </Typography>
                 {comparison.dailyAlerts.length > 0 && (
                   <Typography variant="body2" sx={{ fontWeight: 500, mt: 1 }}>
-                    {comparison.dailyAlerts.length} day{comparison.dailyAlerts.length > 1 ? 's' : ''} with drops &gt;7%
+                    {comparison.dailyAlerts.length} day
+                    {comparison.dailyAlerts.length > 1 ? "s" : ""} with drops
+                    &gt;7%
                   </Typography>
                 )}
               </Stack>
@@ -325,7 +345,11 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                           {comparison.dailyAlerts.map((alert) => (
                             <TableRow key={alert.date}>
                               <TableCell>
-                                <Stack direction="row" alignItems="center" spacing={1}>
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={1}
+                                >
                                   <CalendarToday fontSize="small" />
                                   {format(parseISO(alert.date), "MMM d")}
                                 </Stack>
@@ -340,7 +364,11 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                                 <Chip
                                   label={`${alert.dropPercentage.toFixed(1)}%`}
                                   size="small"
-                                  color={alert.dropPercentage > 15 ? "error" : "warning"}
+                                  color={
+                                    alert.dropPercentage > 15
+                                      ? "error"
+                                      : "warning"
+                                  }
                                 />
                               </TableCell>
                               <TableCell align="right">
@@ -348,7 +376,10 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                                   <Typography variant="body2">
                                     {alert.currentAttainment.toFixed(1)}%
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
                                     vs {alert.previousAttainment.toFixed(1)}%
                                   </Typography>
                                 </Stack>

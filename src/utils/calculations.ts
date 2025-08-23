@@ -321,22 +321,22 @@ export const calculateLocationMetrics = (
     },
   };
 
-  console.log("=== Target Calculations ===");
-  console.log("Daily Targets:", {
-    austin: dailyAustinTarget,
-    charlotte: dailyCharlotteTarget,
-    hasMonthlyAdjustment: !!monthlyAdjustment,
-  });
-  console.log("Working Days:", {
-    totalBusinessDays,
-    elapsedBusinessDays,
-    remainingBusinessDays,
-  });
-  console.log("Monthly Targets:", {
-    austin: monthlyAustinTarget,
-    charlotte: monthlyCharlotteTarget,
-    total: monthlyAustinTarget + monthlyCharlotteTarget,
-  });
+  // console.log("=== Target Calculations ===");
+  // console.log("Daily Targets:", {
+  //   austin: dailyAustinTarget,
+  //   charlotte: dailyCharlotteTarget,
+  //   hasMonthlyAdjustment: !!monthlyAdjustment,
+  // });
+  // console.log("Working Days:", {
+  //   totalBusinessDays,
+  //   elapsedBusinessDays,
+  //   remainingBusinessDays,
+  // });
+  // console.log("Monthly Targets:", {
+  //   austin: monthlyAustinTarget,
+  //   charlotte: monthlyCharlotteTarget,
+  //   total: monthlyAustinTarget + monthlyCharlotteTarget,
+  // });
 
   return {
     austin: {
@@ -1877,9 +1877,9 @@ const calculatePerformanceStability = (data: RevenueData[]): number => {
     Math.min(100, (1 - coefficientOfVariation) * 100)
   );
 
-  console.log("Performance Stability Calculation:", {
-    dataPoints: data.length,
-    mean: mean.toFixed(2),
+  // console.log("Performance Stability Calculation:", {
+  //   dataPoints: data.length,
+  //   mean: mean.toFixed(2),
     standardDeviation: standardDeviation.toFixed(2),
     coefficientOfVariation: coefficientOfVariation.toFixed(4),
     stabilityScore: stability.toFixed(1),
@@ -2094,9 +2094,9 @@ export const calculateBusinessIntelligence = (
     Math.min(100, (1 - coefficientOfVariation) * 100)
   );
 
-  console.log("Business Intelligence - Consistency Calculation:", {
-    averageDailyRevenue: averageDailyRevenue.toFixed(2),
-    standardDeviation: standardDeviation.toFixed(2),
+  // console.log("Business Intelligence - Consistency Calculation:", {
+  //   averageDailyRevenue: averageDailyRevenue.toFixed(2),
+  //   standardDeviation: standardDeviation.toFixed(2),
     coefficientOfVariation: coefficientOfVariation.toFixed(4),
     consistencyScore: consistencyScore.toFixed(1),
   });

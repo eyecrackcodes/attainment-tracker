@@ -378,7 +378,7 @@ export const LeadAttainmentSummary: React.FC<LeadAttainmentSummaryProps> = ({
       )}
 
       <Grid container spacing={3}>
-        <Grid xs={12} lg={6}>
+        <Grid item xs={12} lg={6}>
           {siteData.ATX ? (
             renderSiteMetrics("ATX", siteData.ATX)
           ) : (
@@ -411,7 +411,7 @@ export const LeadAttainmentSummary: React.FC<LeadAttainmentSummaryProps> = ({
             </Paper>
           )}
         </Grid>
-        <Grid xs={12} lg={6}>
+        <Grid item xs={12} lg={6}>
           {siteData.CLT ? (
             renderSiteMetrics("CLT", siteData.CLT)
           ) : (

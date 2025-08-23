@@ -199,10 +199,10 @@ export const Dashboard: React.FC = () => {
         }
       );
 
-      // Log detailed validation results for debugging
-      console.log("Data Consistency Check:", {
-        isValid: consistencyCheck.isValid,
-        summary: consistencyCheck.summary,
+      // Detailed validation results for debugging (commented out)
+      // console.log("Data Consistency Check:", {
+      //   isValid: consistencyCheck.isValid,
+      //   summary: consistencyCheck.summary,
         errors: consistencyCheck.errors,
         warnings: consistencyCheck.warnings,
       });
@@ -234,9 +234,9 @@ export const Dashboard: React.FC = () => {
 
       // Automatically recalculate monthly goals if needed
       if (!consistencyCheck.summary.monthlyGoalConsistency) {
-        console.log(
-          "Monthly goal inconsistency detected, attempting recalculation..."
-        );
+        // console.log(
+        //   "Monthly goal inconsistency detected, attempting recalculation..."
+        // );
 
         try {
           const recalculatedSettings = recalculateMonthlyGoals(
@@ -249,9 +249,9 @@ export const Dashboard: React.FC = () => {
             JSON.stringify(recalculatedSettings) !==
             JSON.stringify(state.targetSettings)
           ) {
-            console.log(
-              "Updating target settings with recalculated monthly goals"
-            );
+            // console.log(
+            //   "Updating target settings with recalculated monthly goals"
+            // );
             setState((prevState) => ({
               ...prevState,
               targetSettings: recalculatedSettings,
@@ -271,7 +271,7 @@ export const Dashboard: React.FC = () => {
   }, [state.revenueData, state.targetSettings, state.filters]);
 
   const handleFilterChange = (newFilters: any) => {
-    console.log("Filter change detected:", newFilters);
+    // console.log("Filter change detected:", newFilters);
     setState((prevState) => {
       // Allow users to select any timeFrame with any location
       // Remove the automatic MTD reset logic that was causing issues
@@ -279,7 +279,7 @@ export const Dashboard: React.FC = () => {
         ...prevState,
         filters: newFilters,
       };
-      console.log("Updated state filters:", updatedState.filters);
+      // console.log("Updated state filters:", updatedState.filters);
       return updatedState;
     });
   };
@@ -687,7 +687,7 @@ export const Dashboard: React.FC = () => {
           return (
             <Stack spacing={3}>
               <Grid container spacing={3}>
-                <Grid xs={12} lg={8}>
+                <Grid item xs={12} lg={8}>
                   <LeadEntryForm
                     defaultDate={new Date()}
                     onEntrySuccess={() => {
@@ -696,7 +696,7 @@ export const Dashboard: React.FC = () => {
                     }}
                   />
                 </Grid>
-                <Grid xs={12} lg={4}>
+                <Grid item xs={12} lg={4}>
                   <LeadDataImport />
                 </Grid>
               </Grid>

@@ -74,11 +74,11 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
     return aDate.getTime() - bDate.getTime();
   });
 
-  // Log the actual dates in the data
-  console.log(
-    "Actual dates in data:",
-    sortedData.map((entry) => entry.date)
-  );
+  // Actual dates in the data for debugging (commented out)
+  // console.log(
+  //   "Actual dates in data:",
+  //   sortedData.map((entry) => entry.date)
+  // );
 
   // Transform data for the chart - only include dates that have actual data
   const chartData = sortedData.map((entry) => {
@@ -90,9 +90,9 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
     const day = parseInt(dateParts[2]);
 
     const date = new Date(year, month, day);
-    console.log(
-      `Original date string: ${entry.date}, Parsed date: ${date.toISOString()}`
-    );
+    // console.log(
+    //   `Original date string: ${entry.date}, Parsed date: ${date.toISOString()}`
+    // );
 
     // Use a more detailed date format that includes the year to avoid confusion
     const formattedDate = format(date, "MM/dd");
@@ -110,8 +110,8 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
     };
   });
 
-  // Log the chart data to see what's being displayed
-  console.log("Chart data:", chartData);
+  // Chart data for debugging (commented out)
+  // console.log("Chart data:", chartData);
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

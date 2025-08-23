@@ -240,338 +240,352 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     combinedMetrics.length;
 
   return (
-    <Stack spacing={3}>
-      <Typography
-        variant="h5"
-        sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
-      >
-        Lead & Sales Correlation Analysis
-      </Typography>
-
-      {/* Summary Cards */}
-      <Grid container spacing={3}>
-        <Grid xs={12} md={3}>
-          <Card
-            elevation={0}
-            sx={{
-              height: "100%",
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Groups color="primary" />
-                  <Typography variant="body2" color="text.secondary">
-                    Avg Lead Attainment
-                  </Typography>
-                </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {avgLeadAttainment.toFixed(1)}%
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid xs={12} md={3}>
-          <Card
-            elevation={0}
-            sx={{
-              height: "100%",
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <AttachMoney color="success" />
-                  <Typography variant="body2" color="text.secondary">
-                    Avg Sales Attainment
-                  </Typography>
-                </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {avgSalesAttainment.toFixed(1)}%
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid xs={12} md={3}>
-          <Card
-            elevation={0}
-            sx={{
-              height: "100%",
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Insights color="info" />
-                  <Typography variant="body2" color="text.secondary">
-                    Correlation
-                  </Typography>
-                </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {(correlation * 100).toFixed(0)}%
-                </Typography>
-                <Chip
-                  label={correlationStrength}
-                  size="small"
-                  color={
-                    correlationStrength === "Strong"
-                      ? "success"
-                      : correlationStrength === "Moderate"
-                      ? "warning"
-                      : "default"
-                  }
-                />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid xs={12} md={3}>
-          <Card
-            elevation={0}
-            sx={{
-              height: "100%",
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Assessment color="secondary" />
-                  <Typography variant="body2" color="text.secondary">
-                    Days with Data
-                  </Typography>
-                </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  {combinedMetrics.length}
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Combined Trend Chart */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-          Lead vs Sales Attainment Trend
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Stack spacing={3}>
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
+        >
+          Lead & Sales Correlation Analysis
         </Typography>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={combinedMetrics}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(value) => format(parseISO(value), "MMM d")}
-            />
-            <YAxis
-              label={{
-                value: "Attainment %",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-            <Tooltip
-              formatter={(value: number) => `${value.toFixed(1)}%`}
-              labelFormatter={(label) => format(parseISO(label), "MMM d, yyyy")}
-            />
-            <Legend />
-            <ReferenceLine y={100} stroke="#666" strokeDasharray="5 5" />
-            <Line
-              type="monotone"
-              dataKey="leadAttainmentCombined"
-              stroke="#3b82f6"
-              name="Lead Attainment"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="salesAttainmentCombined"
-              stroke="#10b981"
-              name="Sales Attainment"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Paper>
 
-      {/* Correlation Scatter Plot */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-          Lead vs Sales Correlation
-        </Typography>
-        <ResponsiveContainer width="100%" height={400}>
-          <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="leadAttainmentCombined"
-              name="Lead Attainment"
-              unit="%"
-              label={{
-                value: "Lead Attainment %",
-                position: "insideBottom",
-                offset: -5,
+        {/* Summary Cards */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3}>
+            <Card
+              elevation={0}
+              sx={{
+                height: "100%",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
               }}
-            />
-            <YAxis
-              dataKey="salesAttainmentCombined"
-              name="Sales Attainment"
-              unit="%"
-              label={{
-                value: "Sales Attainment %",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-            <Tooltip
-              cursor={{ strokeDasharray: "3 3" }}
-              formatter={(value: number) => `${value.toFixed(1)}%`}
-              labelFormatter={(index) => {
-                if (typeof index === "number" && combinedMetrics[index]) {
-                  return format(
-                    parseISO(combinedMetrics[index].date),
-                    "MMM d, yyyy"
-                  );
-                }
-                return "";
-              }}
-            />
-            <ReferenceLine x={100} stroke="#666" strokeDasharray="5 5" />
-            <ReferenceLine y={100} stroke="#666" strokeDasharray="5 5" />
-            <Scatter
-              name="Daily Performance"
-              data={combinedMetrics}
-              fill="#8b5cf6"
             >
-              {combinedMetrics.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    entry.leadAttainmentCombined >= 100 &&
-                    entry.salesAttainmentCombined >= 100
-                      ? "#10b981"
-                      : entry.leadAttainmentCombined >= 100 ||
-                        entry.salesAttainmentCombined >= 100
-                      ? "#f59e0b"
-                      : "#ef4444"
+              <CardContent>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Groups color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      Avg Lead Attainment
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    {avgLeadAttainment.toFixed(1)}%
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card
+              elevation={0}
+              sx={{
+                height: "100%",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <CardContent>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <AttachMoney color="success" />
+                    <Typography variant="body2" color="text.secondary">
+                      Avg Sales Attainment
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    {avgSalesAttainment.toFixed(1)}%
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card
+              elevation={0}
+              sx={{
+                height: "100%",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <CardContent>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Insights color="info" />
+                    <Typography variant="body2" color="text.secondary">
+                      Correlation
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    {(correlation * 100).toFixed(0)}%
+                  </Typography>
+                  <Chip
+                    label={correlationStrength}
+                    size="small"
+                    color={
+                      correlationStrength === "Strong"
+                        ? "success"
+                        : correlationStrength === "Moderate"
+                        ? "warning"
+                        : "default"
+                    }
+                  />
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card
+              elevation={0}
+              sx={{
+                height: "100%",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <CardContent>
+                <Stack spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Assessment color="secondary" />
+                    <Typography variant="body2" color="text.secondary">
+                      Days with Data
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    {combinedMetrics.length}
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Combined Trend Chart */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            Lead vs Sales Attainment Trend
+          </Typography>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={combinedMetrics}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(value) => format(parseISO(value), "MMM d")}
+              />
+              <YAxis
+                label={{
+                  value: "Attainment %",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+              <Tooltip
+                formatter={(value: number) => `${value.toFixed(1)}%`}
+                labelFormatter={(label) =>
+                  format(parseISO(label), "MMM d, yyyy")
+                }
+              />
+              <Legend />
+              <ReferenceLine y={100} stroke="#666" strokeDasharray="5 5" />
+              <Line
+                type="monotone"
+                dataKey="leadAttainmentCombined"
+                stroke="#3b82f6"
+                name="Lead Attainment"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="salesAttainmentCombined"
+                stroke="#10b981"
+                name="Sales Attainment"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Paper>
+
+        {/* Correlation Scatter Plot */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            Lead vs Sales Correlation
+          </Typography>
+          <ResponsiveContainer width="100%" height={400}>
+            <ScatterChart>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="leadAttainmentCombined"
+                name="Lead Attainment"
+                unit="%"
+                tickFormatter={(value) => value.toFixed(1)}
+                label={{
+                  value: "Lead Attainment %",
+                  position: "insideBottom",
+                  offset: -5,
+                }}
+              />
+              <YAxis
+                dataKey="salesAttainmentCombined"
+                name="Sales Attainment"
+                unit="%"
+                tickFormatter={(value) => value.toFixed(1)}
+                label={{
+                  value: "Sales Attainment %",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+              <Tooltip
+                cursor={{ strokeDasharray: "3 3" }}
+                formatter={(value: number) => `${value.toFixed(1)}%`}
+                labelFormatter={(index) => {
+                  if (typeof index === "number" && combinedMetrics[index]) {
+                    return format(
+                      parseISO(combinedMetrics[index].date),
+                      "MMM d, yyyy"
+                    );
                   }
-                />
-              ))}
-            </Scatter>
-          </ScatterChart>
-        </ResponsiveContainer>
-      </Paper>
+                  return "";
+                }}
+              />
+              <ReferenceLine x={100} stroke="#666" strokeDasharray="5 5" />
+              <ReferenceLine y={100} stroke="#666" strokeDasharray="5 5" />
+              <Scatter
+                name="Daily Performance"
+                data={combinedMetrics}
+                fill="#8b5cf6"
+              >
+                {combinedMetrics.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      entry.leadAttainmentCombined >= 100 &&
+                      entry.salesAttainmentCombined >= 100
+                        ? "#10b981"
+                        : entry.leadAttainmentCombined >= 100 ||
+                          entry.salesAttainmentCombined >= 100
+                        ? "#f59e0b"
+                        : "#ef4444"
+                    }
+                  />
+                ))}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        </Paper>
 
-      {/* Site Comparison */}
-      <Grid container spacing={3}>
-        <Grid xs={12} lg={6}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Austin Performance
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={combinedMetrics}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(value) => format(parseISO(value), "MMM d")}
-                />
-                <YAxis />
-                <Tooltip
-                  formatter={(value: number) => `${value.toFixed(1)}%`}
-                  labelFormatter={(label) => format(parseISO(label), "MMM d")}
-                />
-                <Legend />
-                <Bar dataKey="leadAttainmentATX" fill="#3b82f6" name="Lead %" />
-                <Bar
-                  dataKey="salesAttainmentATX"
-                  fill="#10b981"
-                  name="Sales %"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
+        {/* Site Comparison */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} lg={6}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                height: "100%",
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                Austin Performance
+              </Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={combinedMetrics}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(value) => format(parseISO(value), "MMM d")}
+                  />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number) => `${value.toFixed(1)}%`}
+                    labelFormatter={(label) => format(parseISO(label), "MMM d")}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="leadAttainmentATX"
+                    fill="#3b82f6"
+                    name="Lead %"
+                  />
+                  <Bar
+                    dataKey="salesAttainmentATX"
+                    fill="#10b981"
+                    name="Sales %"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Paper>
+          </Grid>
 
-        <Grid xs={12} lg={6}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Charlotte Performance
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={combinedMetrics}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(value) => format(parseISO(value), "MMM d")}
-                />
-                <YAxis />
-                <Tooltip
-                  formatter={(value: number) => `${value.toFixed(1)}%`}
-                  labelFormatter={(label) => format(parseISO(label), "MMM d")}
-                />
-                <Legend />
-                <Bar dataKey="leadAttainmentCLT" fill="#3b82f6" name="Lead %" />
-                <Bar
-                  dataKey="salesAttainmentCLT"
-                  fill="#10b981"
-                  name="Sales %"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </Paper>
+          <Grid item xs={12} lg={6}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                height: "100%",
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                Charlotte Performance
+              </Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={combinedMetrics}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(value) => format(parseISO(value), "MMM d")}
+                  />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number) => `${value.toFixed(1)}%`}
+                    labelFormatter={(label) => format(parseISO(label), "MMM d")}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="leadAttainmentCLT"
+                    fill="#3b82f6"
+                    name="Lead %"
+                  />
+                  <Bar
+                    dataKey="salesAttainmentCLT"
+                    fill="#10b981"
+                    name="Sales %"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
-    </Stack>
+      </Stack>
+    </Box>
   );
 };
