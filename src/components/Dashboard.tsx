@@ -44,9 +44,15 @@ import {
   validateDataIntegrity,
   validateDataConsistency,
   recalculateMonthlyGoals,
+  getBusinessDaysInMonth,
 } from "../utils/calculations";
 import { DaysBehindAlert } from "./DaysBehindAlert";
-import { ExecutiveDashboard } from "./ExecutiveDashboard";
+import { LeadEntryForm } from "./LeadEntryForm";
+import { LeadAttainmentSummary } from "./LeadAttainmentSummary";
+import { LeadDataImport } from "./LeadDataImport";
+import { CombinedInsights } from "./CombinedInsights";
+import { AttendanceAlerts } from "./AttendanceAlerts";
+import { GoalPrompt } from "./GoalPrompt";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -101,6 +107,7 @@ export const Dashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isTabLoading, setIsTabLoading] = useState(false);
+  const [goalPromptOpen, setGoalPromptOpen] = useState(false);
   const showLocationCharts = state.filters.location !== "Combined";
 
   useEffect(() => {
@@ -127,6 +134,24 @@ export const Dashboard: React.FC = () => {
       unsubscribeTargets();
     };
   }, []);
+
+  useEffect(() => {
+    const today = new Date();
+    const isFirstDay = today.getDate() === 1;
+
+    if (isFirstDay) {
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const hasGoalForCurrentMonth =
+        state.targetSettings.monthlyAdjustments.some(
+          (adj) => adj.month === currentMonth && adj.year === currentYear
+        );
+
+      if (!hasGoalForCurrentMonth) {
+        setGoalPromptOpen(true);
+      }
+    }
+  }, [state.targetSettings.monthlyAdjustments]);
 
   useEffect(() => {
     if (state.revenueData.length > 0 && state.targetSettings) {
@@ -174,13 +199,13 @@ export const Dashboard: React.FC = () => {
         }
       );
 
-      // Log detailed validation results for debugging
-      console.log("Data Consistency Check:", {
-        isValid: consistencyCheck.isValid,
-        summary: consistencyCheck.summary,
-        errors: consistencyCheck.errors,
-        warnings: consistencyCheck.warnings,
-      });
+      // Detailed validation results for debugging (commented out)
+      // console.log("Data Consistency Check:", {
+      //   isValid: consistencyCheck.isValid,
+      //   summary: consistencyCheck.summary,
+      //   errors: consistencyCheck.errors,
+      //   warnings: consistencyCheck.warnings,
+      // });
 
       // Handle critical consistency errors
       if (!consistencyCheck.isValid && consistencyCheck.errors.length > 0) {
@@ -209,9 +234,9 @@ export const Dashboard: React.FC = () => {
 
       // Automatically recalculate monthly goals if needed
       if (!consistencyCheck.summary.monthlyGoalConsistency) {
-        console.log(
-          "Monthly goal inconsistency detected, attempting recalculation..."
-        );
+        // console.log(
+        //   "Monthly goal inconsistency detected, attempting recalculation..."
+        // );
 
         try {
           const recalculatedSettings = recalculateMonthlyGoals(
@@ -224,9 +249,9 @@ export const Dashboard: React.FC = () => {
             JSON.stringify(recalculatedSettings) !==
             JSON.stringify(state.targetSettings)
           ) {
-            console.log(
-              "Updating target settings with recalculated monthly goals"
-            );
+            // console.log(
+            //   "Updating target settings with recalculated monthly goals"
+            // );
             setState((prevState) => ({
               ...prevState,
               targetSettings: recalculatedSettings,
@@ -246,7 +271,7 @@ export const Dashboard: React.FC = () => {
   }, [state.revenueData, state.targetSettings, state.filters]);
 
   const handleFilterChange = (newFilters: any) => {
-    console.log("Filter change detected:", newFilters);
+    // console.log("Filter change detected:", newFilters);
     setState((prevState) => {
       // Allow users to select any timeFrame with any location
       // Remove the automatic MTD reset logic that was causing issues
@@ -254,7 +279,7 @@ export const Dashboard: React.FC = () => {
         ...prevState,
         filters: newFilters,
       };
-      console.log("Updated state filters:", updatedState.filters);
+      // console.log("Updated state filters:", updatedState.filters);
       return updatedState;
     });
   };
@@ -295,6 +320,33 @@ export const Dashboard: React.FC = () => {
         },
       }));
     }
+  };
+
+  const handleSaveGoal = (goal: { austin: number; charlotte: number }) => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const businessDays = getBusinessDaysInMonth(currentYear, currentMonth);
+
+    const newAdjustment = {
+      month: currentMonth,
+      year: currentYear,
+      austin: goal.austin,
+      charlotte: goal.charlotte,
+      workingDays: businessDays,
+    };
+
+    const newSettings = {
+      ...state.targetSettings,
+      monthlyAdjustments: [
+        ...state.targetSettings.monthlyAdjustments,
+        newAdjustment,
+      ],
+    };
+
+    handleTargetsChange(newSettings);
+    setGoalPromptOpen(false);
   };
 
   const handleDataUpdate = async (newData: RevenueData[]) => {
@@ -392,6 +444,12 @@ export const Dashboard: React.FC = () => {
                 />
               </Box>
 
+              {/* Attendance Alerts */}
+              <AttendanceAlerts
+                revenueData={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+
               {/* Summary Metrics */}
               <Box>
                 <SummaryMetrics
@@ -415,14 +473,14 @@ export const Dashboard: React.FC = () => {
               {/* Daily Entry Form and Filters Row */}
               <Box sx={{ mt: 1 }}>
                 <Grid container spacing={4}>
-                  <Grid xs={12} lg={5}>
+                  <Grid item xs={12} lg={5}>
                     <DailyEntryForm
                       onSubmit={handleDailyDataAdd}
                       existingData={state.revenueData}
                       targets={state.targetSettings}
                     />
                   </Grid>
-                  <Grid xs={12} lg={7}>
+                  <Grid item xs={12} lg={7}>
                     <Paper
                       elevation={2}
                       sx={{
@@ -434,13 +492,13 @@ export const Dashboard: React.FC = () => {
                       }}
                     >
                       <Grid container spacing={3}>
-                        <Grid xs={12} md={8}>
+                        <Grid item xs={12} md={8}>
                           <FilterPanel
                             filters={state.filters}
                             onFilterChange={handleFilterChange}
                           />
                         </Grid>
-                        <Grid xs={12} md={4}>
+                        <Grid item xs={12} md={4}>
                           <DataImportExport
                             onDataUpdate={handleDataUpdate}
                             currentData={state.revenueData}
@@ -627,10 +685,32 @@ export const Dashboard: React.FC = () => {
           );
         case 3:
           return (
-            <ExecutiveDashboard
-              data={state.revenueData}
-              targetSettings={state.targetSettings}
-            />
+            <Stack spacing={3}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} lg={8}>
+                  <LeadEntryForm
+                    defaultDate={new Date()}
+                    onEntrySuccess={() => {
+                      // Force refresh the summary
+                      setState((prev) => ({ ...prev }));
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} lg={4}>
+                  <LeadDataImport />
+                </Grid>
+              </Grid>
+              <LeadAttainmentSummary date={new Date()} showCombined={true} />
+            </Stack>
+          );
+        case 4:
+          return (
+            <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
+              <CombinedInsights
+                revenueData={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+            </Box>
           );
         default:
           return null;
@@ -639,7 +719,7 @@ export const Dashboard: React.FC = () => {
 
     return (
       <Fade in={!isTabLoading} timeout={300}>
-        <Box>{view}</Box>
+        <Box sx={{ width: "100%" }}>{view}</Box>
       </Fade>
     );
   };
@@ -665,6 +745,11 @@ export const Dashboard: React.FC = () => {
         maxWidth={false}
         sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}
       >
+        <GoalPrompt
+          open={goalPromptOpen}
+          onClose={() => setGoalPromptOpen(false)}
+          onSave={handleSaveGoal}
+        />
         <Snackbar
           open={state.snackbar.open}
           autoHideDuration={6000}
@@ -738,7 +823,8 @@ export const Dashboard: React.FC = () => {
             <Tab label="Overview" />
             <Tab label="Historical Trends" />
             <Tab label="Daily Patterns" />
-            <Tab label="Executive Dashboard" />
+            <Tab label="Lead Attainment" />
+            <Tab label="Lead & Sales Insights" />
           </Tabs>
         </Paper>
 

@@ -22,7 +22,6 @@ import {
   calculateMetrics,
   filterDataByTimeFrame,
   calculateLocationMetrics,
-  calculateLocationMetricsForPeriod,
 } from "../utils/calculations";
 import MetricCard from "./MetricCard";
 import { formatCurrency } from "../utils/formatters";
@@ -54,8 +53,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     location
   );
 
-  // Use the new time-period-aware calculation
-  const metrics = calculateLocationMetricsForPeriod(
+  // Use the standard location metrics calculation
+  const metrics = calculateLocationMetrics(
     filteredData,
     targetSettings,
     location,

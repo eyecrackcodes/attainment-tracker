@@ -167,21 +167,21 @@ export const TimePeriodsChart: React.FC<TimePeriodsChartProps> = ({
               <LabelList
                 dataKey="Austin"
                 position="top"
-                formatter={(value: number) => `${value.toFixed(0)}%`}
+                formatter={(value: number) => `${Math.round(value)}%`}
               />
             </Bar>
             <Bar dataKey="Charlotte" fill={brandColors.charlotte}>
               <LabelList
                 dataKey="Charlotte"
                 position="top"
-                formatter={(value: number) => `${value.toFixed(0)}%`}
+                formatter={(value: number) => `${Math.round(value)}%`}
               />
             </Bar>
             <Bar dataKey="Combined" fill={brandColors.combined}>
               <LabelList
                 dataKey="Combined"
                 position="top"
-                formatter={(value: number) => `${value.toFixed(0)}%`}
+                formatter={(value: number) => `${Math.round(value)}%`}
               />
             </Bar>
           </BarChart>

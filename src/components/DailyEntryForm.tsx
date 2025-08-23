@@ -265,11 +265,25 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
       maximumFractionDigits: 0,
     }).format(value);
 
-  const isValid =
-    warnings.austin.type === "success" &&
-    warnings.charlotte.type === "success" &&
-    warnings.future.type === "success" &&
-    warnings.weekend.type === "success";
+  const isFormValid = () => {
+    const austinValue = parseFloat(austinRevenue);
+    const charlotteValue = parseFloat(charlotteRevenue);
+
+    if (
+      isNaN(austinValue) ||
+      isNaN(charlotteValue) ||
+      austinValue < 0 ||
+      charlotteValue < 0
+    ) {
+      return false;
+    }
+
+    if (warnings.future.type === "error" || warnings.weekend.type === "error") {
+      return false;
+    }
+
+    return true;
+  };
 
   return (
     <>
@@ -385,7 +399,7 @@ export const DailyEntryForm: React.FC<DailyEntryFormProps> = ({
                   variant="contained"
                   color="primary"
                   type="submit"
-                  disabled={!isValid}
+                  disabled={!isFormValid() || submitting}
                   startIcon={<SaveIcon />}
                 >
                   Save Entry

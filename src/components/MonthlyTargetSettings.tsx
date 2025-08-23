@@ -63,6 +63,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
   const [austinTarget, setAustinTarget] = useState<string>("");
   const [charlotteTarget, setCharlotteTarget] = useState<string>("");
   const [workingDays, setWorkingDays] = useState<number[]>([]);
+  const [agentCount, setAgentCount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -104,12 +105,14 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
       setWorkingDays(existingAdjustment.workingDays);
       setAustinTarget(existingAdjustment.austin?.toString() || "");
       setCharlotteTarget(existingAdjustment.charlotte?.toString() || "");
+      setAgentCount(existingAdjustment.agentCount?.toString() || "");
     } else {
       // Default to business days
       const businessDays = daysInSelectedMonth.filter((day) => !isWeekend(day));
       setWorkingDays(businessDays);
       setAustinTarget("");
       setCharlotteTarget("");
+      setAgentCount("");
     }
   }, [selectedMonth, selectedYear, currentSettings.monthlyAdjustments]);
 
@@ -140,6 +143,8 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         ? parseFloat(charlotteTarget)
         : undefined;
 
+      const agentCountValue = agentCount ? parseInt(agentCount, 10) : undefined;
+
       if (
         (austinTarget && isNaN(austinValue!)) ||
         (charlotteTarget && isNaN(charlotteValue!))
@@ -163,6 +168,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         workingDays: [...workingDays].sort((a, b) => a - b), // Sort days in ascending order
         ...(austinValue && { austin: austinValue }),
         ...(charlotteValue && { charlotte: charlotteValue }),
+        ...(agentCountValue && { agentCount: agentCountValue }),
       };
 
       // Update settings
@@ -211,6 +217,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
     setWorkingDays(adjustment.workingDays);
     setAustinTarget(adjustment.austin?.toString() || "");
     setCharlotteTarget(adjustment.charlotte?.toString() || "");
+    setAgentCount(adjustment.agentCount?.toString() || "");
     setEditMode(true);
     setEditIndex(index);
   };
@@ -280,7 +287,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
           </Box>
         </DialogTitle>
         <Divider />
-        <DialogContent>
+        <DialogContent sx={{ pb: 0 }}>
           <Grid container spacing={3}>
             <Grid xs={12} md={8}>
               <Typography variant="body2" color="text.secondary" paragraph>
@@ -331,31 +338,29 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
               <Typography variant="subtitle2" gutterBottom>
                 Working Days
               </Typography>
-              <Box
-                sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}
-              >
+              <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
                 <Button
-                  variant="outlined"
                   size="small"
                   onClick={handleSelectAllBusinessDays}
                   startIcon={<CheckIcon />}
+                  variant="outlined"
                 >
                   Select Business Days
                 </Button>
                 <Button
-                  variant="outlined"
                   size="small"
                   onClick={handleClearAllDays}
                   startIcon={<ClearIcon />}
+                  variant="outlined"
+                  color="secondary"
                 >
                   Clear All
                 </Button>
-                <Typography variant="body2" color="text.secondary">
-                  {workingDays.length} days selected
-                </Typography>
               </Box>
-
-              {/* Calendar-like display */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {workingDays.length} days selected
+              </Typography>
+              {/* Calendar display */}
               <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={1} sx={{ mb: 1 }}>
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
@@ -425,8 +430,10 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                   })}
                 </Grid>
               </Paper>
+            </Grid>
 
-              <Typography variant="subtitle2" gutterBottom>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
                 Target Overrides (Optional)
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -435,35 +442,58 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                 Charlotte (
                 {formatCurrency(currentSettings.dailyTargets.charlotte)})
               </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Important:</strong> Enter DAILY target values, not
+                  monthly totals. For example, if your monthly target is
+                  $1,000,000 and you have 20 working days, enter $50,000 as the
+                  daily target.
+                  <Box sx={{ mt: 1, ml: 2 }}>
+                    • <strong>Entered Values:</strong> Daily revenue targets per
+                    location
+                    <br />• <strong>Monthly Target:</strong> Daily target ×
+                    number of working days selected
+                  </Box>
+                </Typography>
+              </Alert>
               <Grid container spacing={2}>
                 <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Austin Daily Target"
-                    type="number"
                     value={austinTarget}
                     onChange={(e) => setAustinTarget(e.target.value)}
+                    placeholder={currentSettings.dailyTargets.austin.toString()}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                      startAdornment: <Box component="span">$</Box>,
                     }}
-                    placeholder={`Default: ${formatCurrency(
-                      currentSettings.dailyTargets.austin
-                    )}`}
                   />
                 </Grid>
                 <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Charlotte Daily Target"
-                    type="number"
                     value={charlotteTarget}
                     onChange={(e) => setCharlotteTarget(e.target.value)}
+                    placeholder={currentSettings.dailyTargets.charlotte.toString()}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                      startAdornment: <Box component="span">$</Box>,
                     }}
-                    placeholder={`Default: ${formatCurrency(
-                      currentSettings.dailyTargets.charlotte
-                    )}`}
+                  />
+                </Grid>
+              </Grid>
+              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                Additional Metrics (Optional)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Number of Agents"
+                    type="number"
+                    value={agentCount}
+                    onChange={(e) => setAgentCount(e.target.value)}
+                    placeholder="e.g., 15"
                   />
                 </Grid>
               </Grid>
@@ -482,34 +512,33 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                   component={Paper}
                   sx={{ maxHeight: 300, overflow: "auto" }}
                 >
-                  <Table size="small">
+                  <Table stickyHeader size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>Month/Year</TableCell>
-                        <TableCell>Working Days</TableCell>
+                        <TableCell>Days</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {currentSettings.monthlyAdjustments.map((adj, index) => (
-                        <TableRow key={`${adj.month}-${adj.year}`}>
+                        <TableRow key={index}>
                           <TableCell>
                             {getMonthName(adj.month)} {adj.year}
                           </TableCell>
-                          <TableCell>{adj.workingDays.length} days</TableCell>
+                          <TableCell>{adj.workingDays.length}</TableCell>
                           <TableCell>
                             <IconButton
                               size="small"
                               onClick={() => handleEditAdjustment(index)}
-                              sx={{ mr: 1 }}
                             >
-                              <EditIcon fontSize="small" />
+                              <EditIcon />
                             </IconButton>
                             <IconButton
                               size="small"
                               onClick={() => handleDeleteAdjustment(index)}
                             >
-                              <DeleteIcon fontSize="small" />
+                              <DeleteIcon />
                             </IconButton>
                           </TableCell>
                         </TableRow>
