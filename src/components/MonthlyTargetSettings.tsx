@@ -63,6 +63,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
   const [austinTarget, setAustinTarget] = useState<string>("");
   const [charlotteTarget, setCharlotteTarget] = useState<string>("");
   const [workingDays, setWorkingDays] = useState<number[]>([]);
+  const [agentCount, setAgentCount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -104,12 +105,14 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
       setWorkingDays(existingAdjustment.workingDays);
       setAustinTarget(existingAdjustment.austin?.toString() || "");
       setCharlotteTarget(existingAdjustment.charlotte?.toString() || "");
+      setAgentCount(existingAdjustment.agentCount?.toString() || "");
     } else {
       // Default to business days
       const businessDays = daysInSelectedMonth.filter((day) => !isWeekend(day));
       setWorkingDays(businessDays);
       setAustinTarget("");
       setCharlotteTarget("");
+      setAgentCount("");
     }
   }, [selectedMonth, selectedYear, currentSettings.monthlyAdjustments]);
 
@@ -140,6 +143,8 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         ? parseFloat(charlotteTarget)
         : undefined;
 
+      const agentCountValue = agentCount ? parseInt(agentCount, 10) : undefined;
+
       if (
         (austinTarget && isNaN(austinValue!)) ||
         (charlotteTarget && isNaN(charlotteValue!))
@@ -163,6 +168,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         workingDays: [...workingDays].sort((a, b) => a - b), // Sort days in ascending order
         ...(austinValue && { austin: austinValue }),
         ...(charlotteValue && { charlotte: charlotteValue }),
+        ...(agentCountValue && { agentCount: agentCountValue }),
       };
 
       // Update settings
@@ -211,6 +217,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
     setWorkingDays(adjustment.workingDays);
     setAustinTarget(adjustment.austin?.toString() || "");
     setCharlotteTarget(adjustment.charlotte?.toString() || "");
+    setAgentCount(adjustment.agentCount?.toString() || "");
     setEditMode(true);
     setEditIndex(index);
   };
@@ -282,41 +289,53 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
         <Divider />
         <DialogContent sx={{ pb: 0 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Month</InputLabel>
-                <Select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value as number)}
-                  label="Month"
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <MenuItem key={i} value={i}>
-                      {getMonthName(i)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Year</InputLabel>
-                <Select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value as number)}
-                  label="Year"
-                >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            <Grid xs={12} md={8}>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Adjust targets for specific months to account for holidays,
+                office closures, or other variations. Select working days and
+                optionally override the daily targets for each location.
+              </Typography>
 
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Month</InputLabel>
+                    <Select
+                      value={selectedMonth}
+                      label="Month"
+                      onChange={(e) =>
+                        setSelectedMonth(e.target.value as number)
+                      }
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <MenuItem key={i} value={i}>
+                          {getMonthName(i)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Year</InputLabel>
+                    <Select
+                      value={selectedYear}
+                      label="Year"
+                      onChange={(e) =>
+                        setSelectedYear(e.target.value as number)
+                      }
+                    >
+                      {years.map((year) => (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              <Typography variant="subtitle2" gutterBottom>
                 Working Days
               </Typography>
               <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
@@ -345,12 +364,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
               <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={1} sx={{ mb: 1 }}>
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-                    <Grid
-                      item
-                      xs={1.7}
-                      key={index}
-                      sx={{ textAlign: "center" }}
-                    >
+                    <Grid xs={1.7} key={index} sx={{ textAlign: "center" }}>
                       <Typography
                         variant="subtitle2"
                         sx={{
@@ -374,7 +388,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                       length: new Date(selectedYear, selectedMonth, 1).getDay(),
                     },
                     (_, i) => (
-                      <Grid item xs={1.7} key={`empty-${i}`} />
+                      <Grid xs={1.7} key={`empty-${i}`} />
                     )
                   )}
 
@@ -386,7 +400,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     const isSelected = workingDays.includes(day);
 
                     return (
-                      <Grid item xs={1.7} key={day}>
+                      <Grid xs={1.7} key={day}>
                         <Button
                           fullWidth
                           variant={isSelected ? "contained" : "outlined"}
@@ -443,7 +457,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                 </Typography>
               </Alert>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Austin Daily Target"
@@ -455,7 +469,7 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Charlotte Daily Target"
@@ -468,52 +482,71 @@ export const MonthlyTargetSettings: React.FC<MonthlyTargetSettingsProps> = ({
                   />
                 </Grid>
               </Grid>
+              <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                Additional Metrics (Optional)
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Number of Agents"
+                    type="number"
+                    value={agentCount}
+                    onChange={(e) => setAgentCount(e.target.value)}
+                    placeholder="e.g., 15"
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
 
-              {austinTarget || charlotteTarget ? (
-                <Box
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: "background.paper",
-                    borderRadius: 1,
-                    border: "1px dashed grey.300",
-                  }}
+            <Grid xs={12} md={4}>
+              <Typography variant="subtitle2" gutterBottom>
+                Existing Adjustments
+              </Typography>
+              {currentSettings.monthlyAdjustments.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No monthly adjustments have been added yet.
+                </Typography>
+              ) : (
+                <TableContainer
+                  component={Paper}
+                  sx={{ maxHeight: 300, overflow: "auto" }}
                 >
-                  <Typography variant="subtitle2">Target Summary:</Typography>
-                  <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2">
-                        Austin:{" "}
-                        {formatCurrency(
-                          parseFloat(austinTarget) ||
-                            currentSettings.dailyTargets.austin
-                        )}{" "}
-                        × {workingDays.length} days ={" "}
-                        {formatCurrency(
-                          (parseFloat(austinTarget) ||
-                            currentSettings.dailyTargets.austin) *
-                            workingDays.length
-                        )}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2">
-                        Charlotte:{" "}
-                        {formatCurrency(
-                          parseFloat(charlotteTarget) ||
-                            currentSettings.dailyTargets.charlotte
-                        )}{" "}
-                        × {workingDays.length} days ={" "}
-                        {formatCurrency(
-                          (parseFloat(charlotteTarget) ||
-                            currentSettings.dailyTargets.charlotte) *
-                            workingDays.length
-                        )}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Box>
-              ) : null}
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Month/Year</TableCell>
+                        <TableCell>Days</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {currentSettings.monthlyAdjustments.map((adj, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            {getMonthName(adj.month)} {adj.year}
+                          </TableCell>
+                          <TableCell>{adj.workingDays.length}</TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditAdjustment(index)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteAdjustment(index)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Grid>
           </Grid>
 

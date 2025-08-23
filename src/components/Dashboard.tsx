@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
-  Grid,
   Paper,
   Typography,
   CircularProgress,
@@ -15,7 +14,9 @@ import {
   Tabs,
   Tab,
   Fade,
+  Stack,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
@@ -36,7 +37,22 @@ import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
 import { DailyPatternsView } from "./charts/DailyPatternsView";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
-import { filterDataByTimeFrame } from "../utils/calculations";
+import {
+  filterDataByTimeFrame,
+  calculateLocationMetrics,
+  calculateTimePeriodsMetrics,
+  validateDataIntegrity,
+  validateDataConsistency,
+  recalculateMonthlyGoals,
+  getBusinessDaysInMonth,
+} from "../utils/calculations";
+import { DaysBehindAlert } from "./DaysBehindAlert";
+import { LeadEntryForm } from "./LeadEntryForm";
+import { LeadAttainmentSummary } from "./LeadAttainmentSummary";
+import { LeadDataImport } from "./LeadDataImport";
+import { CombinedInsights } from "./CombinedInsights";
+import { AttendanceAlerts } from "./AttendanceAlerts";
+import { GoalPrompt } from "./GoalPrompt";
 
 interface DashboardState {
   revenueData: RevenueData[];
@@ -91,6 +107,8 @@ export const Dashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isTabLoading, setIsTabLoading] = useState(false);
+  const [goalPromptOpen, setGoalPromptOpen] = useState(false);
+  const showLocationCharts = state.filters.location !== "Combined";
 
   useEffect(() => {
     const unsubscribeRevenue = revenueService.subscribeToRevenueData((data) => {
@@ -117,28 +135,149 @@ export const Dashboard: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const today = new Date();
+    const isFirstDay = today.getDate() === 1;
+
+    if (isFirstDay) {
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const hasGoalForCurrentMonth =
+        state.targetSettings.monthlyAdjustments.some(
+          (adj) => adj.month === currentMonth && adj.year === currentYear
+        );
+
+      if (!hasGoalForCurrentMonth) {
+        setGoalPromptOpen(true);
+      }
+    }
+  }, [state.targetSettings.monthlyAdjustments]);
+
+  useEffect(() => {
+    if (state.revenueData.length > 0 && state.targetSettings) {
+      // Existing data integrity validation
+      const validation = validateDataIntegrity(
+        state.revenueData,
+        state.targetSettings
+      );
+
+      if (!validation.isValid) {
+        console.error("Data validation errors:", validation.errors);
+        setState((prevState) => ({
+          ...prevState,
+          snackbar: {
+            open: true,
+            message: `Data validation failed: ${validation.errors.join(", ")}`,
+            severity: "error",
+          },
+        }));
+      } else if (validation.warnings.length > 0) {
+        console.warn("Data validation warnings:", validation.warnings);
+        // Only show first few warnings to avoid overwhelming the user
+        const warningMessage = validation.warnings.slice(0, 3).join(", ");
+        setState((prevState) => ({
+          ...prevState,
+          snackbar: {
+            open: true,
+            message: `Data warnings: ${warningMessage}${
+              validation.warnings.length > 3 ? " and more..." : ""
+            }`,
+            severity: "warning",
+          },
+        }));
+      }
+
+      // New comprehensive data consistency validation
+      const consistencyCheck = validateDataConsistency(
+        state.revenueData,
+        state.targetSettings,
+        {
+          timeFrame: state.filters.timeFrame,
+          location: state.filters.location,
+          startDate: state.filters.startDate,
+          endDate: state.filters.endDate,
+        }
+      );
+
+      // Log detailed validation results for debugging
+      console.log("Data Consistency Check:", {
+        isValid: consistencyCheck.isValid,
+        summary: consistencyCheck.summary,
+        errors: consistencyCheck.errors,
+        warnings: consistencyCheck.warnings,
+      });
+
+      // Handle critical consistency errors
+      if (!consistencyCheck.isValid && consistencyCheck.errors.length > 0) {
+        console.error(
+          "Critical data consistency errors:",
+          consistencyCheck.errors
+        );
+
+        // Show error notification for critical issues
+        const criticalErrors = consistencyCheck.errors.filter(
+          (error) =>
+            error.includes("mismatch") || error.includes("filter not working")
+        );
+
+        if (criticalErrors.length > 0) {
+          setState((prevState) => ({
+            ...prevState,
+            snackbar: {
+              open: true,
+              message: `Critical consistency issue: ${criticalErrors[0]}`,
+              severity: "error",
+            },
+          }));
+        }
+      }
+
+      // Automatically recalculate monthly goals if needed
+      if (!consistencyCheck.summary.monthlyGoalConsistency) {
+        console.log(
+          "Monthly goal inconsistency detected, attempting recalculation..."
+        );
+
+        try {
+          const recalculatedSettings = recalculateMonthlyGoals(
+            state.targetSettings,
+            false
+          );
+
+          // Only update if there are actual changes
+          if (
+            JSON.stringify(recalculatedSettings) !==
+            JSON.stringify(state.targetSettings)
+          ) {
+            console.log(
+              "Updating target settings with recalculated monthly goals"
+            );
+            setState((prevState) => ({
+              ...prevState,
+              targetSettings: recalculatedSettings,
+              snackbar: {
+                open: true,
+                message:
+                  "Monthly goals have been automatically recalculated for consistency",
+                severity: "info",
+              },
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to recalculate monthly goals:", error);
+        }
+      }
+    }
+  }, [state.revenueData, state.targetSettings, state.filters]);
+
   const handleFilterChange = (newFilters: any) => {
     console.log("Filter change detected:", newFilters);
     setState((prevState) => {
-      // If location is changing and timeFrame is not MTD, reset to MTD
-      const shouldResetToMTD =
-        newFilters.location !== prevState.filters.location &&
-        (newFilters.timeFrame !== "MTD" ||
-          newFilters.startDate !== null ||
-          newFilters.endDate !== null);
-
-      const updatedFilters = shouldResetToMTD
-        ? {
-            ...newFilters,
-            timeFrame: "MTD",
-            startDate: null,
-            endDate: null,
-          }
-        : newFilters;
-
+      // Allow users to select any timeFrame with any location
+      // Remove the automatic MTD reset logic that was causing issues
       const updatedState = {
         ...prevState,
-        filters: updatedFilters,
+        filters: newFilters,
       };
       console.log("Updated state filters:", updatedState.filters);
       return updatedState;
@@ -181,6 +320,33 @@ export const Dashboard: React.FC = () => {
         },
       }));
     }
+  };
+
+  const handleSaveGoal = (goal: { austin: number; charlotte: number }) => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const businessDays = getBusinessDaysInMonth(currentYear, currentMonth);
+
+    const newAdjustment = {
+      month: currentMonth,
+      year: currentYear,
+      austin: goal.austin,
+      charlotte: goal.charlotte,
+      workingDays: businessDays,
+    };
+
+    const newSettings = {
+      ...state.targetSettings,
+      monthlyAdjustments: [
+        ...state.targetSettings.monthlyAdjustments,
+        newAdjustment,
+      ],
+    };
+
+    handleTargetsChange(newSettings);
+    setGoalPromptOpen(false);
   };
 
   const handleDataUpdate = async (newData: RevenueData[]) => {
@@ -255,16 +421,8 @@ export const Dashboard: React.FC = () => {
     setIsTabLoading(true);
     setActiveTab(newValue);
 
-    // Reset filters to MTD when switching to historical or daily views
-    if (newValue !== 0) {
-      setState((prev) => ({
-        ...prev,
-        filters: {
-          ...prev.filters,
-          timeFrame: "MTD",
-        },
-      }));
-    }
+    // Allow users to keep their selected timeFrame when switching tabs
+    // Remove the automatic MTD reset that was limiting user choice
 
     // Simulate tab loading transition
     setTimeout(() => {
@@ -277,32 +435,63 @@ export const Dashboard: React.FC = () => {
       switch (activeTab) {
         case 0:
           return (
-            <Grid container spacing={3}>
-              {/* Summary Metrics */}
-              <Grid item xs={12}>
-                <SummaryMetrics
+            <Stack spacing={5}>
+              {/* Days Behind Alert */}
+              <Box>
+                <DaysBehindAlert
                   data={state.revenueData}
+                  targetSettings={state.targetSettings}
+                />
+              </Box>
+
+              {/* Attendance Alerts */}
+              <AttendanceAlerts
+                revenueData={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
+
+              {/* Summary Metrics */}
+              <Box>
+                <SummaryMetrics
+                  data={filterDataByTimeFrame(
+                    state.revenueData,
+                    state.filters.timeFrame,
+                    state.filters.attainmentThreshold,
+                    state.targetSettings,
+                    state.filters.startDate,
+                    state.filters.endDate,
+                    state.filters.location
+                  )}
                   timeFrame={state.filters.timeFrame}
                   targetSettings={state.targetSettings}
                   startDate={state.filters.startDate}
                   endDate={state.filters.endDate}
                   location={state.filters.location}
                 />
-              </Grid>
+              </Box>
 
               {/* Daily Entry Form and Filters Row */}
-              <Grid item xs={12}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={4}>
+              <Box sx={{ mt: 1 }}>
+                <Grid container spacing={4}>
+                  <Grid item xs={12} lg={5}>
                     <DailyEntryForm
                       onSubmit={handleDailyDataAdd}
                       existingData={state.revenueData}
                       targets={state.targetSettings}
                     />
                   </Grid>
-                  <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 3, height: "100%" }}>
-                      <Grid container spacing={2}>
+                  <Grid item xs={12} lg={7}>
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 4,
+                        height: "100%",
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <Grid container spacing={3}>
                         <Grid item xs={12} md={8}>
                           <FilterPanel
                             filters={state.filters}
@@ -313,93 +502,170 @@ export const Dashboard: React.FC = () => {
                           <DataImportExport
                             onDataUpdate={handleDataUpdate}
                             currentData={state.revenueData}
+                            targetSettings={state.targetSettings}
                           />
                         </Grid>
                       </Grid>
                     </Paper>
                   </Grid>
                 </Grid>
-              </Grid>
+              </Box>
 
               {/* Charts Section */}
-              {state.filters.location === "Combined" ? (
+              {!showLocationCharts ? (
                 // Show regular charts for combined view
-                <>
-                  <Grid item xs={12}>
-                    <RevenueComparisonChart
-                      data={state.revenueData}
-                      timeFrame={state.filters.timeFrame}
-                      targetSettings={state.targetSettings}
-                      startDate={state.filters.startDate}
-                      endDate={state.filters.endDate}
-                      location={state.filters.location}
-                    />
-                  </Grid>
+                <Stack spacing={6}>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 550,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
+                      <RevenueComparisonChart
+                        data={state.revenueData}
+                        timeFrame={state.filters.timeFrame}
+                        targetSettings={state.targetSettings}
+                        startDate={state.filters.startDate}
+                        endDate={state.filters.endDate}
+                        location={state.filters.location}
+                      />
+                    </Paper>
+                  </Box>
 
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 550,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
                       <DailyAttainmentChart
                         data={state.revenueData}
                         filters={state.filters}
                         targets={state.targetSettings}
                       />
                     </Paper>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 550,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
                       <TimePeriodsChart
                         data={state.revenueData}
                         filters={state.filters}
                         targets={state.targetSettings}
                       />
                     </Paper>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12}>
-                    <DistributionCharts
-                      data={state.revenueData}
-                      filters={state.filters}
-                      targets={state.targetSettings}
-                    />
-                  </Grid>
-                </>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 650,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
+                      <DistributionCharts
+                        data={state.revenueData}
+                        filters={state.filters}
+                        targets={state.targetSettings}
+                      />
+                    </Paper>
+                  </Box>
+                </Stack>
               ) : (
                 // Show location-specific charts
-                <>
-                  <Grid item xs={12}>
-                    <LocationDailyChart
-                      data={filterDataByTimeFrame(
-                        state.revenueData,
-                        state.filters.timeFrame,
-                        state.filters.attainmentThreshold,
-                        state.targetSettings,
-                        state.filters.startDate,
-                        state.filters.endDate,
-                        state.filters.location
-                      )}
-                      location={state.filters.location}
-                      targetSettings={state.targetSettings}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <LocationMTDChart
-                      data={filterDataByTimeFrame(
-                        state.revenueData,
-                        state.filters.timeFrame,
-                        state.filters.attainmentThreshold,
-                        state.targetSettings,
-                        state.filters.startDate,
-                        state.filters.endDate,
-                        state.filters.location
-                      )}
-                      location={state.filters.location}
-                      targetSettings={state.targetSettings}
-                    />
-                  </Grid>
-                </>
+                <Stack spacing={6}>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 550,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
+                      <LocationDailyChart
+                        data={filterDataByTimeFrame(
+                          state.revenueData,
+                          state.filters.timeFrame,
+                          state.filters.attainmentThreshold,
+                          state.targetSettings,
+                          state.filters.startDate,
+                          state.filters.endDate,
+                          state.filters.location
+                        )}
+                        location={state.filters.location}
+                        targetSettings={state.targetSettings}
+                        timeFrame={state.filters.timeFrame}
+                      />
+                    </Paper>
+                  </Box>
+                  <Box>
+                    <Paper
+                      elevation={3}
+                      sx={{
+                        p: 4,
+                        height: 550,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                      }}
+                    >
+                      <LocationMTDChart
+                        data={filterDataByTimeFrame(
+                          state.revenueData,
+                          state.filters.timeFrame,
+                          state.filters.attainmentThreshold,
+                          state.targetSettings,
+                          state.filters.startDate,
+                          state.filters.endDate,
+                          state.filters.location
+                        )}
+                        location={state.filters.location}
+                        targetSettings={state.targetSettings}
+                        timeFrame={state.filters.timeFrame}
+                      />
+                    </Paper>
+                  </Box>
+                </Stack>
               )}
-            </Grid>
+            </Stack>
           );
         case 1:
           return (
@@ -415,6 +681,33 @@ export const Dashboard: React.FC = () => {
               data={state.revenueData}
               targetSettings={state.targetSettings}
               isLoading={isTabLoading}
+            />
+          );
+        case 3:
+          return (
+            <Stack spacing={3}>
+              <Grid container spacing={3}>
+                <Grid xs={12} lg={8}>
+                  <LeadEntryForm
+                    defaultDate={new Date()}
+                    onEntrySuccess={() => {
+                      // Force refresh the summary
+                      setState((prev) => ({ ...prev }));
+                    }}
+                  />
+                </Grid>
+                <Grid xs={12} lg={4}>
+                  <LeadDataImport />
+                </Grid>
+              </Grid>
+              <LeadAttainmentSummary date={new Date()} showCombined={true} />
+            </Stack>
+          );
+        case 4:
+          return (
+            <CombinedInsights
+              revenueData={state.revenueData}
+              targetSettings={state.targetSettings}
             />
           );
         default:
@@ -446,7 +739,15 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box sx={{ flexGrow: 1, bgcolor: "#F3F4F6", minHeight: "100vh", pt: 2 }}>
-      <Container maxWidth={false} sx={{ px: { xs: 2, lg: 4 } }}>
+      <Container
+        maxWidth={false}
+        sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}
+      >
+        <GoalPrompt
+          open={goalPromptOpen}
+          onClose={() => setGoalPromptOpen(false)}
+          onSave={handleSaveGoal}
+        />
         <Snackbar
           open={state.snackbar.open}
           autoHideDuration={6000}
@@ -520,6 +821,8 @@ export const Dashboard: React.FC = () => {
             <Tab label="Overview" />
             <Tab label="Historical Trends" />
             <Tab label="Daily Patterns" />
+            <Tab label="Lead Attainment" />
+            <Tab label="Lead & Sales Insights" />
           </Tabs>
         </Paper>
 

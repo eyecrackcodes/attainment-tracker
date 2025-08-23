@@ -102,6 +102,35 @@ export const theme = createTheme({
         },
       },
     },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: "8px",
+          padding: "12px 16px",
+        },
+        standardSuccess: {
+          backgroundColor: "rgba(76, 175, 80, 0.1)",
+          color: "#2E7D32",
+          "& .MuiAlert-icon": {
+            color: "#4CAF50",
+          },
+        },
+        standardWarning: {
+          backgroundColor: "rgba(255, 152, 0, 0.1)",
+          color: "#E65100",
+          "& .MuiAlert-icon": {
+            color: "#FF9800",
+          },
+        },
+        standardError: {
+          backgroundColor: "rgba(244, 67, 54, 0.1)",
+          color: "#C62828",
+          "& .MuiAlert-icon": {
+            color: "#F44336",
+          },
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
@@ -126,9 +155,17 @@ export const theme = createTheme({
     MuiContainer: {
       styleOverrides: {
         root: {
-          "@media (min-width: 1200px)": {
+          "@media (min-width: 600px)": {
+            paddingLeft: "24px",
+            paddingRight: "24px",
+          },
+          "@media (min-width: 900px)": {
             paddingLeft: "32px",
             paddingRight: "32px",
+          },
+          "@media (min-width: 1200px)": {
+            paddingLeft: "48px",
+            paddingRight: "48px",
           },
         },
       },

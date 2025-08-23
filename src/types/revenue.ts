@@ -43,6 +43,7 @@ export interface MonthlyTargetAdjustment {
   workingDays: number[]; // Array of working days (1-31)
   austin?: number; // Optional override for Austin's daily target this month
   charlotte?: number; // Optional override for Charlotte's daily target this month
+  agentCount?: number;
 }
 
 export interface TargetSettings {

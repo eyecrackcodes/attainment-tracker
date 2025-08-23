@@ -162,7 +162,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       </Box>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <FormControl fullWidth>
             <InputLabel>Location</InputLabel>
             <Select
@@ -179,7 +179,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           </FormControl>
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <FormControl fullWidth>
             <InputLabel>Time Frame</InputLabel>
             <Select
@@ -198,7 +198,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           </FormControl>
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <TextField
             fullWidth
             type="date"
@@ -215,7 +215,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <TextField
             fullWidth
             type="date"
@@ -232,7 +232,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <Box sx={{ px: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
               <Typography>
@@ -264,7 +264,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           </Box>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <Divider sx={{ my: 1 }} />
           <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button

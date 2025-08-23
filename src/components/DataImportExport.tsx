@@ -1,17 +1,19 @@
 import React, { useRef } from "react";
 import { Box, Button, Stack } from "@mui/material";
-import { CloudUpload, CloudDownload, Description } from "@mui/icons-material";
-import { RevenueData } from "../types/revenue";
-import { importCSV, exportCSV, generateTemplate } from "../services/csvHandler";
+import { CloudUpload, CloudDownload, Description, Assessment } from "@mui/icons-material";
+import { RevenueData, TargetSettings } from "../types/revenue";
+import { importCSV, exportCSV, generateTemplate, exportAnalyticsReport } from "../services/csvHandler";
 
 interface DataImportExportProps {
   onDataUpdate: (data: RevenueData[]) => void;
   currentData: RevenueData[];
+  targetSettings?: TargetSettings;
 }
 
 export const DataImportExport: React.FC<DataImportExportProps> = ({
   onDataUpdate,
   currentData,
+  targetSettings,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,6 +42,18 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       return;
     }
     exportCSV(currentData);
+  };
+
+  const handleAnalyticsExport = () => {
+    if (currentData.length === 0) {
+      alert("No data available for analytics export.");
+      return;
+    }
+    if (!targetSettings) {
+      alert("Target settings not available for analytics export.");
+      return;
+    }
+    exportAnalyticsReport(currentData, targetSettings);
   };
 
   const handleGenerateTemplate = () => {
@@ -73,7 +87,18 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
           fullWidth
           disabled={currentData.length === 0}
         >
-          Export CSV
+          Export Data CSV
+        </Button>
+
+        <Button
+          variant="outlined"
+          startIcon={<Assessment />}
+          onClick={handleAnalyticsExport}
+          fullWidth
+          disabled={currentData.length === 0 || !targetSettings}
+          color="secondary"
+        >
+          Export Analytics Report
         </Button>
 
         <Button
