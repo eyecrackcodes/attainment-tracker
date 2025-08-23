@@ -36,6 +36,7 @@ import {
   Scatter,
   Cell,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import { format, parseISO, subDays, startOfMonth } from "date-fns";
 import { leadService, LeadEntryStored, SiteKey } from "../services/leadService";
@@ -559,59 +560,122 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               </Typography>
             </Box>
 
-            {/* Quadrant Legend */}
-            <Grid container spacing={1}>
-              <Grid item xs={6} md={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Box sx={{ width: 16, height: 16, bgcolor: "#10b981", borderRadius: "50%" }} />
-                  <Typography variant="caption">High Lead & High Sales</Typography>
-                </Stack>
+            {/* Quadrant Guide */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Performance Quadrants:
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 80, 
+                      height: 60, 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr',
+                      gridTemplateRows: '1fr 1fr',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 1,
+                      overflow: 'hidden'
+                    }}>
+                      <Box sx={{ bgcolor: '#fef3c7', border: '1px solid #e5e7eb' }} />
+                      <Box sx={{ bgcolor: '#d1fae5', border: '1px solid #e5e7eb' }} />
+                      <Box sx={{ bgcolor: '#fee2e2', border: '1px solid #e5e7eb' }} />
+                      <Box sx={{ bgcolor: '#fed7aa', border: '1px solid #e5e7eb' }} />
+                    </Box>
+                    <Stack spacing={0.5}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: "#d1fae5", border: '1px solid #10b981' }} />
+                        <Typography variant="caption">High Lead + High Sales (Goal)</Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: "#fed7aa", border: '1px solid #f59e0b' }} />
+                        <Typography variant="caption">High Lead + Low Sales (Conversion Issue)</Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: "#fef3c7", border: '1px solid #f59e0b' }} />
+                        <Typography variant="caption">Low Lead + High Sales (Need Leads)</Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: "#fee2e2", border: '1px solid #ef4444' }} />
+                        <Typography variant="caption">Low Lead + Low Sales (Critical)</Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#10b981', border: '2px solid #10b981' }} />
+                      <Typography variant="caption">High performance (both ≥ 100%)</Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#f59e0b', border: '2px solid #f59e0b' }} />
+                      <Typography variant="caption">Mixed performance (one ≥ 100%)</Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#ef4444', border: '2px solid #ef4444' }} />
+                      <Typography variant="caption">Low performance (both < 100%)</Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: 'transparent', border: '3px solid #1e293b' }} />
+                      <Typography variant="caption">Recent days (last 3)</Typography>
+                    </Stack>
+                  </Stack>
+                </Grid>
               </Grid>
-              <Grid item xs={6} md={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Box sx={{ width: 16, height: 16, bgcolor: "#f59e0b", borderRadius: "50%" }} />
-                  <Typography variant="caption">Mixed Performance</Typography>
-                </Stack>
-              </Grid>
-              <Grid item xs={6} md={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Box sx={{ width: 16, height: 16, bgcolor: "#ef4444", borderRadius: "50%" }} />
-                  <Typography variant="caption">Low Performance</Typography>
-                </Stack>
-              </Grid>
-              <Grid item xs={6} md={3}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Box sx={{ width: 16, height: 16, bgcolor: "#e0e7ff", borderRadius: "50%" }} />
-                  <Typography variant="caption">Recent Days</Typography>
-                </Stack>
-              </Grid>
-            </Grid>
+            </Box>
 
             <ResponsiveContainer width="100%" height={450}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <ScatterChart margin={{ top: 40, right: 60, bottom: 60, left: 80 }}>
+                <defs>
+                  <linearGradient id="lowLowGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#fee2e2" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#fee2e2" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="highHighGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#d1fae5" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#d1fae5" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="mixedGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#fed7aa" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#fed7aa" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                
+                {/* Quadrant backgrounds */}
+                <ReferenceArea x1={0} x2={100} y1={0} y2={100} fill="url(#lowLowGradient)" />
+                <ReferenceArea x1={100} x2={200} y1={0} y2={100} fill="url(#mixedGradient)" />
+                <ReferenceArea x1={0} x2={100} y1={100} y2={200} fill="url(#mixedGradient)" />
+                <ReferenceArea x1={100} x2={200} y1={100} y2={200} fill="url(#highHighGradient)" />
+                
                 <XAxis
+                  type="number"
                   dataKey="leadAttainmentCombined"
                   name="Lead Attainment"
-                  unit="%"
-                  domain={[0, 'dataMax + 20']}
-                  tickFormatter={(value) => `${value}%`}
+                  domain={[0, (dataMax) => Math.ceil(dataMax / 20) * 20 + 20]}
+                  ticks={[0, 20, 40, 60, 80, 100, 120, 140, 160]}
+                  tickFormatter={(value) => `${Math.round(value)}%`}
                   label={{
                     value: "Lead Attainment %",
                     position: "insideBottom",
                     offset: -10,
+                    style: { textAnchor: 'middle' }
                   }}
                 />
                 <YAxis
+                  type="number"
                   dataKey="salesAttainmentCombined"
                   name="Sales Attainment"
-                  unit="%"
-                  domain={[0, 'dataMax + 20']}
-                  tickFormatter={(value) => `${value}%`}
+                  domain={[0, (dataMax) => Math.ceil(dataMax / 20) * 20 + 20]}
+                  ticks={[0, 20, 40, 60, 80, 100, 120, 140, 160]}
+                  tickFormatter={(value) => `${Math.round(value)}%`}
                   label={{
                     value: "Sales Attainment %",
                     angle: -90,
                     position: "insideLeft",
+                    style: { textAnchor: 'middle' }
                   }}
                 />
                 <Tooltip
@@ -658,80 +722,58 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     );
                   }}
                 />
-                <ReferenceLine x={100} stroke="#666" strokeDasharray="5 5" label={{ value: "Lead Target", position: "top" }} />
-                <ReferenceLine y={100} stroke="#666" strokeDasharray="5 5" label={{ value: "Sales Target", position: "right" }} />
-                
-                {/* Quadrant labels */}
-                <ReferenceLine
-                  x={50}
-                  y={150}
-                  label={{
-                    value: "Low Leads\nHigh Sales",
-                    position: "center",
-                    fill: "#666",
-                    fontSize: 12,
-                  }}
-                  stroke="none"
+                <ReferenceLine 
+                  x={100} 
+                  stroke="#94a3b8" 
+                  strokeDasharray="5 5" 
+                  strokeWidth={2}
+                  label={{ 
+                    value: "Target", 
+                    position: "top",
+                    offset: 10,
+                    style: { fill: '#64748b', fontSize: 12 }
+                  }} 
                 />
-                <ReferenceLine
-                  x={150}
-                  y={150}
-                  label={{
-                    value: "High Leads\nHigh Sales",
-                    position: "center",
-                    fill: "#10b981",
-                    fontSize: 12,
-                  }}
-                  stroke="none"
-                />
-                <ReferenceLine
-                  x={50}
-                  y={50}
-                  label={{
-                    value: "Low Leads\nLow Sales",
-                    position: "center",
-                    fill: "#ef4444",
-                    fontSize: 12,
-                  }}
-                  stroke="none"
-                />
-                <ReferenceLine
-                  x={150}
-                  y={50}
-                  label={{
-                    value: "High Leads\nLow Sales",
-                    position: "center",
-                    fill: "#f59e0b",
-                    fontSize: 12,
-                  }}
-                  stroke="none"
+                <ReferenceLine 
+                  y={100} 
+                  stroke="#94a3b8" 
+                  strokeDasharray="5 5" 
+                  strokeWidth={2}
+                  label={{ 
+                    value: "Target", 
+                    position: "right",
+                    offset: 10,
+                    style: { fill: '#64748b', fontSize: 12 }
+                  }} 
                 />
                 
                 <Scatter
                   name="Daily Performance"
                   data={combinedMetrics}
                   fill="#8b5cf6"
-                >
-                  {combinedMetrics.map((entry, index) => {
+                  shape={(props) => {
+                    const { cx, cy, payload, index } = props;
                     const isRecent = index >= combinedMetrics.length - 3;
+                    const fill = 
+                      payload.leadAttainmentCombined >= 100 && payload.salesAttainmentCombined >= 100
+                        ? "#10b981"
+                        : payload.leadAttainmentCombined >= 100 || payload.salesAttainmentCombined >= 100
+                        ? "#f59e0b"
+                        : "#ef4444";
+                    
                     return (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.leadAttainmentCombined >= 100 &&
-                          entry.salesAttainmentCombined >= 100
-                            ? "#10b981"
-                            : entry.leadAttainmentCombined >= 100 ||
-                              entry.salesAttainmentCombined >= 100
-                            ? "#f59e0b"
-                            : "#ef4444"
-                        }
-                        stroke={isRecent ? "#1e293b" : "none"}
-                        strokeWidth={isRecent ? 2 : 0}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={isRecent ? 8 : 6}
+                        fill={fill}
+                        stroke={isRecent ? "#1e293b" : fill}
+                        strokeWidth={isRecent ? 3 : 1.5}
+                        style={{ cursor: 'pointer' }}
                       />
                     );
-                  })}
-                </Scatter>
+                  }}
+                />
               </ScatterChart>
             </ResponsiveContainer>
 
