@@ -77,6 +77,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
   targetSettings,
 }) => {
   const [loading, setLoading] = useState(true);
+  const [isChangingDates, setIsChangingDates] = useState(false);
+  const [hasQueriedData, setHasQueriedData] = useState(false);
   const [leadData, setLeadData] = useState<
     Map<string, Record<SiteKey, LeadEntryStored | null>>
   >(new Map());
@@ -132,7 +134,13 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
   }, [preset, customStartDate, customEndDate]);
 
   useEffect(() => {
+    setIsChangingDates(true);
     setLoading(true);
+
+    // Add a small delay to prevent flickering on fast date changes
+    const timer = setTimeout(() => {
+      setIsChangingDates(false);
+    }, 300);
 
     // Subscribe to lead data for the date range
     const unsubscribe = leadService.subscribeToRange(
@@ -141,10 +149,15 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
       (data) => {
         setLeadData(data);
         setLoading(false);
+        setHasQueriedData(true);
+        setIsChangingDates(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, [dateRange.start, dateRange.end]);
 
   useEffect(() => {
@@ -213,22 +226,136 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     setCombinedMetrics(metrics);
   }, [leadData, revenueData, targetSettings, dateRange.start, dateRange.end]);
 
-  if (loading || !targetSettings) {
+  // Show loading spinner only on initial load or when actively changing dates
+  if ((loading && !hasQueriedData) || !targetSettings) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", p: 4, gap: 2 }}>
         <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          Loading insights...
+        </Typography>
       </Box>
     );
   }
 
   const hasData = combinedMetrics.length > 0;
 
-  if (!hasData) {
+  // Show different messages based on the state
+  if (!hasData && !isChangingDates) {
+    const dateRangeText = `${format(new Date(dateRange.start), "MMM d, yyyy")} to ${format(new Date(dateRange.end), "MMM d, yyyy")}`;
+    
     return (
-      <Alert severity="info">
-        No combined data available. Please ensure both lead and sales data are
-        entered for the same dates.
-      </Alert>
+      <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflow: "visible" }}>
+        <Stack spacing={3} sx={{ width: "100%" }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 600, color: "text.primary" }}
+            >
+              Lead & Sales Correlation Analysis
+            </Typography>
+            
+            {/* Date Range Selector - Keep it visible even with no data */}
+            <Stack direction="row" spacing={2} alignItems="center">
+              <ToggleButtonGroup
+                value={preset}
+                exclusive
+                onChange={(_, newPreset) => {
+                  if (newPreset !== null) {
+                    setPreset(newPreset);
+                  }
+                }}
+                size="small"
+                disabled={isChangingDates}
+                sx={{ bgcolor: "background.paper" }}
+              >
+                <ToggleButton value="7d" sx={{ px: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DateRange fontSize="small" />
+                    <Typography variant="body2">7D</Typography>
+                  </Stack>
+                </ToggleButton>
+                <ToggleButton value="30d" sx={{ px: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DateRange fontSize="small" />
+                    <Typography variant="body2">30D</Typography>
+                  </Stack>
+                </ToggleButton>
+                <ToggleButton value="mtd" sx={{ px: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CalendarMonth fontSize="small" />
+                    <Typography variant="body2">MTD</Typography>
+                  </Stack>
+                </ToggleButton>
+                <ToggleButton value="lastMonth" sx={{ px: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CalendarMonth fontSize="small" />
+                    <Typography variant="body2">Last Month</Typography>
+                  </Stack>
+                </ToggleButton>
+                <ToggleButton value="custom" sx={{ px: 2 }}>
+                  <Typography variant="body2">Custom</Typography>
+                </ToggleButton>
+              </ToggleButtonGroup>
+              
+              {preset === "custom" && (
+                <>
+                  <TextField
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => {
+                      setCustomStartDate(e.target.value);
+                      if (customEndDate && e.target.value > customEndDate) {
+                        setCustomEndDate(e.target.value);
+                      }
+                    }}
+                    size="small"
+                    disabled={isChangingDates}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ width: 140 }}
+                  />
+                  <Typography variant="body2">to</Typography>
+                  <TextField
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => {
+                      if (!customStartDate || e.target.value >= customStartDate) {
+                        setCustomEndDate(e.target.value);
+                      }
+                    }}
+                    size="small"
+                    disabled={isChangingDates}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ width: 140 }}
+                    inputProps={{
+                      min: customStartDate || undefined,
+                    }}
+                  />
+                </>
+              )}
+            </Stack>
+          </Stack>
+
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <Stack spacing={1}>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                No data available for {dateRangeText}
+              </Typography>
+              <Typography variant="body2">
+                To see insights, please ensure:
+              </Typography>
+              <ul style={{ margin: '8px 0', paddingLeft: '24px' }}>
+                <li><Typography variant="body2">Lead data has been entered in the Lead Attainment tab</Typography></li>
+                <li><Typography variant="body2">Sales data has been entered in the Overview tab</Typography></li>
+                <li><Typography variant="body2">Both types of data exist for the same dates</Typography></li>
+              </ul>
+              <Typography variant="body2" color="text.secondary">
+                Try selecting a different date range or entering data for the selected period.
+              </Typography>
+            </Stack>
+          </Alert>
+        </Stack>
+      </Box>
     );
   }
 
@@ -282,7 +409,32 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     combinedMetrics.length;
 
     return (
-    <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflow: "visible" }}>
+    <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflow: "visible", position: "relative" }}>
+      {/* Loading overlay when changing dates */}
+      {isChangingDates && hasData && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: "rgba(255, 255, 255, 0.8)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+            borderRadius: 2,
+          }}
+        >
+          <CircularProgress size={48} />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Updating insights...
+          </Typography>
+        </Box>
+      )}
+      
     <Stack spacing={3} sx={{ width: "100%" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
           <Typography
@@ -303,6 +455,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                 }
               }}
               size="small"
+              disabled={isChangingDates}
               sx={{ bgcolor: "background.paper" }}
             >
               <ToggleButton value="7d" sx={{ px: 2 }}>
@@ -347,6 +500,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     }
                   }}
                   size="small"
+                  disabled={isChangingDates}
                   InputLabelProps={{ shrink: true }}
                   sx={{ width: 140 }}
                 />
@@ -361,6 +515,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     }
                   }}
                   size="small"
+                  disabled={isChangingDates}
                   InputLabelProps={{ shrink: true }}
                   sx={{ width: 140 }}
                   inputProps={{
