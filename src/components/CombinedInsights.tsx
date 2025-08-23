@@ -615,7 +615,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#ef4444', border: '2px solid #ef4444' }} />
-                      <Typography variant="caption">Low performance (both < 100%)</Typography>
+                                              <Typography variant="caption">Low performance (both &lt; 100%)</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: 'transparent', border: '3px solid #1e293b' }} />
