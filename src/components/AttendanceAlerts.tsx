@@ -235,7 +235,46 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
   }, [revenueData, targetSettings]);
 
   if (weeklyComparisons.length === 0) {
-    return null;
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          border: "1px solid",
+          borderColor: "success.light",
+          borderRadius: 2,
+          mb: 3,
+          bgcolor: "success.lighter",
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              bgcolor: "success.main",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Typography variant="h6" sx={{ color: "white" }}>
+              ✓
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "success.dark" }}>
+              Steady Performance
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              All locations are maintaining consistent week-over-week revenue performance.
+              No significant drops detected.
+            </Typography>
+          </Box>
+        </Stack>
+      </Paper>
+    );
   }
 
   const getSeverity = (dropPercentage: number) => {
@@ -262,9 +301,14 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
       <Stack spacing={3}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <WarningIcon sx={{ color: "warning.main", fontSize: 28 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Weekly Performance Alerts
-          </Typography>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Weekly Revenue Performance Monitoring
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Automated alerts for significant week-over-week revenue changes
+            </Typography>
+          </Box>
           <Chip
             label={`${weeklyComparisons.length} Alert${
               weeklyComparisons.length > 1 ? "s" : ""
@@ -274,9 +318,27 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
           />
         </Stack>
 
-        <Typography variant="body2" color="text.secondary">
-          Locations with week-over-week revenue drops exceeding 7%
-        </Typography>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              This system monitors week-over-week revenue changes to identify potential issues early:
+            </Typography>
+            <Stack direction="row" spacing={3} flexWrap="wrap">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box sx={{ width: 12, height: 12, bgcolor: "info.main", borderRadius: "2px" }} />
+                <Typography variant="caption">7-10% drop: Monitor closely</Typography>
+              </Stack>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box sx={{ width: 12, height: 12, bgcolor: "warning.main", borderRadius: "2px" }} />
+                <Typography variant="caption">10-20% drop: Investigation needed</Typography>
+              </Stack>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box sx={{ width: 12, height: 12, bgcolor: "error.main", borderRadius: "2px" }} />
+                <Typography variant="caption">&gt;20% drop: Immediate action required</Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        </Stack>
 
         <Stack spacing={2}>
           {weeklyComparisons.map((comparison) => (
@@ -304,26 +366,62 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                   <span>{comparison.location}</span>
                   <TrendingDown fontSize="small" />
                   <span>
-                    {Math.abs(comparison.changePercentage).toFixed(1)}% Drop
+                    {comparison.changePercentage > 0 ? "+" : ""}{comparison.changePercentage.toFixed(1)}% {comparison.changePercentage < 0 ? "Drop" : "Increase"}
                   </span>
                 </Stack>
               </AlertTitle>
 
-              <Stack spacing={1}>
-                <Typography variant="body2">
-                  Current Week: {formatCurrency(comparison.currentWeekTotal)} (
-                  {comparison.currentWeekAttainment.toFixed(1)}% attainment)
-                </Typography>
-                <Typography variant="body2">
-                  Previous Week: {formatCurrency(comparison.previousWeekTotal)}{" "}
-                  ({comparison.previousWeekAttainment.toFixed(1)}% attainment)
-                </Typography>
+              <Stack spacing={1.5}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Revenue Comparison:
+                  </Typography>
+                  <Typography variant="body2">
+                    This Week: {formatCurrency(comparison.currentWeekTotal)}
+                  </Typography>
+                  <Typography variant="body2">
+                    Last Week: {formatCurrency(comparison.previousWeekTotal)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    Change: {formatCurrency(Math.abs(comparison.currentWeekTotal - comparison.previousWeekTotal))} 
+                    {comparison.changePercentage < 0 ? " decrease" : " increase"}
+                  </Typography>
+                </Box>
+                
+                {Math.abs(comparison.changePercentage) > 10 && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: "warning.dark" }}>
+                      Business Impact:
+                    </Typography>
+                    <Typography variant="body2">
+                      {comparison.changePercentage < -15 
+                        ? "Significant revenue decline requiring immediate attention. Review staffing, lead quality, and operational issues."
+                        : comparison.changePercentage < -10
+                        ? "Notable revenue drop. Investigate potential causes including agent availability, training needs, or market conditions."
+                        : "Revenue variance within acceptable range but worth monitoring for trends."
+                      }
+                    </Typography>
+                  </Box>
+                )}
+                
                 {comparison.dailyAlerts.length > 0 && (
                   <Typography variant="body2" sx={{ fontWeight: 500, mt: 1 }}>
-                    {comparison.dailyAlerts.length} day
-                    {comparison.dailyAlerts.length > 1 ? "s" : ""} with drops
-                    &gt;7%
+                    {comparison.dailyAlerts.length} day{comparison.dailyAlerts.length > 1 ? "s" : ""} had significant drops (&gt;7%)
                   </Typography>
+                )}
+                
+                {Math.abs(comparison.changePercentage) > 15 && (
+                  <Box sx={{ mt: 1, p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Recommended Actions:
+                    </Typography>
+                    <Typography variant="caption" component="ul" sx={{ m: 0, pl: 2 }}>
+                      <li>Check agent staffing levels and attendance</li>
+                      <li>Review lead quality and conversion rates</li>
+                      <li>Verify no technical issues with systems</li>
+                      <li>Compare with same period last month for patterns</li>
+                    </Typography>
+                  </Box>
                 )}
               </Stack>
 
@@ -332,13 +430,13 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                   <Box sx={{ mt: 2 }}>
                     <TableContainer>
                       <Table size="small">
-                        <TableHead>
+                                                    <TableHead>
                           <TableRow>
                             <TableCell>Date</TableCell>
-                            <TableCell align="right">Current</TableCell>
-                            <TableCell align="right">Previous</TableCell>
-                            <TableCell align="right">Drop</TableCell>
-                            <TableCell align="right">Attainment</TableCell>
+                            <TableCell align="right">This Week</TableCell>
+                            <TableCell align="right">Last Week</TableCell>
+                            <TableCell align="right">Change</TableCell>
+                            <TableCell align="right">Day of Week</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -362,7 +460,7 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                               </TableCell>
                               <TableCell align="right">
                                 <Chip
-                                  label={`${alert.dropPercentage.toFixed(1)}%`}
+                                  label={`-${alert.dropPercentage.toFixed(1)}%`}
                                   size="small"
                                   color={
                                     alert.dropPercentage > 15
@@ -372,17 +470,9 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                                 />
                               </TableCell>
                               <TableCell align="right">
-                                <Stack spacing={0}>
-                                  <Typography variant="body2">
-                                    {alert.currentAttainment.toFixed(1)}%
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    vs {alert.previousAttainment.toFixed(1)}%
-                                  </Typography>
-                                </Stack>
+                                <Typography variant="body2">
+                                  {format(parseISO(alert.date), "EEEE")}
+                                </Typography>
                               </TableCell>
                             </TableRow>
                           ))}
