@@ -837,29 +837,37 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                 Austin Performance
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={combinedMetrics}>
+                <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={(value) => format(parseISO(value), "MMM d")}
                   />
-                  <YAxis />
+                  <YAxis 
+                    domain={[0, (dataMax) => Math.max(150, Math.ceil(dataMax / 20) * 20)]}
+                    ticks={[0, 25, 50, 75, 100, 125, 150]}
+                    tickFormatter={(value) => `${value}%`}
+                  />
                   <Tooltip
                     formatter={(value: number) => `${value.toFixed(1)}%`}
-                    labelFormatter={(label) => format(parseISO(label), "MMM d")}
+                    labelFormatter={(label) => format(parseISO(label), "MMM d, yyyy")}
+                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #e5e7eb' }}
                   />
                   <Legend />
+                  <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="5 5" label="Target" />
                   <Bar
                     dataKey="leadAttainmentATX"
                     fill="#3b82f6"
                     name="Lead %"
+                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="salesAttainmentATX"
                     fill="#10b981"
                     name="Sales %"
+                    radius={[4, 4, 0, 0]}
                   />
-                </ComposedChart>
+                </BarChart>
               </ResponsiveContainer>
             </Paper>
           </Grid>
@@ -879,29 +887,37 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                 Charlotte Performance
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={combinedMetrics}>
+                <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={(value) => format(parseISO(value), "MMM d")}
                   />
-                  <YAxis />
+                  <YAxis 
+                    domain={[0, (dataMax) => Math.max(150, Math.ceil(dataMax / 20) * 20)]}
+                    ticks={[0, 25, 50, 75, 100, 125, 150]}
+                    tickFormatter={(value) => `${value}%`}
+                  />
                   <Tooltip
                     formatter={(value: number) => `${value.toFixed(1)}%`}
-                    labelFormatter={(label) => format(parseISO(label), "MMM d")}
+                    labelFormatter={(label) => format(parseISO(label), "MMM d, yyyy")}
+                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #e5e7eb' }}
                   />
                   <Legend />
+                  <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="5 5" label="Target" />
                   <Bar
                     dataKey="leadAttainmentCLT"
                     fill="#3b82f6"
                     name="Lead %"
+                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="salesAttainmentCLT"
                     fill="#10b981"
                     name="Sales %"
+                    radius={[4, 4, 0, 0]}
                   />
-                </ComposedChart>
+                </BarChart>
               </ResponsiveContainer>
             </Paper>
           </Grid>

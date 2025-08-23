@@ -52,6 +52,7 @@ import { LeadAttainmentSummary } from "./LeadAttainmentSummary";
 import { LeadDataImport } from "./LeadDataImport";
 import { CombinedInsights } from "./CombinedInsights";
 import { AttendanceAlerts } from "./AttendanceAlerts";
+import { AgentSummary } from "./AgentSummary";
 import { GoalPrompt } from "./GoalPrompt";
 
 interface DashboardState {
@@ -449,6 +450,9 @@ export const Dashboard: React.FC = () => {
                 revenueData={state.revenueData}
                 targetSettings={state.targetSettings}
               />
+
+              {/* Agent Summary */}
+              <AgentSummary />
 
               {/* Summary Metrics */}
               <Box>
