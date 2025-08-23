@@ -120,8 +120,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
         const cltLead = leadEntry.CLT;
 
         // Calculate daily sales targets
-        const dailyAustinTarget = targetSettings.austin.daily;
-        const dailyCharlotteTarget = targetSettings.charlotte.daily;
+        const dailyAustinTarget = targetSettings.dailyTargets.austin;
+        const dailyCharlotteTarget = targetSettings.dailyTargets.charlotte;
         const dailyCombinedTarget = dailyAustinTarget + dailyCharlotteTarget;
 
         // Calculate daily sales attainment (not MTD)
