@@ -10,6 +10,10 @@ import {
   Alert,
   Chip,
   Divider,
+  TextField,
+  Button,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import {
@@ -19,6 +23,8 @@ import {
   AttachMoney,
   Insights,
   Assessment,
+  CalendarMonth,
+  DateRange,
 } from "@mui/icons-material";
 import {
   LineChart,
@@ -38,7 +44,7 @@ import {
   ReferenceLine,
   ReferenceArea,
 } from "recharts";
-import { format, parseISO, subDays, startOfMonth } from "date-fns";
+import { format, parseISO, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { leadService, LeadEntryStored, SiteKey } from "../services/leadService";
 import { RevenueData } from "../types/revenue";
 import {
@@ -64,6 +70,8 @@ interface DailyMetrics {
   totalRevenue: number;
 }
 
+type DateRangePreset = "7d" | "30d" | "mtd" | "lastMonth" | "custom";
+
 export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
   revenueData,
   targetSettings,
@@ -73,14 +81,55 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     Map<string, Record<SiteKey, LeadEntryStored | null>>
   >(new Map());
   const [combinedMetrics, setCombinedMetrics] = useState<DailyMetrics[]>([]);
+  const [preset, setPreset] = useState<DateRangePreset>("mtd");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
 
-  // Get date range for the last 30 days
-  const endDate = new Date();
-  const startDate = startOfMonth(endDate);
-  const dateRange = {
-    start: format(startDate, "yyyy-MM-dd"),
-    end: format(endDate, "yyyy-MM-dd"),
+  // Calculate date range based on preset
+  const getDateRange = () => {
+    const today = new Date();
+    let start: Date;
+    let end: Date = today;
+
+    switch (preset) {
+      case "7d":
+        start = subDays(today, 6);
+        break;
+      case "30d":
+        start = subDays(today, 29);
+        break;
+      case "mtd":
+        start = startOfMonth(today);
+        break;
+      case "lastMonth":
+        start = startOfMonth(subDays(today, 30));
+        end = endOfMonth(start);
+        break;
+      case "custom":
+        start = customStartDate ? new Date(customStartDate) : subDays(today, 29);
+        end = customEndDate ? new Date(customEndDate) : today;
+        break;
+      default:
+        start = startOfMonth(today);
+    }
+
+    return {
+      start: format(start, "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd"),
+    };
   };
+
+  const dateRange = getDateRange();
+
+  // Initialize custom dates when switching to custom preset
+  useEffect(() => {
+    if (preset === "custom" && !customStartDate && !customEndDate) {
+      const today = new Date();
+      const thirtyDaysAgo = subDays(today, 29);
+      setCustomStartDate(format(thirtyDaysAgo, "yyyy-MM-dd"));
+      setCustomEndDate(format(today, "yyyy-MM-dd"));
+    }
+  }, [preset, customStartDate, customEndDate]);
 
   useEffect(() => {
     setLoading(true);
@@ -109,12 +158,14 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
       return;
     }
 
-    // Get MTD revenue data
-    const mtdRevenue = filterDataByTimeFrame(revenueData, "MTD");
+    // Filter revenue data to match the selected date range
+    const filteredRevenue = revenueData.filter(
+      (r) => r.date >= dateRange.start && r.date <= dateRange.end
+    );
 
     // Process each date in the range
     leadData.forEach((leadEntry, date) => {
-      const revenueEntry = mtdRevenue.find((r) => r.date === date);
+      const revenueEntry = filteredRevenue.find((r) => r.date === date);
 
       if (revenueEntry) {
         const atxLead = leadEntry.ATX;
@@ -160,7 +211,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     // Sort by date
     metrics.sort((a, b) => a.date.localeCompare(b.date));
     setCombinedMetrics(metrics);
-  }, [leadData, revenueData, targetSettings]);
+  }, [leadData, revenueData, targetSettings, dateRange.start, dateRange.end]);
 
   if (loading || !targetSettings) {
     return (
@@ -233,11 +284,97 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
     return (
     <Box sx={{ width: "100%", minWidth: 0, maxWidth: "100%", overflow: "visible" }}>
     <Stack spacing={3} sx={{ width: "100%" }}>
-        <Typography
-          variant="h5"
-          sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
-        >
-          Lead & Sales Correlation Analysis
+        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 600, color: "text.primary" }}
+          >
+            Lead & Sales Correlation Analysis
+          </Typography>
+          
+          {/* Date Range Selector */}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <ToggleButtonGroup
+              value={preset}
+              exclusive
+              onChange={(_, newPreset) => {
+                if (newPreset !== null) {
+                  setPreset(newPreset);
+                }
+              }}
+              size="small"
+              sx={{ bgcolor: "background.paper" }}
+            >
+              <ToggleButton value="7d" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateRange fontSize="small" />
+                  <Typography variant="body2">7D</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="30d" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DateRange fontSize="small" />
+                  <Typography variant="body2">30D</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="mtd" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CalendarMonth fontSize="small" />
+                  <Typography variant="body2">MTD</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="lastMonth" sx={{ px: 2 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CalendarMonth fontSize="small" />
+                  <Typography variant="body2">Last Month</Typography>
+                </Stack>
+              </ToggleButton>
+              <ToggleButton value="custom" sx={{ px: 2 }}>
+                <Typography variant="body2">Custom</Typography>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            
+            {preset === "custom" && (
+              <>
+                <TextField
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    // Ensure end date is not before start date
+                    if (customEndDate && e.target.value > customEndDate) {
+                      setCustomEndDate(e.target.value);
+                    }
+                  }}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: 140 }}
+                />
+                <Typography variant="body2">to</Typography>
+                <TextField
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    // Ensure end date is not before start date
+                    if (!customStartDate || e.target.value >= customStartDate) {
+                      setCustomEndDate(e.target.value);
+                    }
+                  }}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: 140 }}
+                  inputProps={{
+                    min: customStartDate || undefined,
+                  }}
+                />
+              </>
+            )}
+          </Stack>
+        </Stack>
+
+        {/* Date range info */}
+        <Typography variant="body2" color="text.secondary" sx={{ mt: -2 }}>
+          Showing data from {format(new Date(dateRange.start), "MMM d, yyyy")} to {format(new Date(dateRange.end), "MMM d, yyyy")}
         </Typography>
 
               {/* Summary Cards */}
