@@ -705,21 +705,8 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             >
               Daily Performance Trend
             </Typography>
-            <Box 
-              sx={{ 
-                height: 650, 
-                minHeight: 650,
-                width: "100%", 
-                mt: 2, 
-                pb: 2,
-                position: "relative",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column"
-              }}
-              className="chart-container-production"
-            >
-              <ResponsiveContainer width="100%" height={650}>
+            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={processedData.entries}
                   margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
@@ -876,21 +863,8 @@ export const DailyPatternsView: React.FC<DailyPatternsViewProps> = ({
             >
               Average Performance by Weekday
             </Typography>
-            <Box 
-              sx={{ 
-                height: 650, 
-                minHeight: 650,
-                width: "100%", 
-                mt: 2, 
-                pb: 2,
-                position: "relative",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column"
-              }}
-              className="chart-container-production"
-            >
-              <ResponsiveContainer width="100%" height={650}>
+            <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({
                     day,

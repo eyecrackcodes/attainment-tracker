@@ -13,8 +13,6 @@ export default defineConfig({
         },
       },
     },
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     include: [
@@ -24,8 +22,5 @@ export default defineConfig({
       "@emotion/styled",
       "recharts",
     ],
-  },
-  ssr: {
-    noExternal: ["recharts"],
   },
 });

@@ -505,21 +505,8 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
               >
                 Historical Performance Overview
               </Typography>
-              <Box 
-                sx={{ 
-                  height: 650, 
-                  minHeight: 650,
-                  width: "100%", 
-                  mt: 2, 
-                  pb: 2,
-                  position: "relative",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column"
-                }}
-                className="chart-container-production"
-              >
-                <ResponsiveContainer width="100%" height={650}>
+              <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={monthlyTrends}
                     margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -671,21 +658,8 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 >
                   3-Month Moving Average & Forecast
                 </Typography>
-                <Box 
-                  sx={{ 
-                    height: 600, 
-                    minHeight: 600,
-                    width: "100%", 
-                    mt: 2, 
-                    pb: 2,
-                    position: "relative",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column"
-                  }}
-                  className="chart-container-production"
-                >
-                  <ResponsiveContainer width="100%" height={600}>
+                <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={movingAverageData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 60 }}

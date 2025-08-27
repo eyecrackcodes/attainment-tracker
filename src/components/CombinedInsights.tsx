@@ -717,7 +717,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               </Grid>
             </Grid>
 
-            <Box sx={{ width: "100%", height: 400, position: "relative", overflow: "hidden" }}>
+            <Box sx={{ width: "100%", height: 400, position: "relative" }}>
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={combinedMetrics}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -920,7 +920,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               </Grid>
             </Box>
 
-            <Box sx={{ width: "100%", height: 450, position: "relative", overflow: "hidden" }}>
+            <Box sx={{ width: "100%", height: 450, position: "relative" }}>
               <ResponsiveContainer width="100%" height={450}>
                 <ScatterChart margin={{ top: 40, right: 60, bottom: 60, left: 80 }}>
                 <defs>
@@ -1132,7 +1132,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Austin Performance
               </Typography>
-              <Box sx={{ width: "100%", height: 300, position: "relative", overflow: "hidden" }}>
+              <Box sx={{ width: "100%", height: 300, position: "relative" }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1184,7 +1184,7 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Charlotte Performance
               </Typography>
-              <Box sx={{ width: "100%", height: 300, position: "relative", overflow: "hidden" }}>
+              <Box sx={{ width: "100%", height: 300, position: "relative" }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
