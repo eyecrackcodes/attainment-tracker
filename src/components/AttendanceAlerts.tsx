@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -61,6 +61,14 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
   const [expandedLocation, setExpandedLocation] = React.useState<string | null>(
     null
   );
+  const [isMainExpanded, setIsMainExpanded] = React.useState(() => {
+    const saved = localStorage.getItem("attendanceAlertsExpanded");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("attendanceAlertsExpanded", isMainExpanded.toString());
+  }, [isMainExpanded]);
 
   const weeklyComparisons = useMemo(() => {
     if (!revenueData || revenueData.length === 0 || !targetSettings) {
@@ -239,40 +247,48 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
       <Paper
         elevation={0}
         sx={{
-          p: 3,
           border: "1px solid",
           borderColor: "success.light",
           borderRadius: 2,
           mb: 3,
           bgcolor: "success.lighter",
+          overflow: "hidden",
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              bgcolor: "success.main",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography variant="h6" sx={{ color: "white" }}>
-              ✓
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "success.dark" }}>
-              Steady Performance
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              All locations are maintaining consistent week-over-week revenue performance.
-              No significant drops detected.
-            </Typography>
-          </Box>
-        </Stack>
+        <Box sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                bgcolor: "success.main",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography variant="h6" sx={{ color: "white" }}>
+                ✓
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: "success.dark" }}>
+                Weekly Revenue Performance Monitoring
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                All locations are maintaining consistent week-over-week revenue performance.
+                No significant drops detected.
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={() => setIsMainExpanded(!isMainExpanded)}
+              sx={{ ml: "auto" }}
+            >
+              {isMainExpanded ? <ExpandLess /> : <ExpandMore />}
+            </IconButton>
+          </Stack>
+        </Box>
       </Paper>
     );
   }
@@ -291,14 +307,14 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
     <Paper
       elevation={0}
       sx={{
-        p: 3,
         border: "1px solid",
         borderColor: "divider",
         borderRadius: 2,
         mb: 3,
+        overflow: "hidden",
       }}
     >
-      <Stack spacing={3}>
+      <Box sx={{ p: 3, pb: isMainExpanded ? 0 : 3 }}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <WarningIcon sx={{ color: "warning.main", fontSize: 28 }} />
           <Box sx={{ flex: 1 }}>
@@ -315,14 +331,25 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
             }`}
             color="warning"
             size="small"
+            sx={{ mr: 1 }}
           />
+          <IconButton
+            onClick={() => setIsMainExpanded(!isMainExpanded)}
+            sx={{ ml: "auto" }}
+          >
+            {isMainExpanded ? <ExpandLess /> : <ExpandMore />}
+          </IconButton>
         </Stack>
+      </Box>
 
-        <Stack spacing={2}>
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              This system monitors week-over-week revenue changes to identify potential issues early:
-            </Typography>
+      <Collapse in={isMainExpanded}>
+        <Box sx={{ p: 3, pt: 0 }}>
+          <Stack spacing={3}>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  This system monitors week-over-week revenue changes to identify potential issues early:
+                </Typography>
             <Stack direction="row" spacing={3} flexWrap="wrap">
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Box sx={{ width: 12, height: 12, bgcolor: "info.main", borderRadius: "2px" }} />
@@ -337,10 +364,10 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                 <Typography variant="caption">&gt;20% drop: Immediate action required</Typography>
               </Stack>
             </Stack>
-          </Box>
-        </Stack>
+              </Box>
+            </Stack>
 
-        <Stack spacing={2}>
+            <Stack spacing={2}>
           {weeklyComparisons.map((comparison) => (
             <Alert
               key={comparison.location}
@@ -485,7 +512,9 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
             </Alert>
           ))}
         </Stack>
-      </Stack>
+          </Stack>
+        </Box>
+      </Collapse>
     </Paper>
   );
 };
