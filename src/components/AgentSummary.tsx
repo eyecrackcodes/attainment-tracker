@@ -35,16 +35,19 @@ interface DailyMetrics {
     agents: number;
     meetingMin: number;
     attainmentPct: number;
+    absent: number; // agents with 0 leads
   };
   clt: {
     agents: number;
     meetingMin: number;
     attainmentPct: number;
+    absent: number; // agents with 0 leads
   };
   total: {
     agents: number;
     meetingMin: number;
     meetingMinPct: number;
+    absent: number; // total absent agents
   };
 }
 
@@ -52,6 +55,7 @@ interface LocationStats {
   avgAgents: number;
   avgMeetingMin: number;
   avgAttainment: number;
+  avgAbsent: number; // average absent agents
   daysWithData: number;
   outages: number; // days with <80% of average agents
 }
@@ -67,9 +71,9 @@ export const AgentSummary: React.FC = () => {
     clt: LocationStats;
     combined: LocationStats;
   }>({
-    atx: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 },
-    clt: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 },
-    combined: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 },
+    atx: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, avgAbsent: 0, daysWithData: 0, outages: 0 },
+    clt: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, avgAbsent: 0, daysWithData: 0, outages: 0 },
+    combined: { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, avgAbsent: 0, daysWithData: 0, outages: 0 },
   });
   
   const [preset, setPreset] = useState<DateRangePreset>("yesterday");
@@ -147,6 +151,7 @@ export const AgentSummary: React.FC = () => {
         
         const totalAgents = (atx?.availableAgents || 0) + (clt?.availableAgents || 0);
         const totalMeetingMin = (atx?.agentsMeetingMin || 0) + (clt?.agentsMeetingMin || 0);
+        const totalAbsent = (atx?.openOrderZeroLeads || 0) + (clt?.openOrderZeroLeads || 0);
         
         metrics.push({
           date,
@@ -154,16 +159,19 @@ export const AgentSummary: React.FC = () => {
             agents: atx?.availableAgents || 0,
             meetingMin: atx?.agentsMeetingMin || 0,
             attainmentPct: atx?.derived?.attainmentPct ? atx.derived.attainmentPct * 100 : 0,
+            absent: atx?.openOrderZeroLeads || 0,
           },
           clt: {
             agents: clt?.availableAgents || 0,
             meetingMin: clt?.agentsMeetingMin || 0,
             attainmentPct: clt?.derived?.attainmentPct ? clt.derived.attainmentPct * 100 : 0,
+            absent: clt?.openOrderZeroLeads || 0,
           },
           total: {
             agents: totalAgents,
             meetingMin: totalMeetingMin,
             meetingMinPct: totalAgents > 0 ? (totalMeetingMin / totalAgents) * 100 : 0,
+            absent: totalAbsent,
           },
         });
       });
@@ -181,8 +189,8 @@ export const AgentSummary: React.FC = () => {
       
       // Calculate statistics from the range metrics
       const stats = {
-        atx: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, daysWithData: 0, agentsByDay: [] as number[] },
-        clt: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, daysWithData: 0, agentsByDay: [] as number[] },
+        atx: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, totalAbsent: 0, daysWithData: 0, agentsByDay: [] as number[] },
+        clt: { totalAgents: 0, totalMeetingMin: 0, totalAttainment: 0, totalAbsent: 0, daysWithData: 0, agentsByDay: [] as number[] },
       };
 
       // Process each day's metrics
@@ -196,6 +204,7 @@ export const AgentSummary: React.FC = () => {
           stats.atx.totalAgents += dayMetrics.atx.agents;
           stats.atx.totalMeetingMin += dayMetrics.atx.meetingMin;
           stats.atx.totalAttainment += dayMetrics.atx.attainmentPct / 100; // Convert back to decimal
+          stats.atx.totalAbsent += dayMetrics.atx.absent;
           stats.atx.agentsByDay.push(dayMetrics.atx.agents);
         }
         
@@ -205,6 +214,7 @@ export const AgentSummary: React.FC = () => {
           stats.clt.totalAgents += dayMetrics.clt.agents;
           stats.clt.totalMeetingMin += dayMetrics.clt.meetingMin;
           stats.clt.totalAttainment += dayMetrics.clt.attainmentPct / 100; // Convert back to decimal
+          stats.clt.totalAbsent += dayMetrics.clt.absent;
           stats.clt.agentsByDay.push(dayMetrics.clt.agents);
         }
       });
@@ -212,12 +222,13 @@ export const AgentSummary: React.FC = () => {
       // Calculate averages and outages
       const calculateLocationStats = (data: typeof stats.atx): LocationStats => {
         if (data.daysWithData === 0) {
-          return { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, daysWithData: 0, outages: 0 };
+          return { avgAgents: 0, avgMeetingMin: 0, avgAttainment: 0, avgAbsent: 0, daysWithData: 0, outages: 0 };
         }
         
         const avgAgents = data.totalAgents / data.daysWithData;
         const avgMeetingMin = data.totalMeetingMin / data.daysWithData;
         const avgAttainment = (data.totalAttainment / data.daysWithData) * 100;
+        const avgAbsent = data.totalAbsent / data.daysWithData;
         
         // Count outages (days with <80% of average agents)
         const outages = data.agentsByDay.filter(agents => agents < avgAgents * 0.8).length;
@@ -226,6 +237,7 @@ export const AgentSummary: React.FC = () => {
           avgAgents,
           avgMeetingMin,
           avgAttainment,
+          avgAbsent,
           daysWithData: data.daysWithData,
           outages,
         };
@@ -243,6 +255,7 @@ export const AgentSummary: React.FC = () => {
           ? ((atxStats.avgAttainment * atxStats.daysWithData + cltStats.avgAttainment * cltStats.daysWithData) / 
              (atxStats.daysWithData + cltStats.daysWithData))
           : 0,
+        avgAbsent: atxStats.avgAbsent + cltStats.avgAbsent,
         daysWithData: combinedDays,
         outages: Math.max(atxStats.outages, cltStats.outages), // Use max outages from either location
       };
@@ -545,6 +558,112 @@ export const AgentSummary: React.FC = () => {
           </Grid>
         </Grid>
 
+        {/* Absence Metrics Row */}
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* Selected Period Absences */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: selectedDayMetrics && selectedDayMetrics.total.absent > 0 ? "error.lighter" : "grey.100", 
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: selectedDayMetrics && selectedDayMetrics.total.absent > 0 ? "error.light" : "grey.300",
+            }}>
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Warning fontSize="small" color={selectedDayMetrics && selectedDayMetrics.total.absent > 0 ? "error" : "disabled"} />
+                  <Typography variant="body2" color="text.secondary">
+                    {isSingleDay ? format(selectedDate, "MMM d") : "Period Avg"} Absences
+                  </Typography>
+                </Stack>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: selectedDayMetrics && selectedDayMetrics.total.absent > 0 ? "error.main" : "text.disabled" }}>
+                  {isSingleDay && selectedDayMetrics 
+                    ? selectedDayMetrics.total.absent 
+                    : !isSingleDay && locationStats.combined.avgAbsent > 0
+                    ? locationStats.combined.avgAbsent.toFixed(1)
+                    : "0"}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  {selectedDayMetrics || locationStats.combined.avgAbsent > 0 ? (
+                    <>
+                      <Typography variant="caption" color="text.secondary">
+                        ATX: {isSingleDay && selectedDayMetrics ? selectedDayMetrics.atx.absent : locationStats.atx.avgAbsent.toFixed(1)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        CLT: {isSingleDay && selectedDayMetrics ? selectedDayMetrics.clt.absent : locationStats.clt.avgAbsent.toFixed(1)}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      Agents with 0 leads
+                    </Typography>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
+          </Grid>
+
+          {/* Absence Rate */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: "grey.100", 
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "grey.300",
+            }}>
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <TrendingDown fontSize="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    Absence Rate
+                  </Typography>
+                </Stack>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                  {selectedDayMetrics && selectedDayMetrics.total.agents > 0 && isSingleDay
+                    ? `${((selectedDayMetrics.total.absent / selectedDayMetrics.total.agents) * 100).toFixed(1)}%`
+                    : locationStats.combined.avgAgents > 0 && !isSingleDay
+                    ? `${((locationStats.combined.avgAbsent / locationStats.combined.avgAgents) * 100).toFixed(1)}%`
+                    : "0%"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  of available agents absent
+                </Typography>
+              </Stack>
+            </Box>
+          </Grid>
+
+          {/* Impact on Lead Target */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ 
+              p: 2, 
+              bgcolor: "warning.lighter", 
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "warning.light",
+            }}>
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Assessment fontSize="small" color="warning" />
+                  <Typography variant="body2" color="text.secondary">
+                    Lead Impact
+                  </Typography>
+                </Stack>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: "warning.main" }}>
+                  {selectedDayMetrics && isSingleDay
+                    ? selectedDayMetrics.total.absent * 8
+                    : !isSingleDay
+                    ? (locationStats.combined.avgAbsent * 8).toFixed(0)
+                    : "0"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  potential leads lost daily
+                </Typography>
+              </Stack>
+            </Box>
+          </Grid>
+        </Grid>
+
         <Divider />
 
         {/* Location Breakdown */}
@@ -570,6 +689,9 @@ export const AgentSummary: React.FC = () => {
                       • Lead attainment: <strong>{locationStats.atx.avgAttainment.toFixed(0)}%</strong>
                     </Typography>
                     <Typography variant="caption">
+                      • Avg absent agents: <strong>{locationStats.atx.avgAbsent.toFixed(1)}</strong> ({locationStats.atx.avgAgents > 0 ? ((locationStats.atx.avgAbsent / locationStats.atx.avgAgents) * 100).toFixed(0) : 0}%)
+                    </Typography>
+                    <Typography variant="caption">
                       • Days with low staffing: <strong>{locationStats.atx.outages}</strong> ({locationStats.atx.daysWithData > 0 ? ((locationStats.atx.outages / locationStats.atx.daysWithData) * 100).toFixed(0) : 0}%)
                     </Typography>
                   </Stack>
@@ -591,6 +713,9 @@ export const AgentSummary: React.FC = () => {
                     </Typography>
                     <Typography variant="caption">
                       • Lead attainment: <strong>{locationStats.clt.avgAttainment.toFixed(0)}%</strong>
+                    </Typography>
+                    <Typography variant="caption">
+                      • Avg absent agents: <strong>{locationStats.clt.avgAbsent.toFixed(1)}</strong> ({locationStats.clt.avgAgents > 0 ? ((locationStats.clt.avgAbsent / locationStats.clt.avgAgents) * 100).toFixed(0) : 0}%)
                     </Typography>
                     <Typography variant="caption">
                       • Days with low staffing: <strong>{locationStats.clt.outages}</strong> ({locationStats.clt.daysWithData > 0 ? ((locationStats.clt.outages / locationStats.clt.daysWithData) * 100).toFixed(0) : 0}%)
@@ -671,6 +796,20 @@ export const AgentSummary: React.FC = () => {
                 }
               >
                 • {((locationStats.combined.avgMeetingMin / locationStats.combined.avgAgents) * 100).toFixed(0)}% of agents meeting 8+ lead requirement on average
+              </Typography>
+            )}
+            
+            {/* Absence insights */}
+            {locationStats.combined.avgAbsent > 0 && (
+              <Typography variant="caption" color="error.dark">
+                • Average {locationStats.combined.avgAbsent.toFixed(1)} agents absent per day ({((locationStats.combined.avgAbsent / locationStats.combined.avgAgents) * 100).toFixed(0)}% absence rate)
+              </Typography>
+            )}
+            
+            {/* High absence warning */}
+            {locationStats.combined.avgAgents > 0 && (locationStats.combined.avgAbsent / locationStats.combined.avgAgents) > 0.1 && (
+              <Typography variant="caption" color="error.dark">
+                • High absence rate impacting ~{(locationStats.combined.avgAbsent * 8).toFixed(0)} potential leads per day
               </Typography>
             )}
             
