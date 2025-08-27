@@ -78,3 +78,9 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Ensure Recharts ResponsiveContainer works properly in production */
+.recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+}

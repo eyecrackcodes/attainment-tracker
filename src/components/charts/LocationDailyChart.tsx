@@ -315,7 +315,7 @@ export const LocationDailyChart: React.FC<LocationDailyChartProps> = ({
       </Typography>
       <Divider sx={{ mb: 2 }} />
       <Box sx={{ height: 400, width: "100%" }}>
-        <ResponsiveContainer key={`${location}-${timeFrame}`}>
+        <ResponsiveContainer width="100%" height="100%" key={`${location}-${timeFrame}`}>
           <BarChart
             data={chartData}
             margin={{ top: 20, right: 50, left: 20, bottom: 5 }}
