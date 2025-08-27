@@ -384,7 +384,11 @@ export const LocationMTDChart: React.FC<LocationMTDChartProps> = ({
       </Typography>
       <Divider sx={{ mb: 2 }} />
       <Box sx={{ height: 400, width: "100%" }}>
-        <ResponsiveContainer width="100%" height="100%" key={`${location}-${timeFrame}`}>
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          key={`${location}-${timeFrame}`}
+        >
           <LineChart
             data={chartDataWithCumulative}
             margin={{ top: 90, right: 90, left: 20, bottom: 5 }}

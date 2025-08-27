@@ -717,8 +717,9 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               </Grid>
             </Grid>
 
-            <ResponsiveContainer width="100%" height={400}>
-              <ComposedChart data={combinedMetrics}>
+            <Box sx={{ width: "100%", height: 400, position: "relative", overflow: "hidden" }}>
+              <ResponsiveContainer width="100%" height={400}>
+                <ComposedChart data={combinedMetrics}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
@@ -798,7 +799,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                   dot={{ r: 4 }}
                 />
               </ComposedChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
 
             {/* Insights */}
             <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
@@ -918,8 +920,9 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               </Grid>
             </Box>
 
-            <ResponsiveContainer width="100%" height={450}>
-              <ScatterChart margin={{ top: 40, right: 60, bottom: 60, left: 80 }}>
+            <Box sx={{ width: "100%", height: 450, position: "relative", overflow: "hidden" }}>
+              <ResponsiveContainer width="100%" height={450}>
+                <ScatterChart margin={{ top: 40, right: 60, bottom: 60, left: 80 }}>
                 <defs>
                   <linearGradient id="lowLowGradient" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#fee2e2" stopOpacity={0.3} />
@@ -1067,7 +1070,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                   }}
                 />
               </ScatterChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
 
             {/* Performance Summary */}
             <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
@@ -1128,8 +1132,9 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Austin Performance
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <Box sx={{ width: "100%", height: 300, position: "relative", overflow: "hidden" }}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
@@ -1160,7 +1165,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              </Box>
             </Paper>
           </Grid>
 
@@ -1178,8 +1184,9 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Charlotte Performance
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <Box sx={{ width: "100%", height: 300, position: "relative", overflow: "hidden" }}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={combinedMetrics} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
@@ -1210,7 +1217,8 @@ export const CombinedInsights: React.FC<CombinedInsightsProps> = ({
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              </Box>
             </Paper>
           </Grid>
         </Grid>

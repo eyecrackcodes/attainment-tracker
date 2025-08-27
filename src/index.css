@@ -83,4 +83,26 @@ button:focus-visible {
 .recharts-responsive-container {
   width: 100% !important;
   height: 100% !important;
+  min-width: 100% !important;
+  min-height: inherit !important;
+  position: relative !important;
+}
+
+/* Fix for production chart containers */
+.chart-container-production {
+  width: 100% !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.chart-container-production .recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure all chart surfaces render correctly */
+.recharts-surface {
+  width: 100% !important;
+  height: 100% !important;
 }
