@@ -14,7 +14,7 @@ import {
   Divider,
   Stack,
 } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import { Grid } from "@mui/material";
 import { RevenueData, TimeFrame, TargetSettings } from "../../types/revenue";
 import {
   filterDataByTimeFrame,
@@ -313,7 +313,7 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
           </Box>
         ) : (
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
                 <Typography
                   variant="subtitle1"
@@ -365,7 +365,7 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
                 <SimpleLegend data={distribution.austin} />
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
                 <Typography
                   variant="subtitle1"
@@ -417,7 +417,7 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
                 <SimpleLegend data={distribution.charlotte} />
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
                 <Typography
                   variant="subtitle1"
