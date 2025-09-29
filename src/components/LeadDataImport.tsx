@@ -126,41 +126,61 @@ export const LeadDataImport: React.FC = () => {
     let nameColumn: string | undefined;
     let leadsColumn: string | undefined;
 
-    const agentDetails = rows.map((row) => {
-      // Try different column name variations for billable leads
-      // Check all possible variations case-insensitively
-      const leadsValue =
-        row.billable_leads ||
-        row["Billable Leads"] ||
-        row["billable_leads"] ||
-        row["Leads"] ||
-        row["leads"] ||
-        row["Billable"] ||
-        row["billable"] ||
-        row["Total Leads"] ||
-        row["total_leads"] ||
-        "";
+    // If we have at least one row, detect columns from headers
+    if (rows.length > 0) {
+      const firstRow = rows[0];
+      const headers = Object.keys(firstRow);
 
-      // Track which column was used for leads
-      if (!leadsColumn && leadsValue !== "") {
-        const columnNames = [
-          "billable_leads",
-          "Billable Leads",
-          "billable_leads",
-          "Leads",
-          "leads",
-          "Billable",
-          "billable",
-          "Total Leads",
-          "total_leads",
-        ];
-        for (const col of columnNames) {
-          if (row[col] !== undefined && row[col] !== null) {
-            leadsColumn = col;
-            break;
+      // Find name column - check headers case-insensitively
+      const nameVariations = ["agent_name", "agent name", "name", "agent", "employee", "employee name", "employee_name"];
+      for (const header of headers) {
+        const headerLower = header.toLowerCase().trim();
+        if (nameVariations.some(variation => headerLower === variation || headerLower.includes(variation))) {
+          nameColumn = header;
+          break;
+        }
+      }
+
+      // Find leads column - check headers case-insensitively  
+      const leadsVariations = ["billable_leads", "billable leads", "leads", "billable", "total leads", "total_leads"];
+      for (const header of headers) {
+        const headerLower = header.toLowerCase().trim();
+        if (leadsVariations.some(variation => headerLower === variation || headerLower.includes(variation))) {
+          leadsColumn = header;
+          break;
+        }
+      }
+
+      // If we couldn't find columns by name matching, try to detect by content
+      if (!nameColumn || !leadsColumn) {
+        // Check if any column has text values (likely names)
+        if (!nameColumn) {
+          for (const header of headers) {
+            const value = firstRow[header];
+            if (value && isNaN(Number(value)) && String(value).trim().length > 0) {
+              nameColumn = header;
+              break;
+            }
+          }
+        }
+        
+        // Check if any column has numeric values (likely leads)
+        if (!leadsColumn) {
+          for (const header of headers) {
+            const value = firstRow[header];
+            if (value !== undefined && value !== null && !isNaN(Number(value))) {
+              leadsColumn = header;
+              break;
+            }
           }
         }
       }
+    }
+
+    const agentDetails = rows.map((row) => {
+      // Use the detected column names
+      const name = nameColumn ? String(row[nameColumn] || "Unknown").trim() : "Unknown";
+      const leadsValue = leadsColumn ? row[leadsColumn] : "";
 
       // Parse leads - empty/null means 0 (absent)
       const leads =
@@ -170,43 +190,6 @@ export const LeadDataImport: React.FC = () => {
 
       // All agents in the CSV have open orders (inferred by being in the list)
       const hasOpenOrder = true;
-
-      const name =
-        row.agent_name ||
-        row["Agent Name"] ||
-        row["agent_name"] ||
-        row["Name"] ||
-        row["name"] ||
-        row["Agent"] ||
-        row["agent"] ||
-        row["Employee"] ||
-        row["employee"] ||
-        row["Employee Name"] ||
-        row["employee_name"] ||
-        "Unknown";
-
-      // Track which column was used for names
-      if (!nameColumn && name !== "Unknown") {
-        const columnNames = [
-          "agent_name",
-          "Agent Name",
-          "agent_name",
-          "Name",
-          "name",
-          "Agent",
-          "agent",
-          "Employee",
-          "employee",
-          "Employee Name",
-          "employee_name",
-        ];
-        for (const col of columnNames) {
-          if (row[col] !== undefined && row[col] !== null) {
-            nameColumn = col;
-            break;
-          }
-        }
-      }
 
       return {
         name,
@@ -230,14 +213,17 @@ export const LeadDataImport: React.FC = () => {
     ).length;
 
     // Absent agents are those with 0 leads (which includes empty/null)
-    const openOrderZeroLeads = agentDetails.filter(
+    const absentAgents = agentDetails.filter(
       (agent) => agent.leads === 0
     ).length;
+
+    const openOrderZeroLeads = absentAgents; // Same value for CSV imports
 
     return {
       availableAgents,
       totalBillableLeads,
       agentsMeetingMin,
+      absentAgents,
       openOrderZeroLeads,
       agentDetails,
       mappedColumns: {
