@@ -160,16 +160,16 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
     }).format(value);
 
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+    <>
       <Typography variant="h6" gutterBottom>
         Revenue Comparison
       </Typography>
       <Divider sx={{ mb: 2 }} />
-      <Box sx={{ height: 400, width: "100%" }}>
+      <Box sx={{ height: "calc(100% - 60px)" }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+            margin={{ top: 20, right: 40, left: 50, bottom: 80 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
@@ -186,6 +186,7 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
                   compactDisplay: "short",
                 }).format(value)
               }
+              domain={[0, "dataMax + 1000"]}
             />
             <RechartsTooltip
               formatter={(value, name) => [
@@ -249,6 +250,6 @@ export const RevenueComparisonChart: React.FC<RevenueComparisonChartProps> = ({
           </BarChart>
         </ResponsiveContainer>
       </Box>
-    </Paper>
+    </>
   );
 };

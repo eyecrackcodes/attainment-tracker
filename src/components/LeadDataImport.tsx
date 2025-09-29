@@ -51,6 +51,10 @@ interface ProcessedLeadData {
     hasOpenOrder: boolean;
     meetsMin: boolean;
   }[];
+  mappedColumns?: {
+    nameColumn?: string;
+    leadsColumn?: string;
+  };
 }
 
 interface ExistingDataStatus {
@@ -114,19 +118,49 @@ export const LeadDataImport: React.FC = () => {
       },
     });
 
-    // Reset file input
-    event.target.value = "";
+    // Don't reset file input here - it causes issues with re-importing
   };
 
   const processCSVData = (rows: LeadCSVRow[]): ProcessedLeadData => {
+    // Track which columns were found
+    let nameColumn: string | undefined;
+    let leadsColumn: string | undefined;
+
     const agentDetails = rows.map((row) => {
       // Try different column name variations for billable leads
+      // Check all possible variations case-insensitively
       const leadsValue =
         row.billable_leads ||
         row["Billable Leads"] ||
         row["billable_leads"] ||
         row["Leads"] ||
+        row["leads"] ||
+        row["Billable"] ||
+        row["billable"] ||
+        row["Total Leads"] ||
+        row["total_leads"] ||
         "";
+
+      // Track which column was used for leads
+      if (!leadsColumn && leadsValue !== "") {
+        const columnNames = [
+          "billable_leads",
+          "Billable Leads",
+          "billable_leads",
+          "Leads",
+          "leads",
+          "Billable",
+          "billable",
+          "Total Leads",
+          "total_leads",
+        ];
+        for (const col of columnNames) {
+          if (row[col] !== undefined && row[col] !== null) {
+            leadsColumn = col;
+            break;
+          }
+        }
+      }
 
       // Parse leads - empty/null means 0 (absent)
       const leads =
@@ -142,7 +176,37 @@ export const LeadDataImport: React.FC = () => {
         row["Agent Name"] ||
         row["agent_name"] ||
         row["Name"] ||
+        row["name"] ||
+        row["Agent"] ||
+        row["agent"] ||
+        row["Employee"] ||
+        row["employee"] ||
+        row["Employee Name"] ||
+        row["employee_name"] ||
         "Unknown";
+
+      // Track which column was used for names
+      if (!nameColumn && name !== "Unknown") {
+        const columnNames = [
+          "agent_name",
+          "Agent Name",
+          "agent_name",
+          "Name",
+          "name",
+          "Agent",
+          "agent",
+          "Employee",
+          "employee",
+          "Employee Name",
+          "employee_name",
+        ];
+        for (const col of columnNames) {
+          if (row[col] !== undefined && row[col] !== null) {
+            nameColumn = col;
+            break;
+          }
+        }
+      }
 
       return {
         name,
@@ -176,6 +240,10 @@ export const LeadDataImport: React.FC = () => {
       agentsMeetingMin,
       openOrderZeroLeads,
       agentDetails,
+      mappedColumns: {
+        nameColumn,
+        leadsColumn,
+      },
     };
   };
 
@@ -206,7 +274,8 @@ export const LeadDataImport: React.FC = () => {
 
       setSuccess(true);
       setShowDialog(false);
-      setCsvData(null);
+      // Don't clear CSV data after successful save
+      // setCsvData(null);
 
       // Show success message for 3 seconds
       setTimeout(() => setSuccess(false), 3000);
@@ -219,7 +288,8 @@ export const LeadDataImport: React.FC = () => {
 
   const handleCancel = () => {
     setShowDialog(false);
-    setCsvData(null);
+    // Keep CSV data in case user wants to reopen dialog
+    // setCsvData(null);
   };
 
   return (
@@ -245,10 +315,23 @@ export const LeadDataImport: React.FC = () => {
             <Alert severity="info" icon={<InfoIcon />}>
               <Stack spacing={1}>
                 <Typography variant="body2">
-                  Upload a CSV file with columns: <strong>agent_name</strong>{" "}
-                  and <strong>billable_leads</strong>
+                  Upload a CSV file with agent names and billable leads columns.
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                  Supported column names:
+                </Typography>
+                <Typography variant="body2" sx={{ fontSize: "0.8rem", ml: 2 }}>
+                  • Names: agent_name, Agent Name, Name, Agent, Employee,
+                  Employee Name
+                </Typography>
+                <Typography variant="body2" sx={{ fontSize: "0.8rem", ml: 2 }}>
+                  • Leads: billable_leads, Billable Leads, Leads, Billable,
+                  Total Leads
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "0.875rem", mt: 1 }}
+                >
                   • All agents in the CSV are considered to have open orders
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
@@ -258,25 +341,43 @@ export const LeadDataImport: React.FC = () => {
               </Stack>
             </Alert>
 
-            <Box>
-              <input
-                accept=".csv"
-                style={{ display: "none" }}
-                id="lead-csv-upload"
-                type="file"
-                onChange={handleFileUpload}
-              />
-              <label htmlFor="lead-csv-upload">
+            <Stack direction="row" spacing={2}>
+              <Box flex={1}>
+                <input
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  id="lead-csv-upload"
+                  type="file"
+                  onChange={handleFileUpload}
+                />
+                <label htmlFor="lead-csv-upload">
+                  <Button
+                    variant="contained"
+                    component="span"
+                    startIcon={<UploadIcon />}
+                    fullWidth
+                  >
+                    {csvData ? "Upload New CSV" : "Upload CSV File"}
+                  </Button>
+                </label>
+              </Box>
+              {csvData && (
                 <Button
-                  variant="contained"
-                  component="span"
-                  startIcon={<UploadIcon />}
-                  fullWidth
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => {
+                    setCsvData(null);
+                    // Clear the file input
+                    const fileInput = document.getElementById(
+                      "lead-csv-upload"
+                    ) as HTMLInputElement;
+                    if (fileInput) fileInput.value = "";
+                  }}
                 >
-                  Upload CSV File
+                  Clear Data
                 </Button>
-              </label>
-            </Box>
+              )}
+            </Stack>
 
             {error && <Alert severity="error">{error}</Alert>}
             {success && (
@@ -352,8 +453,50 @@ export const LeadDataImport: React.FC = () => {
               </Alert>
             )}
 
+            {csvData && !showDialog && (
+              <Stack spacing={2} sx={{ mt: 2 }}>
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    CSV data loaded with {csvData.availableAgents} agents and{" "}
+                    {csvData.totalBillableLeads} total leads.
+                  </Typography>
+                </Alert>
+                <Button
+                  variant="outlined"
+                  onClick={() => setShowDialog(true)}
+                  fullWidth
+                >
+                  Review and Import Data
+                </Button>
+              </Stack>
+            )}
+
             {csvData && (
               <>
+                {csvData.mappedColumns && (
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      Mapped columns:
+                      {csvData.mappedColumns.nameColumn && (
+                        <>
+                          {" "}
+                          Names from "
+                          <strong>{csvData.mappedColumns.nameColumn}</strong>"
+                        </>
+                      )}
+                      {csvData.mappedColumns.nameColumn &&
+                        csvData.mappedColumns.leadsColumn &&
+                        " and "}
+                      {csvData.mappedColumns.leadsColumn && (
+                        <>
+                          Leads from "
+                          <strong>{csvData.mappedColumns.leadsColumn}</strong>"
+                        </>
+                      )}
+                    </Typography>
+                  </Alert>
+                )}
+
                 <Box
                   sx={{
                     display: "grid",

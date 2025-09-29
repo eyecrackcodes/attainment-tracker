@@ -6,11 +6,12 @@ export const Navigation = () => {
   return (
     <AppBar
       position="sticky"
-      elevation={0}
+      elevation={1}
       sx={{
         backgroundColor: "background.paper",
         borderBottom: "1px solid",
         borderColor: "divider",
+        zIndex: (theme) => theme.zIndex.drawer + 1,
       }}
     >
       <Toolbar sx={{ px: { xs: 2, lg: 4 } }}>

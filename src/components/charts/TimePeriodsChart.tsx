@@ -131,62 +131,64 @@ export const TimePeriodsChart: React.FC<TimePeriodsChartProps> = ({
   };
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
+    <>
       <Typography variant="h6" gutterBottom>
         Weekly Attainment
       </Typography>
       <Typography variant="body2" color="text.secondary" paragraph>
         Weekly and monthly attainment percentages
       </Typography>
-      {chartData.length === 0 ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: 300,
-          }}
-        >
-          <Typography variant="body1" color="text.secondary">
-            No data available for the selected time frame
-          </Typography>
-        </Box>
-      ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      <Box sx={{ height: "calc(100% - 80px)" }}>
+        {chartData.length === 0 ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis domain={[0, 200]} tickFormatter={(value) => `${value}%`} />
-            <RechartsTooltip content={<CustomTooltip />} />
-            <Legend />
-            <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
-            <Bar dataKey="Austin" fill={brandColors.austin}>
-              <LabelList
-                dataKey="Austin"
-                position="top"
-                formatter={(value: number) => `${Math.round(value)}%`}
-              />
-            </Bar>
-            <Bar dataKey="Charlotte" fill={brandColors.charlotte}>
-              <LabelList
-                dataKey="Charlotte"
-                position="top"
-                formatter={(value: number) => `${Math.round(value)}%`}
-              />
-            </Bar>
-            <Bar dataKey="Combined" fill={brandColors.combined}>
-              <LabelList
-                dataKey="Combined"
-                position="top"
-                formatter={(value: number) => `${Math.round(value)}%`}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Box>
+            <Typography variant="body1" color="text.secondary">
+              No data available for the selected time frame
+            </Typography>
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 200]} tickFormatter={(value) => `${value}%`} />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Legend />
+              <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
+              <Bar dataKey="Austin" fill={brandColors.austin}>
+                <LabelList
+                  dataKey="Austin"
+                  position="top"
+                  formatter={(value: number) => `${Math.round(value)}%`}
+                />
+              </Bar>
+              <Bar dataKey="Charlotte" fill={brandColors.charlotte}>
+                <LabelList
+                  dataKey="Charlotte"
+                  position="top"
+                  formatter={(value: number) => `${Math.round(value)}%`}
+                />
+              </Bar>
+              <Bar dataKey="Combined" fill={brandColors.combined}>
+                <LabelList
+                  dataKey="Combined"
+                  position="top"
+                  formatter={(value: number) => `${Math.round(value)}%`}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </Box>
+    </>
   );
 };

@@ -64,7 +64,7 @@ export const leadService = {
         attainmentPct,
         pctAgentsMeetingMin,
       },
-      notes: input.notes,
+      ...(input.notes ? { notes: input.notes } : {}),
       savedAt: Date.now(),
     };
 

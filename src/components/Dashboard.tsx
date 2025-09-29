@@ -7,15 +7,12 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  AppBar,
-  Toolbar,
-  IconButton,
   Button,
   Tabs,
   Tab,
-  Fade,
   Stack,
 } from "@mui/material";
+import { ChartWrapper } from "./ChartWrapper";
 import Grid from "@mui/material/Grid";
 import {
   Settings as SettingsIcon,
@@ -436,14 +433,12 @@ export const Dashboard: React.FC = () => {
       switch (activeTab) {
         case 0:
           return (
-            <Stack spacing={5}>
+            <Stack spacing={3}>
               {/* Days Behind Alert */}
-              <Box>
-                <DaysBehindAlert
-                  data={state.revenueData}
-                  targetSettings={state.targetSettings}
-                />
-              </Box>
+              <DaysBehindAlert
+                data={state.revenueData}
+                targetSettings={state.targetSettings}
+              />
 
               {/* Attendance Alerts */}
               <AttendanceAlerts
@@ -455,24 +450,22 @@ export const Dashboard: React.FC = () => {
               <AgentSummary />
 
               {/* Summary Metrics */}
-              <Box>
-                <SummaryMetrics
-                  data={filterDataByTimeFrame(
-                    state.revenueData,
-                    state.filters.timeFrame,
-                    state.filters.attainmentThreshold,
-                    state.targetSettings,
-                    state.filters.startDate,
-                    state.filters.endDate,
-                    state.filters.location
-                  )}
-                  timeFrame={state.filters.timeFrame}
-                  targetSettings={state.targetSettings}
-                  startDate={state.filters.startDate}
-                  endDate={state.filters.endDate}
-                  location={state.filters.location}
-                />
-              </Box>
+              <SummaryMetrics
+                data={filterDataByTimeFrame(
+                  state.revenueData,
+                  state.filters.timeFrame,
+                  state.filters.attainmentThreshold,
+                  state.targetSettings,
+                  state.filters.startDate,
+                  state.filters.endDate,
+                  state.filters.location
+                )}
+                timeFrame={state.filters.timeFrame}
+                targetSettings={state.targetSettings}
+                startDate={state.filters.startDate}
+                endDate={state.filters.endDate}
+                location={state.filters.location}
+              />
 
               {/* Daily Entry Form and Filters Row */}
               <Box sx={{ mt: 1 }}>
@@ -518,174 +511,101 @@ export const Dashboard: React.FC = () => {
               {/* Charts Section */}
               {!showLocationCharts ? (
                 // Show regular charts for combined view
-                <Stack spacing={6}>
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 550,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <RevenueComparisonChart
-                        data={state.revenueData}
-                        timeFrame={state.filters.timeFrame}
-                        targetSettings={state.targetSettings}
-                        startDate={state.filters.startDate}
-                        endDate={state.filters.endDate}
-                        location={state.filters.location}
-                      />
-                    </Paper>
-                  </Box>
+                <>
+                  <ChartWrapper height={400}>
+                    <RevenueComparisonChart
+                      data={state.revenueData}
+                      timeFrame={state.filters.timeFrame}
+                      targetSettings={state.targetSettings}
+                      startDate={state.filters.startDate}
+                      endDate={state.filters.endDate}
+                      location={state.filters.location}
+                    />
+                  </ChartWrapper>
 
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 550,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <DailyAttainmentChart
-                        data={state.revenueData}
-                        filters={state.filters}
-                        targets={state.targetSettings}
-                      />
-                    </Paper>
-                  </Box>
+                  <ChartWrapper height={400}>
+                    <DailyAttainmentChart
+                      data={state.revenueData}
+                      filters={state.filters}
+                      targets={state.targetSettings}
+                    />
+                  </ChartWrapper>
 
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 550,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <TimePeriodsChart
-                        data={state.revenueData}
-                        filters={state.filters}
-                        targets={state.targetSettings}
-                      />
-                    </Paper>
-                  </Box>
+                  <ChartWrapper height={400}>
+                    <TimePeriodsChart
+                      data={state.revenueData}
+                      filters={state.filters}
+                      targets={state.targetSettings}
+                    />
+                  </ChartWrapper>
 
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 650,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <DistributionCharts
-                        data={state.revenueData}
-                        filters={state.filters}
-                        targets={state.targetSettings}
-                      />
-                    </Paper>
-                  </Box>
-                </Stack>
+                  <ChartWrapper height={450}>
+                    <DistributionCharts
+                      data={state.revenueData}
+                      filters={state.filters}
+                      targets={state.targetSettings}
+                    />
+                  </ChartWrapper>
+                </>
               ) : (
                 // Show location-specific charts
-                <Stack spacing={6}>
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 550,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <LocationDailyChart
-                        data={filterDataByTimeFrame(
-                          state.revenueData,
-                          state.filters.timeFrame,
-                          state.filters.attainmentThreshold,
-                          state.targetSettings,
-                          state.filters.startDate,
-                          state.filters.endDate,
-                          state.filters.location
-                        )}
-                        location={state.filters.location}
-                        targetSettings={state.targetSettings}
-                        timeFrame={state.filters.timeFrame}
-                      />
-                    </Paper>
-                  </Box>
-                  <Box>
-                    <Paper
-                      elevation={3}
-                      sx={{
-                        p: 4,
-                        height: 550,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      }}
-                    >
-                      <LocationMTDChart
-                        data={filterDataByTimeFrame(
-                          state.revenueData,
-                          state.filters.timeFrame,
-                          state.filters.attainmentThreshold,
-                          state.targetSettings,
-                          state.filters.startDate,
-                          state.filters.endDate,
-                          state.filters.location
-                        )}
-                        location={state.filters.location}
-                        targetSettings={state.targetSettings}
-                        timeFrame={state.filters.timeFrame}
-                      />
-                    </Paper>
-                  </Box>
-                </Stack>
+                <>
+                  <ChartWrapper height={400}>
+                    <LocationDailyChart
+                      data={filterDataByTimeFrame(
+                        state.revenueData,
+                        state.filters.timeFrame,
+                        state.filters.attainmentThreshold,
+                        state.targetSettings,
+                        state.filters.startDate,
+                        state.filters.endDate,
+                        state.filters.location
+                      )}
+                      location={state.filters.location}
+                      targetSettings={state.targetSettings}
+                      timeFrame={state.filters.timeFrame}
+                    />
+                  </ChartWrapper>
+
+                  <ChartWrapper height={400}>
+                    <LocationMTDChart
+                      data={filterDataByTimeFrame(
+                        state.revenueData,
+                        state.filters.timeFrame,
+                        state.filters.attainmentThreshold,
+                        state.targetSettings,
+                        state.filters.startDate,
+                        state.filters.endDate,
+                        state.filters.location
+                      )}
+                      location={state.filters.location}
+                      targetSettings={state.targetSettings}
+                      timeFrame={state.filters.timeFrame}
+                    />
+                  </ChartWrapper>
+                </>
               )}
             </Stack>
           );
         case 1:
           return (
-            <HistoricalTrendsView
-              data={state.revenueData}
-              targetSettings={state.targetSettings}
-              isLoading={isTabLoading}
-            />
+            <Box sx={{ pt: 2 }}>
+              <HistoricalTrendsView
+                data={state.revenueData}
+                targetSettings={state.targetSettings}
+                isLoading={isTabLoading}
+              />
+            </Box>
           );
         case 2:
           return (
-            <DailyPatternsView
-              data={state.revenueData}
-              targetSettings={state.targetSettings}
-              isLoading={isTabLoading}
-            />
+            <Box sx={{ pt: 2 }}>
+              <DailyPatternsView
+                data={state.revenueData}
+                targetSettings={state.targetSettings}
+                isLoading={isTabLoading}
+              />
+            </Box>
           );
         case 3:
           return (
@@ -721,11 +641,7 @@ export const Dashboard: React.FC = () => {
       }
     })();
 
-    return (
-      <Fade in={!isTabLoading} timeout={300}>
-        <Box sx={{ width: "100%" }}>{view}</Box>
-      </Fade>
-    );
+    return view;
   };
 
   if (state.error) {
@@ -744,11 +660,8 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: "#F3F4F6", minHeight: "100vh", pt: 2 }}>
-      <Container
-        maxWidth={false}
-        sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, py: 2 }}
-      >
+    <Box sx={{ bgcolor: "#F3F4F6", minHeight: "100vh", pb: 4 }}>
+      <Container maxWidth="xl" sx={{ pt: 3 }}>
         <GoalPrompt
           open={goalPromptOpen}
           onClose={() => setGoalPromptOpen(false)}
@@ -769,46 +682,49 @@ export const Dashboard: React.FC = () => {
           </Alert>
         </Snackbar>
 
-        <Box sx={{ mb: 3 }}>
-          <AppBar position="static" sx={{ borderRadius: 2 }}>
-            <Toolbar>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Revenue Attainment Dashboard
-              </Typography>
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<SettingsIcon />}
-                  onClick={() => {
-                    const targetSettingsButton = document.querySelector(
-                      '[data-testid="target-settings-button"]'
-                    );
-                    if (targetSettingsButton) {
-                      (targetSettingsButton as HTMLElement).click();
-                    }
-                  }}
-                >
-                  Daily Targets
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<CalendarIcon />}
-                  onClick={() => {
-                    const monthlySettingsButton = document.querySelector(
-                      '[data-testid="monthly-settings-button"]'
-                    );
-                    if (monthlySettingsButton) {
-                      (monthlySettingsButton as HTMLElement).click();
-                    }
-                  }}
-                >
-                  Monthly Adjustments
-                </Button>
-              </Box>
-            </Toolbar>
-          </AppBar>
+        <Box
+          sx={{
+            mb: 3,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+            Revenue Attainment Dashboard
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<SettingsIcon />}
+              onClick={() => {
+                const targetSettingsButton = document.querySelector(
+                  '[data-testid="target-settings-button"]'
+                );
+                if (targetSettingsButton) {
+                  (targetSettingsButton as HTMLElement).click();
+                }
+              }}
+            >
+              Daily Targets
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<CalendarIcon />}
+              onClick={() => {
+                const monthlySettingsButton = document.querySelector(
+                  '[data-testid="monthly-settings-button"]'
+                );
+                if (monthlySettingsButton) {
+                  (monthlySettingsButton as HTMLElement).click();
+                }
+              }}
+            >
+              Monthly Adjustments
+            </Button>
+          </Box>
         </Box>
 
         <Paper sx={{ mb: 3 }}>
@@ -832,26 +748,20 @@ export const Dashboard: React.FC = () => {
           </Tabs>
         </Paper>
 
-        {state.loading && (
+        {state.loading ? (
           <Box
             sx={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: "rgba(255, 255, 255, 0.7)",
-              zIndex: 9999,
+              py: 10,
             }}
           >
-            <CircularProgress color="primary" />
+            <CircularProgress color="primary" size={60} />
           </Box>
+        ) : (
+          renderActiveView()
         )}
-
-        {renderActiveView()}
 
         <TargetSettingsComponent
           currentSettings={state.targetSettings}
