@@ -505,8 +505,8 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
               >
                 Historical Performance Overview
               </Typography>
-              <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2 }}>
-                <ResponsiveContainer>
+              <Box sx={{ height: 650, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={monthlyTrends}
                     margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -658,8 +658,8 @@ export const HistoricalTrendsView: React.FC<HistoricalTrendsViewProps> = ({
                 >
                   3-Month Moving Average & Forecast
                 </Typography>
-                <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2 }}>
-                  <ResponsiveContainer>
+                <Box sx={{ height: 600, width: "100%", mt: 2, pb: 2, position: "relative" }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={movingAverageData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 60 }}

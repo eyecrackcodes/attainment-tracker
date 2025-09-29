@@ -9,12 +9,12 @@ import {
 import {
   Typography,
   Box,
-  Grid,
   useTheme,
   Paper,
   Divider,
   Stack,
 } from "@mui/material";
+import { Grid } from "@mui/material";
 import { RevenueData, TimeFrame, TargetSettings } from "../../types/revenue";
 import {
   filterDataByTimeFrame,
@@ -290,180 +290,188 @@ export const DistributionCharts: React.FC<DistributionChartsProps> = ({
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+    <>
       <Typography variant="h6" gutterBottom>
         Attainment Distribution
       </Typography>
       <Typography variant="body2" color="text.secondary" paragraph>
         How often each location achieves different attainment levels
       </Typography>
-      {filteredData.length === 0 ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: 300,
-          }}
-        >
-          <Typography variant="body1" color="text.secondary">
-            No data available for the selected time frame
-          </Typography>
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
-              <Typography
-                variant="subtitle1"
-                align="center"
-                gutterBottom
-                fontWeight="bold"
-              >
-                Austin
-              </Typography>
-              <Typography
-                variant="body2"
-                align="center"
-                color="text.secondary"
-                gutterBottom
-              >
-                {distribution.austinTotal} days total
-              </Typography>
-              <Box sx={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distribution.austin}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                      outerRadius={80}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="count"
-                      nameKey="name"
-                      paddingAngle={4}
-                    >
-                      {distribution.austin.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.color}
-                          stroke={theme.palette.background.paper}
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-              <SimpleLegend data={distribution.austin} />
-            </Paper>
+      <Box sx={{ height: "calc(100% - 80px)" }}>
+        {filteredData.length === 0 ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <Typography variant="body1" color="text.secondary">
+              No data available for the selected time frame
+            </Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
+                <Typography
+                  variant="subtitle1"
+                  align="center"
+                  gutterBottom
+                  fontWeight="bold"
+                >
+                  Austin
+                </Typography>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  {distribution.austinTotal} days total
+                </Typography>
+                <Box
+                  sx={{ height: 220, position: "relative", overflow: "hidden" }}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distribution.austin}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="count"
+                        nameKey="name"
+                        paddingAngle={4}
+                      >
+                        {distribution.austin.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            stroke={theme.palette.background.paper}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+                <SimpleLegend data={distribution.austin} />
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
+                <Typography
+                  variant="subtitle1"
+                  align="center"
+                  gutterBottom
+                  fontWeight="bold"
+                >
+                  Charlotte
+                </Typography>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  {distribution.charlotteTotal} days total
+                </Typography>
+                <Box
+                  sx={{ height: 220, position: "relative", overflow: "hidden" }}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distribution.charlotte}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="count"
+                        nameKey="name"
+                        paddingAngle={4}
+                      >
+                        {distribution.charlotte.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            stroke={theme.palette.background.paper}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+                <SimpleLegend data={distribution.charlotte} />
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
+                <Typography
+                  variant="subtitle1"
+                  align="center"
+                  gutterBottom
+                  fontWeight="bold"
+                >
+                  Combined
+                </Typography>
+                <Typography
+                  variant="body2"
+                  align="center"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  {distribution.combinedTotal} days total
+                </Typography>
+                <Box
+                  sx={{ height: 220, position: "relative", overflow: "hidden" }}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distribution.combined}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="count"
+                        nameKey="name"
+                        paddingAngle={4}
+                      >
+                        {distribution.combined.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            stroke={theme.palette.background.paper}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+                <SimpleLegend data={distribution.combined} />
+              </Paper>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
-              <Typography
-                variant="subtitle1"
-                align="center"
-                gutterBottom
-                fontWeight="bold"
-              >
-                Charlotte
-              </Typography>
-              <Typography
-                variant="body2"
-                align="center"
-                color="text.secondary"
-                gutterBottom
-              >
-                {distribution.charlotteTotal} days total
-              </Typography>
-              <Box sx={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distribution.charlotte}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                      outerRadius={80}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="count"
-                      nameKey="name"
-                      paddingAngle={4}
-                    >
-                      {distribution.charlotte.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.color}
-                          stroke={theme.palette.background.paper}
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-              <SimpleLegend data={distribution.charlotte} />
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper elevation={1} sx={{ p: 2, height: "100%" }}>
-              <Typography
-                variant="subtitle1"
-                align="center"
-                gutterBottom
-                fontWeight="bold"
-              >
-                Combined
-              </Typography>
-              <Typography
-                variant="body2"
-                align="center"
-                color="text.secondary"
-                gutterBottom
-              >
-                {distribution.combinedTotal} days total
-              </Typography>
-              <Box sx={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distribution.combined}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                      outerRadius={80}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="count"
-                      nameKey="name"
-                      paddingAngle={4}
-                    >
-                      {distribution.combined.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.color}
-                          stroke={theme.palette.background.paper}
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-              <SimpleLegend data={distribution.combined} />
-            </Paper>
-          </Grid>
-        </Grid>
-      )}
-    </Paper>
+        )}
+      </Box>
+    </>
   );
 };

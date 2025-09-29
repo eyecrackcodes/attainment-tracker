@@ -131,47 +131,49 @@ export const DailyAttainmentChart: React.FC<DailyAttainmentChartProps> = ({
   };
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
+    <>
       <Typography variant="h6" gutterBottom>
         Daily Attainment
       </Typography>
       <Typography variant="body2" color="text.secondary" paragraph>
         Daily attainment percentage for each location and combined
       </Typography>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis domain={[0, 200]} tickFormatter={(value) => `${value}%`} />
-          <RechartsTooltip content={<CustomTooltip />} />
-          <Legend />
-          <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
-          <Line
-            type="monotone"
-            dataKey="Austin"
-            stroke={brandColors.austin}
-            activeDot={{ r: 8 }}
-            connectNulls
-          />
-          <Line
-            type="monotone"
-            dataKey="Charlotte"
-            stroke={brandColors.charlotte}
-            activeDot={{ r: 8 }}
-            connectNulls
-          />
-          <Line
-            type="monotone"
-            dataKey="Combined"
-            stroke={brandColors.combined}
-            activeDot={{ r: 8 }}
-            connectNulls
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </Box>
+      <Box sx={{ height: "calc(100% - 80px)" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis domain={[0, 200]} tickFormatter={(value) => `${value}%`} />
+            <RechartsTooltip content={<CustomTooltip />} />
+            <Legend />
+            <ReferenceLine y={100} stroke="#666" strokeDasharray="3 3" />
+            <Line
+              type="monotone"
+              dataKey="Austin"
+              stroke={brandColors.austin}
+              activeDot={{ r: 8 }}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="Charlotte"
+              stroke={brandColors.charlotte}
+              activeDot={{ r: 8 }}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="Combined"
+              stroke={brandColors.combined}
+              activeDot={{ r: 8 }}
+              connectNulls
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Box>
+    </>
   );
 };
