@@ -475,10 +475,18 @@ export const filterDataByTimeFrame = (
       const mostRecentDate = locationFilteredData.reduce((latest, item) => {
         const itemDate = createDate(item.date);
         return itemDate > latest ? itemDate : latest;
-      }, createDate(locationFilteredData[0]?.date || '2025-10-12'));
-      
-      const startOfMonth = new Date(mostRecentDate.getFullYear(), mostRecentDate.getMonth(), 1);
-      const endOfMonth = new Date(mostRecentDate.getFullYear(), mostRecentDate.getMonth() + 1, 0);
+      }, createDate(locationFilteredData[0]?.date || "2025-10-12"));
+
+      const startOfMonth = new Date(
+        mostRecentDate.getFullYear(),
+        mostRecentDate.getMonth(),
+        1
+      );
+      const endOfMonth = new Date(
+        mostRecentDate.getFullYear(),
+        mostRecentDate.getMonth() + 1,
+        0
+      );
 
       filteredData = locationFilteredData.filter((item) => {
         const itemDate = createDate(item.date);

@@ -47,6 +47,7 @@ import { AILeadInsights } from "./charts/AILeadInsights";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
 import { DashboardV2 } from "./DashboardV2";
+import { CleanDashboard } from "./CleanDashboard";
 import {
   filterDataByTimeFrame,
   calculateLocationMetrics,
@@ -132,6 +133,7 @@ export const Dashboard: React.FC = () => {
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [goalPromptOpen, setGoalPromptOpen] = useState(false);
   const [useNewLayout, setUseNewLayout] = useState(true); // Default to new layout
+  const [useCleanDashboard, setUseCleanDashboard] = useState(true); // Default to clean dashboard
   const showLocationCharts = state.filters.location !== "Combined";
 
   // Fetch data from Snowflake
@@ -793,6 +795,68 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  // Use clean dashboard if enabled
+  if (useCleanDashboard) {
+    return (
+      <>
+        <GoalPrompt
+          open={goalPromptOpen}
+          onClose={() => setGoalPromptOpen(false)}
+          onSave={handleSaveGoal}
+        />
+        <Snackbar
+          open={state.snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={state.snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {state.snackbar.message}
+          </Alert>
+        </Snackbar>
+        
+        <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", bgcolor: "background.paper" }}>
+          <FilterPanel
+            filters={state.filters}
+            onFiltersChange={handleFilterChange}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={async () => {
+                setState((prev) => ({ ...prev, loading: true }));
+                await fetchSnowflakeData();
+                await dataPollingService.manualRefresh();
+                setState((prev) => ({ ...prev, loading: false }));
+              }}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setUseCleanDashboard(false)}
+              size="small"
+            >
+              Legacy View
+            </Button>
+          </Stack>
+        </Box>
+        
+        <CleanDashboard
+          data={state.revenueData}
+          filters={state.filters}
+          targetSettings={state.targetSettings}
+          snowflakeData={state.snowflakeData}
+        />
+      </>
+    );
+  }
+
   // Use new layout if enabled
   if (useNewLayout) {
     return (
@@ -829,14 +893,25 @@ export const Dashboard: React.FC = () => {
             <Typography variant="h4" fontWeight="bold">
               Life Insurance Call Center Analytics
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<ViewListIcon />}
-              onClick={() => setUseNewLayout(false)}
-              size="small"
-            >
-              Switch to Classic View
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<ViewModuleIcon />}
+                onClick={() => setUseCleanDashboard(true)}
+                size="small"
+              >
+                Clean Dashboard
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ViewListIcon />}
+                onClick={() => setUseNewLayout(false)}
+                size="small"
+              >
+                Switch to Classic View
+              </Button>
+            </Stack>
           </Box>
 
           <DashboardV2
@@ -887,14 +962,25 @@ export const Dashboard: React.FC = () => {
             Revenue Attainment Dashboard
           </Typography>
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<ViewModuleIcon />}
-              onClick={() => setUseNewLayout(true)}
-              size="small"
-            >
-              New View
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<ViewModuleIcon />}
+                onClick={() => setUseCleanDashboard(true)}
+                size="small"
+              >
+                Clean Dashboard
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ViewModuleIcon />}
+                onClick={() => setUseNewLayout(true)}
+                size="small"
+              >
+                New View
+              </Button>
+            </Stack>
             <Button
               variant="contained"
               color="secondary"

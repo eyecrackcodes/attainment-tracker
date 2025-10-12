@@ -321,16 +321,17 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             }
           />
         </Grid>
-        
+
         {/* Missed Calls Card - Only show if we have Snowflake data */}
-        {snowflakeData?.dailyMetrics && snowflakeData.dailyMetrics.length > 0 && (
-          <Grid xs={12} md={4}>
-            <MissedCallsCard
-              data={snowflakeData.dailyMetrics}
-              timeFrame={timeFrame}
-            />
-          </Grid>
-        )}
+        {snowflakeData?.dailyMetrics &&
+          snowflakeData.dailyMetrics.length > 0 && (
+            <Grid xs={12} md={4}>
+              <MissedCallsCard
+                data={snowflakeData.dailyMetrics}
+                timeFrame={timeFrame}
+              />
+            </Grid>
+          )}
       </Grid>
     </Paper>
   );
