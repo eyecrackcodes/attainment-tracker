@@ -76,13 +76,74 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Simple test endpoint to check data availability
+app.get("/api/test-data", async (req, res) => {
+  const query = `
+    SELECT 
+      COUNT(*) as total_records,
+      MIN(CALL_TIMESTAMP_LOCAL) as earliest_date,
+      MAX(CALL_TIMESTAMP_LOCAL) as latest_date,
+      COUNT(DISTINCT DEPARTMENT) as unique_departments
+    FROM PL_DIC_CALL_SIM
+    WHERE CALL_TIMESTAMP_LOCAL >= '2025-01-01'
+  `;
+  
+  console.log(`[Test Data] Executing test query...`);
+  
+  connection.execute({
+    sqlText: query,
+    complete: (err, stmt, rows) => {
+      if (err) {
+        console.error(`[Test Data] Query error:`, err);
+        res.status(500).json({ error: err.message });
+      } else {
+        console.log(`[Test Data] Query result:`, rows);
+        res.json(rows);
+      }
+    },
+  });
+});
+
+// Get unique departments
+app.get("/api/test-departments", async (req, res) => {
+  const query = `
+    SELECT DISTINCT DEPARTMENT, COUNT(*) as record_count
+    FROM PL_DIC_CALL_SIM
+    WHERE CALL_TIMESTAMP_LOCAL >= '2025-07-01'
+    GROUP BY DEPARTMENT
+    ORDER BY record_count DESC
+  `;
+  
+  console.log(`[Test Departments] Executing query...`);
+  
+  connection.execute({
+    sqlText: query,
+    complete: (err, stmt, rows) => {
+      if (err) {
+        console.error(`[Test Departments] Query error:`, err);
+        res.status(500).json({ error: err.message });
+      } else {
+        console.log(`[Test Departments] Departments found:`, rows);
+        res.json(rows);
+      }
+    },
+  });
+});
+
 // API endpoint for daily lead metrics
 app.get("/api/daily-lead-metrics", async (req, res) => {
   const { startDate, endDate, department } = req.query;
+  
+  console.log(`[Daily Metrics] Request received:`, {
+    startDate,
+    endDate,
+    department: department || 'ALL'
+  });
 
+  // Temporarily showing all departments for debugging
   const deptFilter = department
     ? `AND DEPARTMENT = '${department}'`
-    : "AND DEPARTMENT IN ('ATX', 'CLT')";
+    : "-- AND DEPARTMENT IN ('ATX', 'CLT')"; // Commented out for debugging
 
   const query = `
     WITH call_metrics AS (
@@ -101,22 +162,31 @@ app.get("/api/daily-lead-metrics", async (req, res) => {
         COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND SMOKER_CLASSIFICATION IN ('Non-Smoker', 'Never used') THEN 1 END) as non_smoker_count,
         COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND SMOKER_CLASSIFICATION NOT IN ('Non-Smoker', 'Never used') THEN 1 END) as smoker_count
       FROM PL_DIC_CALL_SIM
-      WHERE AGENT_TYPE != 'AI'
+      WHERE 1=1
+        -- Temporarily removing AI filter for debugging
+        -- AGENT_TYPE != 'AI'
         -- TODO: Add brokerage filter when field is identified (e.g., AND LEAD_SOURCE NOT LIKE '%Broker%')
         ${deptFilter}
         AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
-        AND CALL_TIMESTAMP_LOCAL < '${endDate}'
+        AND CALL_TIMESTAMP_LOCAL <= '${endDate}'
       GROUP BY DATE(CALL_TIMESTAMP_LOCAL), DEPARTMENT
     )
     SELECT * FROM call_metrics ORDER BY date DESC, site
   `;
 
+  console.log(`[Daily Metrics] Executing query...`);
+  
   connection.execute({
     sqlText: query,
     complete: (err, stmt, rows) => {
       if (err) {
+        console.error(`[Daily Metrics] Query error:`, err);
         res.status(500).json({ error: err.message });
       } else {
+        console.log(`[Daily Metrics] Query successful. Rows returned: ${rows.length}`);
+        if (rows.length > 0) {
+          console.log(`[Daily Metrics] First row:`, rows[0]);
+        }
         res.json(rows);
       }
     },
