@@ -143,7 +143,10 @@ export const Dashboard: React.FC = () => {
       // For test data in 2025, use last 30 days from test data end date
       // TODO: Update this to use current dates in production
       const endDate = "2025-10-12"; // Test data end date
-      const startDate = format(subDays(new Date("2025-10-12"), 30), "yyyy-MM-dd"); // Last 30 days
+      const startDate = format(
+        subDays(new Date("2025-10-12"), 30),
+        "yyyy-MM-dd"
+      ); // Last 30 days
 
       // Fetch all data types in parallel
       const [dailyMetrics, leadSourceMetrics, agentComparison] =

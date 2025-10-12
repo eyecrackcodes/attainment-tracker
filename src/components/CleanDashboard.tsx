@@ -168,7 +168,7 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
     // Get daily data for charts - ensure we have valid data
     const dailyData = snowflakeData?.dailyMetrics || [];
     const sortedDaily = [...dailyData]
-      .filter(d => d && d.date) // Filter out invalid entries
+      .filter((d) => d && d.date) // Filter out invalid entries
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return {
@@ -207,15 +207,16 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       },
     },
     xaxis: {
-      categories: processedData.daily.length > 0 
-        ? processedData.daily.map((d) => {
-            try {
-              return format(parseISO(d.date), "MMM d");
-            } catch {
-              return d.date; // Fallback if date parsing fails
-            }
-          })
-        : [],
+      categories:
+        processedData.daily.length > 0
+          ? processedData.daily.map((d) => {
+              try {
+                return format(parseISO(d.date), "MMM d");
+              } catch {
+                return d.date; // Fallback if date parsing fails
+              }
+            })
+          : [],
       labels: {
         rotate: -45,
         style: {
@@ -363,7 +364,10 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       (sum, d) => sum + (d?.billableLeads || 0),
       0
     );
-    const totalSales = processedData.daily.reduce((sum, d) => sum + (d?.sales || 0), 0);
+    const totalSales = processedData.daily.reduce(
+      (sum, d) => sum + (d?.sales || 0),
+      0
+    );
     const totalMissed = processedData.daily.reduce(
       (sum, d) => sum + (d?.missedCalls || 0),
       0
@@ -387,7 +391,7 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.grey[50], pb: 4 }}>
-      <Container maxWidth="xl" sx={{ pt: 3 }}>
+      <Container maxWidth="xl" sx={{ pt: 3, px: { xs: 2, sm: 3 } }}>
         {/* Header Section */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -519,8 +523,17 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                     height={expandedChart === "revenue" ? 500 : 350}
                   />
                 ) : (
-                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 350 }}>
-                    <Typography color="text.secondary">Loading revenue data...</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: 350,
+                    }}
+                  >
+                    <Typography color="text.secondary">
+                      Loading revenue data...
+                    </Typography>
                   </Box>
                 )}
               </Paper>
@@ -547,7 +560,8 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                         data: [
                           processedData.metrics.charlotte?.monthlyTarget || 0,
                           processedData.metrics.charlotte?.revenue || 0,
-                          processedData.metrics.charlotte?.projectedRevenue || 0,
+                          processedData.metrics.charlotte?.projectedRevenue ||
+                            0,
                         ],
                       },
                     ]}
@@ -555,8 +569,17 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                     height={350}
                   />
                 ) : (
-                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 350 }}>
-                    <Typography color="text.secondary">Loading performance data...</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: 350,
+                    }}
+                  >
+                    <Typography color="text.secondary">
+                      Loading performance data...
+                    </Typography>
                   </Box>
                 )}
               </Paper>
@@ -610,16 +633,18 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                       },
                     },
                   }}
-                    series={[
-                      {
-                        name: "Billable Leads",
-                        data: processedData.daily.map((d) => d?.billableLeads || 0),
-                      },
-                      {
-                        name: "Sales",
-                        data: processedData.daily.map((d) => d?.sales || 0),
-                      },
-                    ]}
+                  series={[
+                    {
+                      name: "Billable Leads",
+                      data: processedData.daily.map(
+                        (d) => d?.billableLeads || 0
+                      ),
+                    },
+                    {
+                      name: "Sales",
+                      data: processedData.daily.map((d) => d?.sales || 0),
+                    },
+                  ]}
                   type="bar"
                   height={350}
                 />

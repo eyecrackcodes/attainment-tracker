@@ -125,6 +125,8 @@ const executeQuery = async <T>(
     const url = `${API_BASE_URL}${endpoint}${
       queryParams ? `?${queryParams}` : ""
     }`;
+    
+    console.log("Snowflake API Request:", url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -289,7 +291,7 @@ export const snowflakeService = {
 
   // Initialize the connection
   initialize: async (): Promise<void> => {
-    await initializeConnection();
+      await initializeConnection();
   },
 
   // Get daily lead metrics with caching and pagination
@@ -323,6 +325,10 @@ export const snowflakeService = {
       };
 
       const rows = await executeQuery<any>("/daily-lead-metrics", params);
+      
+      // Debug: Log the raw response
+      console.log("Raw Snowflake daily metrics response:", rows);
+      console.log("First row keys:", rows[0] ? Object.keys(rows[0]) : 'No rows');
 
       // Transform results
       const metrics: DailyLeadMetrics[] = rows.map((row) => ({
@@ -354,7 +360,7 @@ export const snowflakeService = {
       setCachedResult(cacheKey, metrics);
 
       return metrics;
-    } catch (error) {
+      } catch (error) {
       console.error("Error fetching daily lead metrics:", error);
       throw error;
     }
