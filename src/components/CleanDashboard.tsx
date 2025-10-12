@@ -165,11 +165,11 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       filters.timeFrame
     );
 
-    // Get daily data for charts
-    const dailyData = snowflakeData.dailyMetrics || [];
-    const sortedDaily = [...dailyData].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    // Get daily data for charts - ensure we have valid data
+    const dailyData = snowflakeData?.dailyMetrics || [];
+    const sortedDaily = [...dailyData]
+      .filter(d => d && d.date) // Filter out invalid entries
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return {
       filtered: filteredData,
@@ -207,9 +207,15 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       },
     },
     xaxis: {
-      categories: processedData.daily.map((d) =>
-        format(parseISO(d.date), "MMM d")
-      ),
+      categories: processedData.daily.length > 0 
+        ? processedData.daily.map((d) => {
+            try {
+              return format(parseISO(d.date), "MMM d");
+            } catch {
+              return d.date; // Fallback if date parsing fails
+            }
+          })
+        : [],
       labels: {
         rotate: -45,
         style: {
@@ -337,21 +343,33 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
+    if (!processedData.daily || processedData.daily.length === 0) {
+      return {
+        totalCalls: 0,
+        totalBillable: 0,
+        totalSales: 0,
+        totalMissed: 0,
+        totalRevenue: 0,
+        conversionRate: 0,
+        missRate: 0,
+      };
+    }
+
     const totalCalls = processedData.daily.reduce(
-      (sum, d) => sum + d.totalCalls,
+      (sum, d) => sum + (d?.totalCalls || 0),
       0
     );
     const totalBillable = processedData.daily.reduce(
-      (sum, d) => sum + d.billableLeads,
+      (sum, d) => sum + (d?.billableLeads || 0),
       0
     );
-    const totalSales = processedData.daily.reduce((sum, d) => sum + d.sales, 0);
+    const totalSales = processedData.daily.reduce((sum, d) => sum + (d?.sales || 0), 0);
     const totalMissed = processedData.daily.reduce(
-      (sum, d) => sum + (d.missedCalls || 0),
+      (sum, d) => sum + (d?.missedCalls || 0),
       0
     );
     const totalRevenue = processedData.daily.reduce(
-      (sum, d) => sum + d.revenue,
+      (sum, d) => sum + (d?.revenue || 0),
       0
     );
 
@@ -480,25 +498,31 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                     )}
                   </IconButton>
                 </Box>
-                <ApexCharts
-                  options={revenueChartOptions}
-                  series={[
-                    {
-                      name: "Austin",
-                      data: processedData.daily
-                        .filter((d) => d.site === "ATX")
-                        .map((d) => d.revenue),
-                    },
-                    {
-                      name: "Charlotte",
-                      data: processedData.daily
-                        .filter((d) => d.site === "CLT")
-                        .map((d) => d.revenue),
-                    },
-                  ]}
-                  type="area"
-                  height={expandedChart === "revenue" ? 500 : 350}
-                />
+                {processedData.daily.length > 0 ? (
+                  <ApexCharts
+                    options={revenueChartOptions}
+                    series={[
+                      {
+                        name: "Austin",
+                        data: processedData.daily
+                          .filter((d) => d && d.site === "ATX")
+                          .map((d) => d.revenue || 0),
+                      },
+                      {
+                        name: "Charlotte",
+                        data: processedData.daily
+                          .filter((d) => d && d.site === "CLT")
+                          .map((d) => d.revenue || 0),
+                      },
+                    ]}
+                    type="area"
+                    height={expandedChart === "revenue" ? 500 : 350}
+                  />
+                ) : (
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 350 }}>
+                    <Typography color="text.secondary">Loading revenue data...</Typography>
+                  </Box>
+                )}
               </Paper>
             </Grid>
             <Grid item xs={12} lg={4}>
@@ -506,29 +530,35 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Performance vs Target
                 </Typography>
-                <ApexCharts
-                  options={performanceBarOptions}
-                  series={[
-                    {
-                      name: "Austin",
-                      data: [
-                        processedData.metrics.austin.monthlyTarget,
-                        processedData.metrics.austin.revenue,
-                        processedData.metrics.austin.projectedRevenue,
-                      ],
-                    },
-                    {
-                      name: "Charlotte",
-                      data: [
-                        processedData.metrics.charlotte.monthlyTarget,
-                        processedData.metrics.charlotte.revenue,
-                        processedData.metrics.charlotte.projectedRevenue,
-                      ],
-                    },
-                  ]}
-                  type="bar"
-                  height={350}
-                />
+                {processedData.metrics ? (
+                  <ApexCharts
+                    options={performanceBarOptions}
+                    series={[
+                      {
+                        name: "Austin",
+                        data: [
+                          processedData.metrics.austin?.monthlyTarget || 0,
+                          processedData.metrics.austin?.revenue || 0,
+                          processedData.metrics.austin?.projectedRevenue || 0,
+                        ],
+                      },
+                      {
+                        name: "Charlotte",
+                        data: [
+                          processedData.metrics.charlotte?.monthlyTarget || 0,
+                          processedData.metrics.charlotte?.revenue || 0,
+                          processedData.metrics.charlotte?.projectedRevenue || 0,
+                        ],
+                      },
+                    ]}
+                    type="bar"
+                    height={350}
+                  />
+                ) : (
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 350 }}>
+                    <Typography color="text.secondary">Loading performance data...</Typography>
+                  </Box>
+                )}
               </Paper>
             </Grid>
           </Grid>
@@ -580,16 +610,16 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                       },
                     },
                   }}
-                  series={[
-                    {
-                      name: "Billable Leads",
-                      data: processedData.daily.map((d) => d.billableLeads),
-                    },
-                    {
-                      name: "Sales",
-                      data: processedData.daily.map((d) => d.sales),
-                    },
-                  ]}
+                    series={[
+                      {
+                        name: "Billable Leads",
+                        data: processedData.daily.map((d) => d?.billableLeads || 0),
+                      },
+                      {
+                        name: "Sales",
+                        data: processedData.daily.map((d) => d?.sales || 0),
+                      },
+                    ]}
                   type="bar"
                   height={350}
                 />

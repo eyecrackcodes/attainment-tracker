@@ -162,10 +162,10 @@ class DataPollingService {
   // Sync data from Snowflake to Firebase
   private async syncFromSnowflake(): Promise<void> {
     try {
-      // For test data in 2025, use a fixed date range
+      // For test data in 2025, use last 30 days from test data end date
       // TODO: Update this to use current dates in production
       const endDate = "2025-10-12"; // Test data end date
-      const startDate = "2025-07-14"; // Test data start date (90 days before)
+      const startDate = format(subDays(new Date("2025-10-12"), 30), "yyyy-MM-dd"); // Last 30 days
 
       console.log(
         `DataPollingService: Fetching data from ${startDate} to ${endDate}`
