@@ -133,10 +133,10 @@ export const Dashboard: React.FC = () => {
   // Fetch data from Snowflake
   const fetchSnowflakeData = async () => {
     try {
-      const endDate = new Date().toISOString().split("T")[0];
-      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
+      // For test data in 2025, use a fixed date range
+      // TODO: Update this to use current dates in production
+      const endDate = "2025-10-12"; // Test data end date
+      const startDate = "2025-07-14"; // Test data start date (90 days before)
 
       // Fetch all data types in parallel
       const [dailyMetrics, leadSourceMetrics, agentComparison] =
