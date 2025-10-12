@@ -1,5 +1,25 @@
 // Example Node.js/Express backend for Snowflake
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+
+// Try to load .env.local first, then fall back to .env
+if (fs.existsSync(path.join(__dirname, '.env.local'))) {
+  console.log("Loading environment from .env.local");
+  require("dotenv").config({ path: '.env.local' });
+} else {
+  console.log("Loading environment from .env");
+  require("dotenv").config();
+}
+
+// Verify environment variables are loaded
+console.log("Environment check:");
+console.log("- SNOWFLAKE_ACCOUNT:", process.env.SNOWFLAKE_ACCOUNT ? "✓ Set" : "✗ Missing");
+console.log("- SNOWFLAKE_USERNAME:", process.env.SNOWFLAKE_USERNAME ? "✓ Set" : "✗ Missing");
+console.log("- SNOWFLAKE_PASSWORD:", process.env.SNOWFLAKE_PASSWORD ? "✓ Set" : "✗ Missing");
+console.log("- SNOWFLAKE_DATABASE:", process.env.SNOWFLAKE_DATABASE || "Not set");
+console.log("- SNOWFLAKE_SCHEMA:", process.env.SNOWFLAKE_SCHEMA || "Not set");
+console.log("- SNOWFLAKE_WAREHOUSE:", process.env.SNOWFLAKE_WAREHOUSE ? "✓ Set" : "✗ Missing");
+
 const express = require("express");
 const snowflake = require("snowflake-sdk");
 const cors = require("cors");
