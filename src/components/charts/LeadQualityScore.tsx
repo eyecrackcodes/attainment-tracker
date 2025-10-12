@@ -120,9 +120,10 @@ const LeadQualityScoreComponent: React.FC<LeadQualityScoreProps> = ({
 
     // Limit data to prevent performance issues
     const MAX_SCATTER_POINTS = 100;
-    const limitedData = data.length > MAX_SCATTER_POINTS 
-      ? data.slice(0, MAX_SCATTER_POINTS) 
-      : data;
+    const limitedData =
+      data.length > MAX_SCATTER_POINTS
+        ? data.slice(0, MAX_SCATTER_POINTS)
+        : data;
 
     // Add calculated quality scores
     const dataWithScores = limitedData.map((item) => ({

@@ -29,7 +29,7 @@ import {
 } from "@mui/icons-material";
 import { FilterPanel } from "./FilterPanel";
 import { DaysBehindAlert } from "./DaysBehindAlert";
-import { SummaryMetrics } from "./SummaryMetrics";
+import SummaryMetrics from "./SummaryMetrics";
 import { RevenueComparisonChart } from "./charts/RevenueComparisonChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
@@ -117,7 +117,8 @@ export const DashboardV2: React.FC<DashboardV2Props> = ({
           Life Insurance Call Center Analytics
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Comprehensive insights into agent performance, lead quality, and revenue optimization
+          Comprehensive insights into agent performance, lead quality, and
+          revenue optimization
         </Typography>
       </Box>
 

@@ -817,8 +817,15 @@ export const Dashboard: React.FC = () => {
               {state.snackbar.message}
             </Alert>
           </Snackbar>
-          
-          <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+          <Box
+            sx={{
+              mb: 3,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Typography variant="h4" fontWeight="bold">
               Life Insurance Call Center Analytics
             </Typography>
@@ -831,7 +838,7 @@ export const Dashboard: React.FC = () => {
               Switch to Classic View
             </Button>
           </Box>
-          
+
           <DashboardV2
             data={state.revenueData}
             filters={state.filters}
