@@ -24,25 +24,43 @@ import {
   calculateLocationMetrics,
 } from "../utils/calculations";
 import MetricCard from "./MetricCard";
+import { MissedCallsCard } from "./MissedCallsCard";
 import { formatCurrency } from "../utils/formatters";
 
 interface SummaryMetricsProps {
   data: RevenueData[];
-  timeFrame: TimeFrame;
+  filters?: {
+    timeFrame: TimeFrame;
+    location?: string;
+    startDate?: string | null;
+    endDate?: string | null;
+  };
+  timeFrame?: TimeFrame;
   targetSettings?: TargetSettings;
   startDate?: string | null;
   endDate?: string | null;
   location?: string;
+  snowflakeData?: {
+    dailyMetrics: any[];
+    [key: string]: any;
+  };
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   data,
-  timeFrame,
+  filters,
+  timeFrame: timeFrameProp,
   targetSettings,
-  startDate,
-  endDate,
-  location,
+  startDate: startDateProp,
+  endDate: endDateProp,
+  location: locationProp,
+  snowflakeData,
 }) => {
+  // Support both old prop format and new filters format
+  const timeFrame = filters?.timeFrame || timeFrameProp || "MTD";
+  const location = filters?.location || locationProp;
+  const startDate = filters?.startDate || startDateProp;
+  const endDate = filters?.endDate || endDateProp;
   const filteredData = filterDataByTimeFrame(
     data,
     timeFrame,
@@ -303,6 +321,16 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
             }
           />
         </Grid>
+        
+        {/* Missed Calls Card - Only show if we have Snowflake data */}
+        {snowflakeData?.dailyMetrics && snowflakeData.dailyMetrics.length > 0 && (
+          <Grid xs={12} md={4}>
+            <MissedCallsCard
+              data={snowflakeData.dailyMetrics}
+              timeFrame={timeFrame}
+            />
+          </Grid>
+        )}
       </Grid>
     </Paper>
   );

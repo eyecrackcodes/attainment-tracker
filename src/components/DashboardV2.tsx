@@ -151,6 +151,7 @@ export const DashboardV2: React.FC<DashboardV2Props> = ({
                 data={data}
                 filters={filters}
                 targetSettings={targetSettings}
+                snowflakeData={snowflakeData}
               />
             </Grid>
             <Grid item xs={12} lg={6}>
