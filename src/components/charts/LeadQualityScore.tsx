@@ -118,8 +118,14 @@ const LeadQualityScoreComponent: React.FC<LeadQualityScoreProps> = ({
     if (!data || data.length === 0)
       return { scatter: [], demographics: [], sources: [] };
 
+    // Limit data to prevent performance issues
+    const MAX_SCATTER_POINTS = 100;
+    const limitedData = data.length > MAX_SCATTER_POINTS 
+      ? data.slice(0, MAX_SCATTER_POINTS) 
+      : data;
+
     // Add calculated quality scores
-    const dataWithScores = data.map((item) => ({
+    const dataWithScores = limitedData.map((item) => ({
       ...item,
       qualityScore: calculateQualityScore(
         item.conversionRate,
@@ -137,7 +143,8 @@ const LeadQualityScoreComponent: React.FC<LeadQualityScoreProps> = ({
       { conversions: number; total: number; premium: number }
     >();
 
-    dataWithScores.forEach((item) => {
+    // Use the original data for aggregations to get accurate totals
+    data.forEach((item) => {
       const key = `${item.ageGroup}_${item.gender}_${item.smokerStatus}`;
       const existing = demographicsMap.get(key) || {
         conversions: 0,
@@ -175,7 +182,8 @@ const LeadQualityScoreComponent: React.FC<LeadQualityScoreProps> = ({
       { conversions: number; total: number; revenue: number }
     >();
 
-    dataWithScores.forEach((item) => {
+    // Use the original data for aggregations to get accurate totals
+    data.forEach((item) => {
       const existing = sourcesMap.get(item.leadSource) || {
         conversions: 0,
         total: 0,

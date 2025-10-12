@@ -18,6 +18,8 @@ import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
   Refresh as RefreshIcon,
+  ViewList as ViewListIcon,
+  ViewModule as ViewModuleIcon,
 } from "@mui/icons-material";
 import { RevenueData, TimeFrame, TargetSettings } from "../types/revenue";
 import {
@@ -44,6 +46,7 @@ import { SalesConversionAnalytics } from "./charts/SalesConversionAnalytics";
 import { AILeadInsights } from "./charts/AILeadInsights";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
+import { DashboardV2 } from "./DashboardV2";
 import {
   filterDataByTimeFrame,
   calculateLocationMetrics,
@@ -128,6 +131,7 @@ export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [goalPromptOpen, setGoalPromptOpen] = useState(false);
+  const [useNewLayout, setUseNewLayout] = useState(true); // Default to new layout
   const showLocationCharts = state.filters.location !== "Combined";
 
   // Fetch data from Snowflake
@@ -789,6 +793,58 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  // Use new layout if enabled
+  if (useNewLayout) {
+    return (
+      <Box sx={{ bgcolor: "#F3F4F6", minHeight: "100vh", pb: 4 }}>
+        <Container maxWidth="xl" sx={{ pt: 3 }}>
+          <GoalPrompt
+            open={goalPromptOpen}
+            onClose={() => setGoalPromptOpen(false)}
+            onSave={handleSaveGoal}
+          />
+          <Snackbar
+            open={state.snackbar.open}
+            autoHideDuration={6000}
+            onClose={handleCloseSnackbar}
+            anchorOrigin={{ vertical: "top", horizontal: "center" }}
+          >
+            <Alert
+              onClose={handleCloseSnackbar}
+              severity={state.snackbar.severity}
+              sx={{ width: "100%" }}
+            >
+              {state.snackbar.message}
+            </Alert>
+          </Snackbar>
+          
+          <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="h4" fontWeight="bold">
+              Life Insurance Call Center Analytics
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<ViewListIcon />}
+              onClick={() => setUseNewLayout(false)}
+              size="small"
+            >
+              Switch to Classic View
+            </Button>
+          </Box>
+          
+          <DashboardV2
+            data={state.revenueData}
+            filters={state.filters}
+            onFiltersChange={handleFiltersChange}
+            targetSettings={state.targetSettings}
+            snowflakeData={state.snowflakeData}
+          />
+        </Container>
+      </Box>
+    );
+  }
+
+  // Original layout
   return (
     <Box sx={{ bgcolor: "#F3F4F6", minHeight: "100vh", pb: 4 }}>
       <Container maxWidth="xl" sx={{ pt: 3 }}>
@@ -824,6 +880,14 @@ export const Dashboard: React.FC = () => {
             Revenue Attainment Dashboard
           </Typography>
           <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<ViewModuleIcon />}
+              onClick={() => setUseNewLayout(true)}
+              size="small"
+            >
+              New View
+            </Button>
             <Button
               variant="contained"
               color="secondary"
