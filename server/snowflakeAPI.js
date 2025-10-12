@@ -81,15 +81,17 @@ app.get("/api/test-data", async (req, res) => {
   const query = `
     SELECT 
       COUNT(*) as total_records,
-      MIN(CALL_TIMESTAMP_LOCAL) as earliest_date,
-      MAX(CALL_TIMESTAMP_LOCAL) as latest_date,
-      COUNT(DISTINCT DEPARTMENT) as unique_departments
+      MIN(CALL_TIMESTAMP_LOCAL) as earliest_date_utc,
+      MAX(CALL_TIMESTAMP_LOCAL) as latest_date_utc,
+      CONVERT_TIMEZONE('UTC', 'America/Chicago', MIN(CALL_TIMESTAMP_LOCAL)) as earliest_date_cst,
+      CONVERT_TIMEZONE('UTC', 'America/Chicago', MAX(CALL_TIMESTAMP_LOCAL)) as latest_date_cst,
+      COUNT(DISTINCT DEPARTMENT) as unique_departments,
+      DATEDIFF('day', MAX(CALL_TIMESTAMP_LOCAL), CURRENT_TIMESTAMP()) as days_since_last_data
     FROM PL_DIC_CALL_SIM
-    WHERE CALL_TIMESTAMP_LOCAL >= '2025-01-01'
   `;
-  
+
   console.log(`[Test Data] Executing test query...`);
-  
+
   connection.execute({
     sqlText: query,
     complete: (err, stmt, rows) => {
@@ -109,13 +111,12 @@ app.get("/api/test-departments", async (req, res) => {
   const query = `
     SELECT DISTINCT DEPARTMENT, COUNT(*) as record_count
     FROM PL_DIC_CALL_SIM
-    WHERE CALL_TIMESTAMP_LOCAL >= '2025-07-01'
     GROUP BY DEPARTMENT
     ORDER BY record_count DESC
   `;
-  
+
   console.log(`[Test Departments] Executing query...`);
-  
+
   connection.execute({
     sqlText: query,
     complete: (err, stmt, rows) => {
@@ -130,14 +131,42 @@ app.get("/api/test-departments", async (req, res) => {
   });
 });
 
+// Get available date range
+app.get("/api/available-dates", async (req, res) => {
+  const query = `
+    SELECT 
+      MIN(DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL))) as earliest_date_cst,
+      MAX(DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL))) as latest_date_cst,
+      DATEDIFF('day', MAX(CALL_TIMESTAMP_LOCAL), CURRENT_TIMESTAMP()) as days_old
+    FROM PL_DIC_CALL_SIM
+    WHERE DEPARTMENT IN ('ATX', 'CLT')
+      AND AGENT_TYPE != 'AI'
+  `;
+  
+  console.log(`[Available Dates] Executing query...`);
+  
+  connection.execute({
+    sqlText: query,
+    complete: (err, stmt, rows) => {
+      if (err) {
+        console.error(`[Available Dates] Query error:`, err);
+        res.status(500).json({ error: err.message });
+      } else {
+        console.log(`[Available Dates] Result:`, rows);
+        res.json(rows[0] || {});
+      }
+    },
+  });
+});
+
 // API endpoint for daily lead metrics
 app.get("/api/daily-lead-metrics", async (req, res) => {
   const { startDate, endDate, department } = req.query;
-  
+
   console.log(`[Daily Metrics] Request received:`, {
     startDate,
     endDate,
-    department: department || 'ALL'
+    department: department || "ALL",
   });
 
   // Temporarily showing all departments for debugging
@@ -148,7 +177,7 @@ app.get("/api/daily-lead-metrics", async (req, res) => {
   const query = `
     WITH call_metrics AS (
       SELECT
-        DATE(CALL_TIMESTAMP_LOCAL) as date,
+        DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL)) as date,
         DEPARTMENT as site,
         COUNT(*) as total_calls,
         COUNT(CASE WHEN LEAD_UID = 'UNKNOWN' THEN 1 END) as missed_calls,
@@ -167,15 +196,15 @@ app.get("/api/daily-lead-metrics", async (req, res) => {
         -- AGENT_TYPE != 'AI'
         -- TODO: Add brokerage filter when field is identified (e.g., AND LEAD_SOURCE NOT LIKE '%Broker%')
         ${deptFilter}
-        AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
-        AND CALL_TIMESTAMP_LOCAL <= '${endDate}'
-      GROUP BY DATE(CALL_TIMESTAMP_LOCAL), DEPARTMENT
+        AND DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL)) >= '${startDate}'
+        AND DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL)) <= '${endDate}'
+      GROUP BY DATE(CONVERT_TIMEZONE('UTC', 'America/Chicago', CALL_TIMESTAMP_LOCAL)), DEPARTMENT
     )
     SELECT * FROM call_metrics ORDER BY date DESC, site
   `;
 
   console.log(`[Daily Metrics] Executing query...`);
-  
+
   connection.execute({
     sqlText: query,
     complete: (err, stmt, rows) => {
@@ -183,7 +212,9 @@ app.get("/api/daily-lead-metrics", async (req, res) => {
         console.error(`[Daily Metrics] Query error:`, err);
         res.status(500).json({ error: err.message });
       } else {
-        console.log(`[Daily Metrics] Query successful. Rows returned: ${rows.length}`);
+        console.log(
+          `[Daily Metrics] Query successful. Rows returned: ${rows.length}`
+        );
         if (rows.length > 0) {
           console.log(`[Daily Metrics] First row:`, rows[0]);
         }

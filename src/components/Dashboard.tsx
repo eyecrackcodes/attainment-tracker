@@ -140,13 +140,34 @@ export const Dashboard: React.FC = () => {
   // Fetch data from Snowflake
   const fetchSnowflakeData = async () => {
     try {
-      // For test data in 2025, use last 30 days from test data end date
-      // TODO: Update this to use current dates in production
-      const endDate = "2025-10-12"; // Test data end date
-      const startDate = format(
-        subDays(new Date("2025-10-12"), 30),
-        "yyyy-MM-dd"
-      ); // Last 30 days
+      // First, check what date range is available
+      let endDate: string;
+      let startDate: string;
+      
+      try {
+        const availableDatesResponse = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/available-dates`);
+        if (availableDatesResponse.ok) {
+          const datesInfo = await availableDatesResponse.json();
+          if (datesInfo.latest_date_cst) {
+            // Use actual latest date from the database
+            endDate = datesInfo.latest_date_cst;
+            startDate = format(subDays(new Date(endDate), 30), "yyyy-MM-dd");
+            console.log(`Using actual data range - Latest: ${endDate}, Days old: ${datesInfo.days_old}`);
+          } else {
+            // Fallback to current date minus some buffer
+            endDate = format(subDays(new Date(), 14), "yyyy-MM-dd");
+            startDate = format(subDays(new Date(endDate), 30), "yyyy-MM-dd");
+          }
+        } else {
+          // Default fallback
+          endDate = format(new Date(), "yyyy-MM-dd");
+          startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
+        }
+      } catch {
+        // Error fetching available dates, use default
+        endDate = format(new Date(), "yyyy-MM-dd");
+        startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
+      }
 
       // Fetch all data types in parallel
       const [dailyMetrics, leadSourceMetrics, agentComparison] =
