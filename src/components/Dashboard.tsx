@@ -143,16 +143,22 @@ export const Dashboard: React.FC = () => {
       // First, check what date range is available
       let endDate: string;
       let startDate: string;
-      
+
       try {
-        const availableDatesResponse = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/available-dates`);
+        const availableDatesResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+          }/available-dates`
+        );
         if (availableDatesResponse.ok) {
           const datesInfo = await availableDatesResponse.json();
           if (datesInfo.latest_date_cst) {
             // Use actual latest date from the database
             endDate = datesInfo.latest_date_cst;
             startDate = format(subDays(new Date(endDate), 30), "yyyy-MM-dd");
-            console.log(`Using actual data range - Latest: ${endDate}, Days old: ${datesInfo.days_old}`);
+            console.log(
+              `Using actual data range - Latest: ${endDate}, Days old: ${datesInfo.days_old}`
+            );
           } else {
             // Fallback to current date minus some buffer
             endDate = format(subDays(new Date(), 14), "yyyy-MM-dd");
@@ -854,7 +860,7 @@ export const Dashboard: React.FC = () => {
         >
           <FilterPanel
             filters={state.filters}
-            onFiltersChange={handleFilterChange}
+            onFilterChange={handleFilterChange}
           />
           <Stack direction="row" spacing={1}>
             <Button

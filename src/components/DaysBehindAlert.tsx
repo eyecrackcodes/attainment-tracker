@@ -79,9 +79,9 @@ export const DaysBehindAlert: React.FC<DaysBehindAlertProps> = ({
         const endDate = missingData.missingDates[0];
 
         // Fetch data from Snowflake for the missing dates
-              // No need to adjust dates anymore since we're getting actual data dates
-              const adjustedStartDate = startDate;
-              const adjustedEndDate = endDate;
+        // No need to adjust dates anymore since we're getting actual data dates
+        const adjustedStartDate = startDate;
+        const adjustedEndDate = endDate;
 
         const snowflakeData = await snowflakeService.getDailyLeadMetrics(
           adjustedStartDate,

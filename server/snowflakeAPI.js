@@ -142,9 +142,9 @@ app.get("/api/available-dates", async (req, res) => {
     WHERE DEPARTMENT IN ('ATX', 'CLT')
       AND AGENT_TYPE != 'AI'
   `;
-  
+
   console.log(`[Available Dates] Executing query...`);
-  
+
   connection.execute({
     sqlText: query,
     complete: (err, stmt, rows) => {
