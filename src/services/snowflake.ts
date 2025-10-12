@@ -329,6 +329,7 @@ export const snowflakeService = {
         date: format(new Date(row.DATE), "yyyy-MM-dd"),
         site: row.SITE as "ATX" | "CLT",
         totalCalls: parseInt(row.TOTAL_CALLS),
+        missedCalls: row.MISSED_CALLS ? parseInt(row.MISSED_CALLS) : undefined,
         billableLeads: parseInt(row.BILLABLE_LEADS),
         sales: parseInt(row.SALES),
         revenue: parseFloat(row.REVENUE) || 0,

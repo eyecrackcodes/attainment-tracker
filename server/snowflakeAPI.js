@@ -85,26 +85,30 @@ app.get("/api/daily-lead-metrics", async (req, res) => {
     : "AND DEPARTMENT IN ('ATX', 'CLT')";
 
   const query = `
-    SELECT 
-      DATE(CALL_TIMESTAMP_LOCAL) as date,
-      DEPARTMENT as site,
-      COUNT(*) as total_calls,
-      COUNT(CASE WHEN BILLABLE_FLAG = 'Y' THEN 1 END) as billable_leads,
-      COUNT(CASE WHEN SALE_MADE_FLAG = 'Y' THEN 1 END) as sales,
-      COALESCE(SUM(CASE WHEN SALE_MADE_FLAG = 'Y' THEN ANNUAL_PREMIUM END), 0) as revenue,
-      AVG(CALL_DURATION) as avg_call_duration,
-      AVG(AGE_YEARS) as avg_age,
-      COUNT(CASE WHEN GENDER = 'Male' THEN 1 END) as male_count,
-      COUNT(CASE WHEN GENDER = 'Female' THEN 1 END) as female_count,
-      COUNT(CASE WHEN SMOKER_CLASSIFICATION IN ('Non-Smoker', 'Never used') THEN 1 END) as non_smoker_count,
-      COUNT(CASE WHEN SMOKER_CLASSIFICATION NOT IN ('Non-Smoker', 'Never used') THEN 1 END) as smoker_count
-    FROM PL_DIC_CALL_SIM
-    WHERE AGENT_TYPE != 'AI'
-      ${deptFilter}
-      AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
-      AND CALL_TIMESTAMP_LOCAL < '${endDate}'
-    GROUP BY DATE(CALL_TIMESTAMP_LOCAL), DEPARTMENT
-    ORDER BY date DESC, site
+    WITH call_metrics AS (
+      SELECT
+        DATE(CALL_TIMESTAMP_LOCAL) as date,
+        DEPARTMENT as site,
+        COUNT(*) as total_calls,
+        COUNT(CASE WHEN LEAD_UID = 'UNKNOWN' THEN 1 END) as missed_calls,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND BILLABLE_FLAG = 'Y' THEN 1 END) as billable_leads,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND SALE_MADE_FLAG = 'Y' THEN 1 END) as sales,
+        COALESCE(SUM(CASE WHEN LEAD_UID != 'UNKNOWN' AND SALE_MADE_FLAG = 'Y' THEN ANNUAL_PREMIUM END), 0) as revenue,
+        AVG(CASE WHEN LEAD_UID != 'UNKNOWN' THEN CALL_DURATION END) as avg_call_duration,
+        AVG(CASE WHEN LEAD_UID != 'UNKNOWN' THEN AGE_YEARS END) as avg_age,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND GENDER = 'Male' THEN 1 END) as male_count,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND GENDER = 'Female' THEN 1 END) as female_count,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND SMOKER_CLASSIFICATION IN ('Non-Smoker', 'Never used') THEN 1 END) as non_smoker_count,
+        COUNT(CASE WHEN LEAD_UID != 'UNKNOWN' AND SMOKER_CLASSIFICATION NOT IN ('Non-Smoker', 'Never used') THEN 1 END) as smoker_count
+      FROM PL_DIC_CALL_SIM
+      WHERE AGENT_TYPE != 'AI'
+        -- TODO: Add brokerage filter when field is identified (e.g., AND LEAD_SOURCE NOT LIKE '%Broker%')
+        ${deptFilter}
+        AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
+        AND CALL_TIMESTAMP_LOCAL < '${endDate}'
+      GROUP BY DATE(CALL_TIMESTAMP_LOCAL), DEPARTMENT
+    )
+    SELECT * FROM call_metrics ORDER BY date DESC, site
   `;
 
   connection.execute({
@@ -137,6 +141,8 @@ app.get("/api/lead-source-metrics", async (req, res) => {
       COUNT(CASE WHEN SMOKER_CLASSIFICATION NOT IN ('Non-Smoker', 'Never used') THEN 1 END) as smoker_count
     FROM PL_DIC_CALL_SIM
     WHERE AGENT_TYPE != 'AI'
+      AND LEAD_UID != 'UNKNOWN'  -- Exclude missed calls
+      -- TODO: Add brokerage filter when field is identified (e.g., AND LEAD_SOURCE NOT LIKE '%Broker%')
       AND DEPARTMENT IN ('ATX', 'CLT')
       AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
       AND CALL_TIMESTAMP_LOCAL < '${endDate}'
@@ -170,7 +176,9 @@ app.get("/api/agent-comparison", async (req, res) => {
       AVG(CALL_DURATION) as avg_call_duration,
       COALESCE(SUM(CASE WHEN SALE_MADE_FLAG = 'Y' THEN ANNUAL_PREMIUM END), 0) as revenue
     FROM PL_DIC_CALL_SIM
-    WHERE CALL_TIMESTAMP_LOCAL >= '${startDate}'
+    WHERE LEAD_UID != 'UNKNOWN'  -- Exclude missed calls
+      -- TODO: Add brokerage filter when field is identified (e.g., AND LEAD_SOURCE NOT LIKE '%Broker%')
+      AND CALL_TIMESTAMP_LOCAL >= '${startDate}'
       AND CALL_TIMESTAMP_LOCAL < '${endDate}'
     GROUP BY DATE(CALL_TIMESTAMP_LOCAL), CASE WHEN AGENT_TYPE = 'AI' THEN 'AI' ELSE 'Human' END
     ORDER BY date DESC, agent_type

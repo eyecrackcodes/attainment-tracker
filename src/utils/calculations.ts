@@ -471,12 +471,19 @@ export const filterDataByTimeFrame = (
     }
 
     case "MTD": {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      // For test data in 2025, we need to use the most recent month in the data
+      const mostRecentDate = locationFilteredData.reduce((latest, item) => {
+        const itemDate = createDate(item.date);
+        return itemDate > latest ? itemDate : latest;
+      }, createDate(locationFilteredData[0]?.date || '2025-10-12'));
+      
+      const startOfMonth = new Date(mostRecentDate.getFullYear(), mostRecentDate.getMonth(), 1);
+      const endOfMonth = new Date(mostRecentDate.getFullYear(), mostRecentDate.getMonth() + 1, 0);
 
       filteredData = locationFilteredData.filter((item) => {
         const itemDate = createDate(item.date);
-        // Include all dates from start of month up to current date (inclusive)
-        return itemDate >= startOfMonth && itemDate <= today;
+        // Include all dates from start of month up to end of the most recent month
+        return itemDate >= startOfMonth && itemDate <= endOfMonth;
       });
       break;
     }

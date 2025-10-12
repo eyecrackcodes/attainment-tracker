@@ -31,6 +31,7 @@ export interface DailyLeadMetrics {
   date: string;
   site: "ATX" | "CLT";
   totalCalls: number;
+  missedCalls?: number;
   billableLeads: number;
   sales: number;
   revenue: number;
