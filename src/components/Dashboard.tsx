@@ -235,11 +235,23 @@ export const Dashboard: React.FC = () => {
       }
     );
 
+    // Set loading to false after a timeout if data hasn't loaded
+    const loadingTimeout = setTimeout(() => {
+      setState((prevState) => {
+        if (prevState.loading) {
+          console.log("Loading timeout reached, setting loading to false");
+          return { ...prevState, loading: false };
+        }
+        return prevState;
+      });
+    }, 2000); // 2 second timeout
+
     return () => {
       unsubscribeRevenue();
       unsubscribeTargets();
       unsubscribeStatus();
       dataPollingService.cleanup();
+      clearTimeout(loadingTimeout);
     };
   }, []);
 
