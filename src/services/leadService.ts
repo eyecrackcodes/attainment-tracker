@@ -19,6 +19,25 @@ export interface LeadEntryInput {
   agentsMeetingMin?: number; // optional manual
   openOrderZeroLeads?: number; // optional manual
   notes?: string;
+  // New fields from Snowflake
+  totalCalls?: number;
+  sales?: number;
+  revenue?: number;
+  avgCallDuration?: number;
+  demographics?: {
+    avgAge: number;
+    genderDistribution: Record<string, number>;
+    smokerDistribution: Record<string, number>;
+  };
+  leadSources?: Record<
+    string,
+    {
+      count: number;
+      sales: number;
+      revenue: number;
+      conversionRate: number;
+    }
+  >;
 }
 
 export interface LeadEntryStored {
@@ -31,9 +50,29 @@ export interface LeadEntryStored {
     targetLeads: number;
     attainmentPct: number; // 0..n
     pctAgentsMeetingMin?: number; // 0..1 (only if agentsMeetingMin provided)
+    conversionRate?: number; // Sales conversion rate
   };
   notes?: string;
   savedAt: number;
+  // New fields from Snowflake
+  totalCalls?: number;
+  sales?: number;
+  revenue?: number;
+  avgCallDuration?: number;
+  demographics?: {
+    avgAge: number;
+    genderDistribution: Record<string, number>;
+    smokerDistribution: Record<string, number>;
+  };
+  leadSources?: Record<
+    string,
+    {
+      count: number;
+      sales: number;
+      revenue: number;
+      conversionRate: number;
+    }
+  >;
 }
 
 const database = getDatabase();
@@ -53,6 +92,11 @@ export const leadService = {
         ? input.agentsMeetingMin / input.availableAgents
         : undefined;
 
+    const conversionRate =
+      input.sales && input.totalBillableLeads > 0
+        ? (input.sales / input.totalBillableLeads) * 100
+        : undefined;
+
     const payload: LeadEntryStored = {
       availableAgents: input.availableAgents,
       totalBillableLeads: input.totalBillableLeads,
@@ -63,8 +107,19 @@ export const leadService = {
         targetLeads,
         attainmentPct,
         pctAgentsMeetingMin,
+        conversionRate,
       },
       ...(input.notes ? { notes: input.notes } : {}),
+      ...(input.totalCalls !== undefined
+        ? { totalCalls: input.totalCalls }
+        : {}),
+      ...(input.sales !== undefined ? { sales: input.sales } : {}),
+      ...(input.revenue !== undefined ? { revenue: input.revenue } : {}),
+      ...(input.avgCallDuration !== undefined
+        ? { avgCallDuration: input.avgCallDuration }
+        : {}),
+      ...(input.demographics ? { demographics: input.demographics } : {}),
+      ...(input.leadSources ? { leadSources: input.leadSources } : {}),
       savedAt: Date.now(),
     };
 

@@ -17,8 +17,14 @@ import Grid from "@mui/material/Grid";
 import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { RevenueData, TimeFrame, TargetSettings } from "../types/revenue";
+import {
+  DailyLeadMetrics,
+  LeadQualityData,
+  AgentPerformanceComparison,
+} from "../types/snowflake";
 import { FilterPanel } from "./FilterPanel";
 import { DataImportExport } from "./DataImportExport";
 import { DailyAttainmentChart } from "./charts/DailyAttainmentChart";
@@ -28,10 +34,14 @@ import { DistributionCharts } from "./charts/DistributionCharts";
 import SummaryMetrics from "./SummaryMetrics";
 import { DailyEntryForm } from "./DailyEntryForm";
 import { revenueService } from "../services/firebase";
+import { dataPollingService } from "../services/dataPollingService";
+import { snowflakeService } from "../services/snowflake";
 import { TargetSettings as TargetSettingsComponent } from "./TargetSettings";
 import { MonthlyTargetSettings as MonthlyTargetSettingsComponent } from "./MonthlyTargetSettings";
-import { HistoricalTrendsView } from "./charts/HistoricalTrendsView";
-import { DailyPatternsView } from "./charts/DailyPatternsView";
+// New high-impact components
+import { LeadQualityScore } from "./charts/LeadQualityScore";
+import { SalesConversionAnalytics } from "./charts/SalesConversionAnalytics";
+import { AILeadInsights } from "./charts/AILeadInsights";
 import { LocationDailyChart } from "./charts/LocationDailyChart";
 import { LocationMTDChart } from "./charts/LocationMTDChart";
 import {
@@ -72,6 +82,12 @@ interface DashboardState {
     endDate: string | null;
   };
   targetSettings: TargetSettings;
+  snowflakeData: {
+    dailyMetrics: DailyLeadMetrics[];
+    leadQualityData: LeadQualityData[];
+    agentComparison: AgentPerformanceComparison[];
+    lastFetch: number | null;
+  };
 }
 
 export const Dashboard: React.FC = () => {
@@ -101,6 +117,12 @@ export const Dashboard: React.FC = () => {
       },
       monthlyAdjustments: [],
     },
+    snowflakeData: {
+      dailyMetrics: [],
+      leadQualityData: [],
+      agentComparison: [],
+      lastFetch: null,
+    },
   });
 
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -108,7 +130,93 @@ export const Dashboard: React.FC = () => {
   const [goalPromptOpen, setGoalPromptOpen] = useState(false);
   const showLocationCharts = state.filters.location !== "Combined";
 
+  // Fetch data from Snowflake
+  const fetchSnowflakeData = async () => {
+    try {
+      const endDate = new Date().toISOString().split("T")[0];
+      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+
+      // Fetch all data types in parallel
+      const [dailyMetrics, leadSourceMetrics, agentComparison] =
+        await Promise.all([
+          snowflakeService.getDailyLeadMetrics(startDate, endDate),
+          snowflakeService.getLeadSourceMetrics(startDate, endDate),
+          snowflakeService.getAgentPerformanceComparison(startDate, endDate),
+        ]);
+
+      // Transform lead source metrics to lead quality data format
+      const leadQualityData: LeadQualityData[] = Object.values(
+        leadSourceMetrics
+      ).map((metric: any) => ({
+        leadSource: metric.leadSource,
+        ageGroup: "35-54", // Mock data for now
+        smokerStatus: "Non-Smoker",
+        gender: "Mixed",
+        totalLeads: metric.totalLeads,
+        conversions: metric.sales,
+        conversionRate: metric.conversionRate,
+        avgPremium: metric.revenue / (metric.sales || 1),
+        qualityScore: 0, // Will be calculated in component
+      }));
+
+      setState((prev) => ({
+        ...prev,
+        snowflakeData: {
+          dailyMetrics,
+          leadQualityData,
+          agentComparison,
+          lastFetch: Date.now(),
+        },
+      }));
+
+      // Also transform to revenue data for existing components
+      const revenueData = snowflakeService.transformToRevenueData(dailyMetrics);
+      setState((prev) => ({
+        ...prev,
+        revenueData: [...prev.revenueData, ...revenueData],
+      }));
+    } catch (error) {
+      console.error("Failed to fetch Snowflake data:", error);
+      setState((prev) => ({
+        ...prev,
+        snackbar: {
+          open: true,
+          message: "Failed to fetch data from Snowflake. Using cached data.",
+          severity: "warning",
+        },
+      }));
+    }
+  };
+
   useEffect(() => {
+    // Initialize data polling service
+    dataPollingService
+      .initialize(true)
+      .then(() => {
+        console.log("Data polling service initialized");
+      })
+      .catch((error) => {
+        console.error("Failed to initialize data polling service:", error);
+        setState((prev) => ({
+          ...prev,
+          snackbar: {
+            open: true,
+            message: "Using Firebase data source (Snowflake unavailable)",
+            severity: "info",
+          },
+        }));
+      });
+
+    // Subscribe to sync status updates
+    const unsubscribeStatus = dataPollingService.subscribeToStatus((status) => {
+      console.log("Data sync status:", status);
+    });
+
+    // Fetch initial Snowflake data
+    fetchSnowflakeData();
+
     const unsubscribeRevenue = revenueService.subscribeToRevenueData((data) => {
       setState((prevState) => ({
         ...prevState,
@@ -130,6 +238,8 @@ export const Dashboard: React.FC = () => {
     return () => {
       unsubscribeRevenue();
       unsubscribeTargets();
+      unsubscribeStatus();
+      dataPollingService.cleanup();
     };
   }, []);
 
@@ -587,27 +697,8 @@ export const Dashboard: React.FC = () => {
               )}
             </Stack>
           );
+        // Cases 1 and 2 removed (HistoricalTrendsView and DailyPatternsView)
         case 1:
-          return (
-            <Box sx={{ pt: 2 }}>
-              <HistoricalTrendsView
-                data={state.revenueData}
-                targetSettings={state.targetSettings}
-                isLoading={isTabLoading}
-              />
-            </Box>
-          );
-        case 2:
-          return (
-            <Box sx={{ pt: 2 }}>
-              <DailyPatternsView
-                data={state.revenueData}
-                targetSettings={state.targetSettings}
-                isLoading={isTabLoading}
-              />
-            </Box>
-          );
-        case 3:
           return (
             <Stack spacing={3}>
               <Grid container spacing={3}>
@@ -627,12 +718,39 @@ export const Dashboard: React.FC = () => {
               <LeadAttainmentSummary date={new Date()} showCombined={true} />
             </Stack>
           );
-        case 4:
+        case 2:
           return (
             <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
               <CombinedInsights
                 revenueData={state.revenueData}
                 targetSettings={state.targetSettings}
+              />
+            </Box>
+          );
+        case 3:
+          return (
+            <Box sx={{ pt: 2 }}>
+              <LeadQualityScore
+                data={state.snowflakeData.leadQualityData}
+                isLoading={isTabLoading || !state.snowflakeData.lastFetch}
+              />
+            </Box>
+          );
+        case 4:
+          return (
+            <Box sx={{ pt: 2 }}>
+              <SalesConversionAnalytics
+                data={state.snowflakeData.dailyMetrics}
+                isLoading={isTabLoading || !state.snowflakeData.lastFetch}
+              />
+            </Box>
+          );
+        case 5:
+          return (
+            <Box sx={{ pt: 2 }}>
+              <AILeadInsights
+                data={state.snowflakeData.agentComparison}
+                isLoading={isTabLoading || !state.snowflakeData.lastFetch}
               />
             </Box>
           );
@@ -724,6 +842,19 @@ export const Dashboard: React.FC = () => {
             >
               Monthly Adjustments
             </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<RefreshIcon />}
+              onClick={async () => {
+                setState((prev) => ({ ...prev, loading: true }));
+                await fetchSnowflakeData();
+                await dataPollingService.manualRefresh();
+                setState((prev) => ({ ...prev, loading: false }));
+              }}
+            >
+              Refresh Data
+            </Button>
           </Box>
         </Box>
 
@@ -741,10 +872,11 @@ export const Dashboard: React.FC = () => {
             }}
           >
             <Tab label="Overview" />
-            <Tab label="Historical Trends" />
-            <Tab label="Daily Patterns" />
             <Tab label="Lead Attainment" />
             <Tab label="Lead & Sales Insights" />
+            <Tab label="Lead Quality Score" />
+            <Tab label="Sales Conversion" />
+            <Tab label="AI Insights" />
           </Tabs>
         </Paper>
 

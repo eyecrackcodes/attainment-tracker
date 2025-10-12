@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "This backend service is required because the Snowflake SDK cannot run directly in browser environments.",
+  "main": "snowflakeAPI.js",
+  "scripts": {
+    "start": "node snowflakeAPI.js",
+    "dev": "node snowflakeAPI.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "snowflake-sdk": "^2.3.1"
+  }
+}

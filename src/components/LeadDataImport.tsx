@@ -132,20 +132,45 @@ export const LeadDataImport: React.FC = () => {
       const headers = Object.keys(firstRow);
 
       // Find name column - check headers case-insensitively
-      const nameVariations = ["agent_name", "agent name", "name", "agent", "employee", "employee name", "employee_name"];
+      const nameVariations = [
+        "agent_name",
+        "agent name",
+        "name",
+        "agent",
+        "employee",
+        "employee name",
+        "employee_name",
+      ];
       for (const header of headers) {
         const headerLower = header.toLowerCase().trim();
-        if (nameVariations.some(variation => headerLower === variation || headerLower.includes(variation))) {
+        if (
+          nameVariations.some(
+            (variation) =>
+              headerLower === variation || headerLower.includes(variation)
+          )
+        ) {
           nameColumn = header;
           break;
         }
       }
 
-      // Find leads column - check headers case-insensitively  
-      const leadsVariations = ["billable_leads", "billable leads", "leads", "billable", "total leads", "total_leads"];
+      // Find leads column - check headers case-insensitively
+      const leadsVariations = [
+        "billable_leads",
+        "billable leads",
+        "leads",
+        "billable",
+        "total leads",
+        "total_leads",
+      ];
       for (const header of headers) {
         const headerLower = header.toLowerCase().trim();
-        if (leadsVariations.some(variation => headerLower === variation || headerLower.includes(variation))) {
+        if (
+          leadsVariations.some(
+            (variation) =>
+              headerLower === variation || headerLower.includes(variation)
+          )
+        ) {
           leadsColumn = header;
           break;
         }
@@ -157,18 +182,26 @@ export const LeadDataImport: React.FC = () => {
         if (!nameColumn) {
           for (const header of headers) {
             const value = firstRow[header];
-            if (value && isNaN(Number(value)) && String(value).trim().length > 0) {
+            if (
+              value &&
+              isNaN(Number(value)) &&
+              String(value).trim().length > 0
+            ) {
               nameColumn = header;
               break;
             }
           }
         }
-        
+
         // Check if any column has numeric values (likely leads)
         if (!leadsColumn) {
           for (const header of headers) {
             const value = firstRow[header];
-            if (value !== undefined && value !== null && !isNaN(Number(value))) {
+            if (
+              value !== undefined &&
+              value !== null &&
+              !isNaN(Number(value))
+            ) {
               leadsColumn = header;
               break;
             }
@@ -179,7 +212,9 @@ export const LeadDataImport: React.FC = () => {
 
     const agentDetails = rows.map((row) => {
       // Use the detected column names
-      const name = nameColumn ? String(row[nameColumn] || "Unknown").trim() : "Unknown";
+      const name = nameColumn
+        ? String(row[nameColumn] || "Unknown").trim()
+        : "Unknown";
       const leadsValue = leadsColumn ? row[leadsColumn] : "";
 
       // Parse leads - empty/null means 0 (absent)
