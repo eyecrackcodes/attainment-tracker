@@ -87,7 +87,7 @@ export interface CachedQueryResult<T> {
   data: T;
   timestamp: number;
   expiresAt: number;
-  query: string;
+  query?: string; // Optional - not used in API-based approach
 }
 
 // Connection status

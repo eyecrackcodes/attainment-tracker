@@ -167,12 +167,11 @@ const getCachedResult = <T>(cacheKey: string): T | null => {
   return cached.data as T;
 };
 
-const setCachedResult = <T>(cacheKey: string, data: T, query: string): void => {
+const setCachedResult = <T>(cacheKey: string, data: T): void => {
   queryCache.set(cacheKey, {
     data,
     timestamp: Date.now(),
     expiresAt: Date.now() + CACHE_TTL,
-    query,
   });
 };
 
@@ -351,7 +350,7 @@ export const snowflakeService = {
       }));
 
       // Cache the results
-      setCachedResult(cacheKey, metrics, query);
+      setCachedResult(cacheKey, metrics);
 
       return metrics;
     } catch (error) {
@@ -394,7 +393,7 @@ export const snowflakeService = {
         };
       });
 
-      setCachedResult(cacheKey, metrics, query);
+      setCachedResult(cacheKey, metrics);
       return metrics;
     } catch (error) {
       console.error("Error fetching lead source metrics:", error);
@@ -455,7 +454,7 @@ export const snowflakeService = {
       });
 
       const comparisons = Array.from(comparisonMap.values());
-      setCachedResult(cacheKey, comparisons, query);
+      setCachedResult(cacheKey, comparisons);
 
       return comparisons;
     } catch (error) {
