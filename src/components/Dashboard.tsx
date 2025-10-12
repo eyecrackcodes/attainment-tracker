@@ -842,7 +842,7 @@ export const Dashboard: React.FC = () => {
           <DashboardV2
             data={state.revenueData}
             filters={state.filters}
-            onFiltersChange={handleFiltersChange}
+            onFiltersChange={handleFilterChange}
             targetSettings={state.targetSettings}
             snowflakeData={state.snowflakeData}
           />
