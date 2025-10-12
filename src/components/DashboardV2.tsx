@@ -156,15 +156,19 @@ export const DashboardV2: React.FC<DashboardV2Props> = ({
             <Grid item xs={12} lg={6}>
               <RevenueComparisonChart
                 data={data}
-                filters={filters}
+                timeFrame={filters.timeFrame}
                 targetSettings={targetSettings}
+                startDate={filters.startDate}
+                endDate={filters.endDate}
+                location={filters.location}
               />
             </Grid>
             <Grid item xs={12} lg={6}>
               <LocationMTDChart
                 data={data}
-                filters={filters}
+                location={filters.location || "Combined"}
                 targetSettings={targetSettings}
+                timeFrame={filters.timeFrame}
               />
             </Grid>
           </Grid>
@@ -180,8 +184,9 @@ export const DashboardV2: React.FC<DashboardV2Props> = ({
             <Grid item xs={12} lg={8}>
               <LocationDailyChart
                 data={data}
-                filters={filters}
+                location={filters.location || "Combined"}
                 targetSettings={targetSettings}
+                timeFrame={filters.timeFrame}
               />
             </Grid>
             <Grid item xs={12} lg={4}>
