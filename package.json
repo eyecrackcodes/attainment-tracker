@@ -24,7 +24,9 @@
     "papaparse": "^5.5.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "recharts": "^2.15.1"
+    "recharts": "^2.15.1",
+    "apexcharts": "^3.45.2",
+    "react-apexcharts": "^1.4.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

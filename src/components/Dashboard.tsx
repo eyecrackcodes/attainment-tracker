@@ -818,8 +818,15 @@ export const Dashboard: React.FC = () => {
             {state.snackbar.message}
           </Alert>
         </Snackbar>
-        
-        <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", bgcolor: "background.paper" }}>
+
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            bgcolor: "background.paper",
+          }}
+        >
           <FilterPanel
             filters={state.filters}
             onFiltersChange={handleFilterChange}
@@ -846,7 +853,7 @@ export const Dashboard: React.FC = () => {
             </Button>
           </Stack>
         </Box>
-        
+
         <CleanDashboard
           data={state.revenueData}
           filters={state.filters}

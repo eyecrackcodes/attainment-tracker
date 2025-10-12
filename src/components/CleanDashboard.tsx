@@ -33,7 +33,10 @@ import { ApexOptions } from "apexcharts";
 import { format, parseISO } from "date-fns";
 import { RevenueData, TargetSettings } from "../types/revenue";
 import { DailyLeadMetrics } from "../types/snowflake";
-import { filterDataByTimeFrame, calculateLocationMetrics } from "../utils/calculations";
+import {
+  filterDataByTimeFrame,
+  calculateLocationMetrics,
+} from "../utils/calculations";
 import { formatCurrency } from "../utils/formatters";
 
 interface CleanDashboardProps {
@@ -56,12 +59,15 @@ const MetricCard: React.FC<{
   color?: string;
 }> = ({ title, value, subtitle, icon, trend, color }) => {
   const theme = useTheme();
-  
+
   return (
     <Card
       sx={{
         height: "100%",
-        background: `linear-gradient(135deg, ${alpha(color || theme.palette.primary.main, 0.1)} 0%, ${theme.palette.background.paper} 100%)`,
+        background: `linear-gradient(135deg, ${alpha(
+          color || theme.palette.primary.main,
+          0.1
+        )} 0%, ${theme.palette.background.paper} 100%)`,
         boxShadow: theme.shadows[2],
         transition: "transform 0.2s, box-shadow 0.2s",
         "&:hover": {
@@ -102,14 +108,21 @@ const MetricCard: React.FC<{
         {trend !== undefined && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             {trend > 0 ? (
-              <TrendingUp sx={{ fontSize: 16, color: theme.palette.success.main }} />
+              <TrendingUp
+                sx={{ fontSize: 16, color: theme.palette.success.main }}
+              />
             ) : (
-              <TrendingDown sx={{ fontSize: 16, color: theme.palette.error.main }} />
+              <TrendingDown
+                sx={{ fontSize: 16, color: theme.palette.error.main }}
+              />
             )}
             <Typography
               variant="caption"
               sx={{
-                color: trend > 0 ? theme.palette.success.main : theme.palette.error.main,
+                color:
+                  trend > 0
+                    ? theme.palette.success.main
+                    : theme.palette.error.main,
               }}
             >
               {Math.abs(trend).toFixed(1)}% vs last period
@@ -128,7 +141,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
   snowflakeData,
 }) => {
   const theme = useTheme();
-  const [selectedView, setSelectedView] = useState<"revenue" | "leads" | "performance">("revenue");
+  const [selectedView, setSelectedView] = useState<
+    "revenue" | "leads" | "performance"
+  >("revenue");
   const [expandedChart, setExpandedChart] = useState<string | null>(null);
 
   // Process data
@@ -192,7 +207,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       },
     },
     xaxis: {
-      categories: processedData.daily.map((d) => format(parseISO(d.date), "MMM d")),
+      categories: processedData.daily.map((d) =>
+        format(parseISO(d.date), "MMM d")
+      ),
       labels: {
         rotate: -45,
         style: {
@@ -236,7 +253,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
     dataLabels: {
       enabled: true,
       formatter: function (val, opts) {
-        return opts.w.config.series[opts.seriesIndex] + " (" + val.toFixed(1) + "%)";
+        return (
+          opts.w.config.series[opts.seriesIndex] + " (" + val.toFixed(1) + "%)"
+        );
       },
     },
     plotOptions: {
@@ -250,7 +269,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
               showAlways: true,
               label: "Total Calls",
               formatter: function (w) {
-                return w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0).toLocaleString();
+                return w.globals.seriesTotals
+                  .reduce((a: number, b: number) => a + b, 0)
+                  .toLocaleString();
               },
             },
           },
@@ -316,11 +337,23 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
-    const totalCalls = processedData.daily.reduce((sum, d) => sum + d.totalCalls, 0);
-    const totalBillable = processedData.daily.reduce((sum, d) => sum + d.billableLeads, 0);
+    const totalCalls = processedData.daily.reduce(
+      (sum, d) => sum + d.totalCalls,
+      0
+    );
+    const totalBillable = processedData.daily.reduce(
+      (sum, d) => sum + d.billableLeads,
+      0
+    );
     const totalSales = processedData.daily.reduce((sum, d) => sum + d.sales, 0);
-    const totalMissed = processedData.daily.reduce((sum, d) => sum + (d.missedCalls || 0), 0);
-    const totalRevenue = processedData.daily.reduce((sum, d) => sum + d.revenue, 0);
+    const totalMissed = processedData.daily.reduce(
+      (sum, d) => sum + (d.missedCalls || 0),
+      0
+    );
+    const totalRevenue = processedData.daily.reduce(
+      (sum, d) => sum + d.revenue,
+      0
+    );
 
     return {
       totalCalls,
@@ -328,7 +361,8 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
       totalSales,
       totalMissed,
       totalRevenue,
-      conversionRate: totalBillable > 0 ? (totalSales / totalBillable) * 100 : 0,
+      conversionRate:
+        totalBillable > 0 ? (totalSales / totalBillable) * 100 : 0,
       missRate: totalCalls > 0 ? (totalMissed / totalCalls) * 100 : 0,
     };
   }, [processedData.daily]);
@@ -379,7 +413,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
             <MetricCard
               title="Total Revenue"
               value={formatCurrency(summaryMetrics.totalRevenue)}
-              subtitle={`Target: ${formatCurrency(processedData.metrics.total.monthlyTarget)}`}
+              subtitle={`Target: ${formatCurrency(
+                processedData.metrics.total.monthlyTarget
+              )}`}
               icon={<AttachMoney sx={{ color: theme.palette.success.main }} />}
               trend={15.2}
               color={theme.palette.success.main}
@@ -422,12 +458,26 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
           <Grid container spacing={3}>
             <Grid item xs={12} lg={8}>
               <Paper sx={{ p: 3, height: "100%" }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
                   <Typography variant="h6">Revenue Trend</Typography>
                   <IconButton
-                    onClick={() => setExpandedChart(expandedChart === "revenue" ? null : "revenue")}
+                    onClick={() =>
+                      setExpandedChart(
+                        expandedChart === "revenue" ? null : "revenue"
+                      )
+                    }
                   >
-                    {expandedChart === "revenue" ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                    {expandedChart === "revenue" ? (
+                      <FullscreenExitOutlined />
+                    ) : (
+                      <FullscreenOutlined />
+                    )}
                   </IconButton>
                 </Box>
                 <ApexCharts
@@ -628,7 +678,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                         <Typography variant="subtitle1" gutterBottom>
                           Austin Performance
                         </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
                           <Box sx={{ flexGrow: 1 }}>
                             <Box
                               sx={{
@@ -641,7 +693,10 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                               <Box
                                 sx={{
                                   height: "100%",
-                                  width: `${Math.min(processedData.metrics.austin.attainment, 100)}%`,
+                                  width: `${Math.min(
+                                    processedData.metrics.austin.attainment,
+                                    100
+                                  )}%`,
                                   bgcolor: theme.palette.primary.main,
                                   transition: "width 0.3s",
                                 }}
@@ -649,7 +704,8 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                             </Box>
                           </Box>
                           <Typography variant="body2" fontWeight="bold">
-                            {processedData.metrics.austin.attainment.toFixed(1)}%
+                            {processedData.metrics.austin.attainment.toFixed(1)}
+                            %
                           </Typography>
                         </Box>
                       </Box>
@@ -657,7 +713,9 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                         <Typography variant="subtitle1" gutterBottom>
                           Charlotte Performance
                         </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
                           <Box sx={{ flexGrow: 1 }}>
                             <Box
                               sx={{
@@ -670,7 +728,10 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                               <Box
                                 sx={{
                                   height: "100%",
-                                  width: `${Math.min(processedData.metrics.charlotte.attainment, 100)}%`,
+                                  width: `${Math.min(
+                                    processedData.metrics.charlotte.attainment,
+                                    100
+                                  )}%`,
                                   bgcolor: theme.palette.secondary.main,
                                   transition: "width 0.3s",
                                 }}
@@ -678,7 +739,10 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({
                             </Box>
                           </Box>
                           <Typography variant="body2" fontWeight="bold">
-                            {processedData.metrics.charlotte.attainment.toFixed(1)}%
+                            {processedData.metrics.charlotte.attainment.toFixed(
+                              1
+                            )}
+                            %
                           </Typography>
                         </Box>
                       </Box>
