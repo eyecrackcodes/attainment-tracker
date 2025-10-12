@@ -11,7 +11,7 @@ interface PollingConfig {
   maxRetries: number;
 }
 
-interface DataSyncStatus {
+export interface DataSyncStatus {
   snowflake: {
     available: boolean;
     lastSync: number | null;
@@ -24,6 +24,9 @@ interface DataSyncStatus {
   };
   activeSource: "snowflake" | "firebase";
 }
+
+// Export a type alias for compatibility
+export type SyncStatus = DataSyncStatus;
 
 class DataPollingService {
   private pollingConfig: PollingConfig = {
